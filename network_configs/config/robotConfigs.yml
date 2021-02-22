@@ -1,0 +1,35 @@
+groundstation-ubnt:
+        is-active: True
+        IP-address: "192.168.42.200"
+        using-radio: "brick-1"
+        base-port: "1234"
+        clients:
+          "dcist-repeater-1-ubnt": 1
+
+dcist-repeater-1-ubnt:
+        is-active: True
+        IP-address: "192.168.42.50"
+        using-radio: "black-3"
+        base-port: "2234"
+        clients:
+          "groundstation-ubnt": 1
+          "dcist-repeater-2-ubnt": 2
+          "robot": 3
+
+dcist-repeater-2-ubnt:
+        is-active: True
+        IP-address: "192.168.42.51"
+        using-radio: "black-2"
+        base-port: "3234"
+        clients:
+          "dcist-repeater-1-ubnt": 1
+          "robot": 2
+
+robot:
+        is-active: True
+        IP-address: "192.168.42.80"
+        using-radio: "black-1"
+        base-port: "4234"
+        clients:
+          "dcist-repeater-1-ubnt": 1
+          "dcist-repeater-2-ubnt": 2

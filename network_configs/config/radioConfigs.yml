@@ -1,0 +1,59 @@
+brick-1:
+        SN: "ME4-2450R-58845"
+        MAC-address: ["04:f0:21:38:cf:5b", "04:f0:21:38:86:bd"]
+        computed-IP-address: "10.229.221.1"
+
+brick-2:
+        SN: "ME4-2450R-58846"
+        MAC-address: ["04:f0:21:38:d3:be", "04:f0:21:38:86:c9"]
+        computed-IP-address: "10.229.222.1"
+
+blue-1:
+        SN: "OMAHA-50-63915"
+        MAC-address: ["cc:2d:e0:9b:3e:aa"]
+        computed-IP-address: "10.249.171.1"
+
+blue-2:
+        SN: "OMAHA-50-63935"
+        MAC-address: ["cc:2d:e0:9b:3e:46"]
+        computed-IP-address: "10.249.191.1"
+
+blue-3:
+        SN: "OMAHA-50-67211"
+        MAC-address: ["b8:69:f4:70:ba:90"]
+        computed-IP-address: "10.6.139.1"
+
+blue-4:
+        SN: "OMAHA-50-67212"
+        MAC-address: ["b8:69:f4:70:ba:bc"]
+        computed-IP-address: "10.6.140.1"
+
+blue-5:
+        SN: "OMAHA-50-67213"
+        MAC-address: ["b8:69:f4:70:ba:0f"]
+        computed-IP-address: "10.6.141.1"
+
+blue-6:
+        SN: "DX2-50-67783"
+        MAC-address: ["74:4d:28:41:7a:e6"]
+        computed-IP-address: "10.8.199.1"
+
+black-1:
+        SN: "ME4-2450R-41075"
+        MAC-address: ["04:f0:21:2f:6d:ab", "04:f0:21:17:e4:51"]
+        computed-IP-address: "10.160.115.1"
+
+black-2:
+        SN: "ME4-2450R-46136"
+        MAC-address: ["04:f0:21:13:13:e7", "04:f0:21:02:e1:39"]
+        computed-IP-address: "10.180.56.1"
+
+black-3:
+        SN: "ME4-2450R-58161"
+        MAC-address: ["04:f0:21:1c:1b:21", "04:f0:21:19:b1:bb"]
+        computed-IP-address: "10.227.49.1"
+
+black-4:
+        SN: "ME4-2450R-46130"
+        MAC-address: ["04:f0:21:13:13:e4", "04:f0:21:02:e1:4a"]
+        computed-IP-address: "10.180.50.1"

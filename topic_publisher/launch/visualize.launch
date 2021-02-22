@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+        <node pkg="topic_publisher" type="publish_database.py" name="publish_database" output="screen"/>
+        <!--
+        <node pkg="map_viz" type="map_to_darpa.py" name="mapping_relay_darpa" output="screen"/>
+        -->
+</launch>

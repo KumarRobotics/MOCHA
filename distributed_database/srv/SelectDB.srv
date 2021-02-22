@@ -1,0 +1,5 @@
+string robot_name
+float64 ts_limit
+int8 feature_id
+---
+string[] hashes

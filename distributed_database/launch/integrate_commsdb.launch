@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+
+	<node pkg="distributed_database" type="integrate_database.py" name="integrate_database" output="screen">
+		<param name='client_ip' value='$(env ROBOT_IP)'/>
+	</node>
+
+</launch>

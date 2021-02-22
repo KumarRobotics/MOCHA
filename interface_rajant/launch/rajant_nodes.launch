@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+
+  <node pkg="interface_rajant" type="rajant_log.py" name="rajant_log" output="screen"/>
+  <node pkg="interface_rajant" type="rajant_listener.py" name="rajant_listener" output="screen"/>
+
+</launch>

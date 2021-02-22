@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+
+	<!-- Repeaters only launch the node that relays msgs -->
+	<include file="$(find distributed_database)/launch/integrate_commsdb.launch" />
+
+  <!--
+	<node pkg="rosbag" type="record" name="rosbag_record_basestation"
+	 args="record -o /home/nvidia/ /quadrotor/odom_throttled_low /quadrotor/odom_on_detection /quadrotor/odom_throttled_low_hash /quadrotor/odom_on_detection_hash" />
+  -->
+</launch>
+
