@@ -1,0 +1,5 @@
+string msg_name
+string msg_type_hash
+uint8[] msg_content
+---
+string new_hash

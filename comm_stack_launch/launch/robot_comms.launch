@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+
+	<include file="$(find distributed_database)/launch/integrate_commsdb.launch" />
+	<!-- <include file="$(find interface_rajant)/launch/rajant_nodes.launch"/> -->
+	<node pkg="translators" type="robot_pose_translator.py" name="robot_pose_listener" output="screen"/>
+	<node pkg="translators" type="robot_detections_translator.py" name="robot_detections_listener" output="screen"/>
+</launch>
+

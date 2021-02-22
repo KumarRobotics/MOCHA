@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+
+  <include file="$(find distributed_database)/launch/integrate_commsdb.launch" />
+  <include file="$(find topic_publisher)/launch/visualize.launch" />
+  <!--
+	<node pkg="rosbag" type="record" name="rosbag_record_basestation"
+	 args="record -o /home/melodic-dev/ /quadrotor/odom_throttled_low /quadrotor/odom_on_detection /quadrotor/odom_throttled_low_hash /quadrotor/odom_on_detection_hash" />
+  -->
+	<!-- <include file="$(find interface_rajant)/launch/rajant_nodes.launch"/> -->
+</launch>
+
