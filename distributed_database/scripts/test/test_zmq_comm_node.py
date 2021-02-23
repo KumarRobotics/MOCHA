@@ -2,10 +2,11 @@
 
 """ test_zmq_comm_node.py
 This file tests the basic functionality between two communication nodes.
- - Two nodes are created: robot1 and robot2. The configuration for these are
-   defined in CONFIG_FILE.
- - We generate a random message that c1 sends to c2.
- - We check that the message we sent is well received.
+ - Two nodes are created: groundstation and charon. The configuration for these are
+   defined in CONFIG_FILE. The client of each node is set to the other one.
+ - We generate a random message that groundstation sends to charon. Upon reception,
+   cb_charon is called. The return value of this function is transmitted to the groundstation.
+ - The groundstation receives the messag3e
 """
 
 import os
@@ -24,21 +25,22 @@ class test(unittest.TestCase):
     def test_simple_connection(self):
         self.answer = None
 
-        def cb_c1(value):
-            rospy.logdebug(f"CB_C1: {value}")
+        def cb_groundstation(value):
+            rospy.logdebug(f"cb_groundstation: {value}")
             self.answer = value
 
-        def cb_s2(value):
-            # return the same number we got in the answer
-            rospy.logdebug(f"CB_S2: {value}")
+        def cb_charon(value):
+            # This function is called upon reception of a message by charon. The return
+            # value is transmitted as answer to the original message.
+            rospy.logdebug(f"cb_charon: {value}")
             return value
 
         # Create the two robots
-        robot1 = zmq_comm_node.Comm_node(
-            "groundstation", "charon", CONFIG_FILE, cb_c1, None
+        node_groundstation = zmq_comm_node.Comm_node(
+            "groundstation", "charon", CONFIG_FILE, cb_groundstation, None
         )
-        robot2 = zmq_comm_node.Comm_node(
-            "charon", "groundstation", CONFIG_FILE, None, cb_s2
+        node_charon = zmq_comm_node.Comm_node(
+            "charon", "groundstation", CONFIG_FILE, None, cb_charon
         )
 
         # Generate random message
@@ -47,14 +49,14 @@ class test(unittest.TestCase):
         random_msg = random_str + str(random.randint(0, 1024))
         random_msg = random_msg.encode()
 
-        # Send message from robot1 to robot 2
-        robot1.connect_send_message(random_msg)
+        # Send message from node_groundstation to robot 2
+        node_groundstation.connect_send_message(random_msg)
 
-        # robot2.connect_send_message(random_msg)
+        # node_charon.connect_send_message(random_msg)
 
         # Terminate robots and test assertion
-        robot1.terminate()
-        robot2.terminate()
+        node_groundstation.terminate()
+        node_charon.terminate()
         self.assertEqual(random_msg, self.answer, "Sent %s" % random_msg)
 
 
