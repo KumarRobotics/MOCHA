@@ -102,13 +102,13 @@ class Comm_node:
 
         # Msg check
         if not isinstance(msg, bytes):
-            rospy.logdebug("SENDMSG: msg has to be bytes")
+            rospy.logdebug(f"{self.this_node} - SENDMSG: msg has to be bytes")
             return
 
         # Check that we are in the right state
         self.syncStatus_lock.acquire()
         if self.syncStatus != SyncStatus.IDLE:
-            rospy.logdebug("SENDMSG: Sync is running, abort")
+            rospy.logdebug(f"{self.this_node} - SENDMSG: Sync is running, abort")
             return
         self.client_thread = SyncStatus.SYNCHRONIZING
         self.syncStatus_lock.release()
@@ -123,7 +123,9 @@ class Comm_node:
             + str(int(target_robot["base-port"]) + port_offset)
         )
 
-        rospy.logdebug(f"SENDMSG: Connecting to server {server_endpoint}")
+        rospy.logdebug(
+            f"{self.this_node} - SENDMSG: Connecting to server {server_endpoint}"
+        )
         client = self.context.socket(zmq.REQ)
         client.connect(server_endpoint)
 
@@ -134,7 +136,7 @@ class Comm_node:
         rnd_uuid = str(uuid.uuid4().hex).encode()
         msg_id = hash_comm.Hash(rnd_uuid).bindigest()
         full_msg = msg_id + msg
-        rospy.logdebug(f"SENDMSG: Sending ({full_msg})")
+        rospy.logdebug(f"{self.this_node} - SENDMSG: Sending ({full_msg})")
         client.send(full_msg)
 
         retries_left = REQUEST_RETRIES
@@ -144,30 +146,42 @@ class Comm_node:
             if socks.get(client) == zmq.POLLIN:
                 reply = client.recv()
                 if not reply:
-                    rospy.logdebug("SENDMSG: No response from the server")
+                    rospy.logdebug(
+                        f"{self.this_node} - SENDMSG: No response from the server"
+                    )
                     break
                 header = reply[0:HASH_LENGTH]
                 data = reply[HASH_LENGTH:]
                 if header == msg_id:
-                    rospy.logdebug(f"SENDMSG: Server replied OK ({len(reply)} bytes)")
+                    rospy.logdebug(
+                        f"{self.this_node} - SENDMSG: Server replied OK ({len(reply)} bytes)"
+                    )
                     self.client_callback(data)
                     break
                 else:
-                    sys.exit(f"SENDMSG: Malformed reply from server: {reply}")
+                    sys.exit(
+                        f"{self.this_node} - SENDMSG: Malformed reply from server: {reply}"
+                    )
                     self.client_callback(None)
                     break
             else:
-                rospy.logdebug("SENDMSG: No response from server, retrying...")
+                rospy.logdebug(
+                    "{self.this_node} - SENDMSG: No response from server, retrying..."
+                )
                 # Socket is confused. Close and remove it.
                 client.setsockopt(zmq.LINGER, 0)
                 client.close()
                 poll.unregister(client)
                 retries_left -= 1
                 if retries_left == 0:
-                    rospy.logdebug("SENDMSG: Server seems to be offline, abandoning")
+                    rospy.logdebug(
+                        "{self.this_node} - SENDMSG: Server seems to be offline, abandoning"
+                    )
                     self.client_callback(None)
                     break
-                rospy.logdebug(f"SENDMSG: Reconnecting and resending ({full_msg})")
+                rospy.logdebug(
+                    f"{self.this_node} - SENDMSG: Reconnecting and resending ({full_msg})"
+                )
                 # Create new connection
                 client = self.context.socket(zmq.REQ)
                 client.connect(server_endpoint)
@@ -191,26 +205,28 @@ class Comm_node:
                 request = self.server.recv()
             except zmq.ZMQError as e:
                 if e.errno == zmq.EAGAIN:
-                    rospy.logdebug(f"SERVER_RUNNING: {self.server_running}")
+                    rospy.logdebug(
+                        f"{self.this_node} - SERVER_RUNNING: {self.server_running}"
+                    )
                     continue
                 else:
                     sys.exit("SERVER unknown error")
-            rospy.logdebug(f"SERVER: Got {request}")
+            rospy.logdebug(f"{self.this_node} - SERVER: Got {request}")
             header = request[0:HASH_LENGTH]
             data = request[HASH_LENGTH:]
             reply = self.server_callback(data)
             if reply == None:
-                raise Exception("SERVER: reply cannot be none")
+                raise Exception(f"{self.this_node} - SERVER: reply cannot be none")
             if not isinstance(reply, bytes):
-                raise Exception("SERVER: reply has to be bytes")
+                raise Exception(f"{self.this_node} - SERVER: reply has to be bytes")
             ans = header + reply
             self.server.send(ans)
-            rospy.logdebug(f"SERVER: Replied {len(ans)} bytes")
+            rospy.logdebug(f"{self.this_node} - SERVER: Replied {len(ans)} bytes")
         self.server.close()
         self.context.term()
 
     def terminate(self):
-        rospy.logdebug("Terminating server")
+        rospy.logdebug(f"{self.this_node} - Terminating server")
         self.server_running = False
 
 
