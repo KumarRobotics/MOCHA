@@ -12,7 +12,7 @@ import rospy
 class RobotPose:
     def __init__(self):
         self.robot_pose_num = 1
-        self.robot_pose_topic = "/quadrotor/odom_throttled_low"
+        self.robot_pose_topic = "/robot/odom"
         self.robot_pose_name = "OdomThrottled"
         self.add_service_name = "database_server/AddUpdateDB"
         self.add_update_db = rospy.ServiceProxy(
