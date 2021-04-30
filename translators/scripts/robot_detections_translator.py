@@ -12,7 +12,7 @@ import rospy
 class OdomOnDetection:
     def __init__(self):
         self.odom_on_det_num = 1
-        self.odom_on_det_topic = "/quadrotor/odom_on_detection"
+        self.odom_on_det_topic = "/robot/det_odom"
         self.odom_on_det_name = "OdomOnDetection"
         self.add_service_name = "database_server/AddUpdateDB"
         self.add_update_db = rospy.ServiceProxy(
