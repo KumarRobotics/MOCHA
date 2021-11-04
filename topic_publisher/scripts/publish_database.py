@@ -18,10 +18,10 @@ configs_path = rospack.get_path("network_configs")
 robot_yaml_path = os.path.join(configs_path, "config", "robotConfigs.yml")
 
 import database_server_utils as du
-import nav_msgs.msg
 import distributed_database.srv
+import nav_msgs.msg
 import std_msgs.msg
-from sensor_msgs.msg import CompressedImage
+from sensor_msgs.msg import CompressedImage, PointCloud2
 
 
 class Map_Visualize:
@@ -38,36 +38,54 @@ class Map_Visualize:
             self.get_hash_service, distributed_database.srv.GetDataHashDB
         )
 
-        self.detection_topic = "/quadrotor/odom_on_detection"
-        self.odom_topic = "/quadrotor/odom_throttled_low"
+        self.detection_topic_io = "/io/object_map_pc"
+        self.odom_topic_io = "/io/odom_raw"
+
+        self.detection_topic_callisto = "/callisto/object_map_pc"
+        self.odom_topic_callisto = "/callisto/odom_raw"
 
         with open(robot_yaml_path, "r") as f:
             robot_cfg = yaml.load(f)
         self.robot_list = list(robot_cfg.keys())
 
-        self.robot_list.remove("groundstation-ubnt")
-        self.robot_list.remove("dcist-repeater-1-ubnt")
-        self.robot_list.remove("dcist-repeater-2-ubnt")
+        self.robot_list.remove("groundstation")
+        # self.robot_list.remove("robot-io")
+        # self.robot_list.remove("robot-callisto")
 
         self.map_pub = []
 
-        self.detection_topic_pub = rospy.Publisher(
-            self.detection_topic, nav_msgs.msg.Odometry, queue_size=10
+        self.detection_topic_io_pub = rospy.Publisher(
+            self.detection_topic_io, PointCloud2, queue_size=10
         )
 
-        self.detection_topic_pub_hash = rospy.Publisher(
-            self.detection_topic + "_hash", std_msgs.msg.String, queue_size=10
+        self.detection_topic_io_pub_hash = rospy.Publisher(
+            self.detection_topic_io + "_hash", std_msgs.msg.String, queue_size=10
         )
 
-        self.odom_topic_pub = rospy.Publisher(
-            self.odom_topic, nav_msgs.msg.Odometry, queue_size=10
+        self.odom_topic_io_pub = rospy.Publisher(
+            self.odom_topic_io, nav_msgs.msg.Odometry, queue_size=10
         )
 
-        self.odom_topic_pub_hash = rospy.Publisher(
-            self.odom_topic + "_hash", std_msgs.msg.String, queue_size=10
+        self.odom_topic_io_pub_hash = rospy.Publisher(
+            self.odom_topic_io + "_hash", std_msgs.msg.String, queue_size=10
+        )
+        self.detection_topic_callisto_pub = rospy.Publisher(
+            self.detection_topic_callisto, PointCloud2, queue_size=10
         )
 
-        rate = rospy.Rate(0.5)
+        self.detection_topic_callisto_pub_hash = rospy.Publisher(
+            self.detection_topic_callisto + "_hash", std_msgs.msg.String, queue_size=10
+        )
+
+        self.odom_topic_callisto_pub = rospy.Publisher(
+            self.odom_topic_callisto, nav_msgs.msg.Odometry, queue_size=10
+        )
+
+        self.odom_topic_callisto_pub_hash = rospy.Publisher(
+            self.odom_topic_callisto + "_hash", std_msgs.msg.String, queue_size=10
+        )
+
+        rate = rospy.Rate(0.2)
 
         hashes = []
 
@@ -100,21 +118,36 @@ class Map_Visualize:
 
                     ans_feat_name, ans_ts, ans_data, _ = du.parse_answer(answ)
 
+                    print(40*"-", ans_feat_name)
+
                     # msg = nav_msgs.msg.Odometry(ans_data)
                     # pdb.set_trace()
 
-                    if "OdomOnDetection" in ans_feat_name:
+                    if "io-Detections" in ans_feat_name:
                         # print("published")
-                        self.detection_topic_pub.publish(ans_data)
-                        self.detection_topic_pub_hash.publish(get_hash)
-                        print(len(hashes), ": Detection")
+                        self.detection_topic_io_pub.publish(ans_data)
+                        self.detection_topic_io_pub_hash.publish(get_hash)
+                        print(len(hashes), ": IO-Detection")
 
-                    elif "OdomThrottled" in ans_feat_name:
+                    elif "io-Odom" in ans_feat_name:
                         # print("published")
-                        self.odom_topic_pub.publish(ans_data)
-                        self.odom_topic_pub_hash.publish(get_hash)
-                        print(len(hashes), ": Odom")
+                        self.odom_topic_io_pub.publish(ans_data)
+                        self.odom_topic_io_pub_hash.publish(get_hash)
+                        print(len(hashes), ": IO-Odom")
+
+                    elif "callisto-OdomOnDetection" in ans_feat_name:
+                        # print("published")
+                        self.detection_topic_callisto_pub.publish(ans_data)
+                        self.detection_topic_callisto_pub_hash.publish(get_hash)
+                        print(len(hashes), ": Callisto-Detection")
+
+                    elif "callisto-Odom" in ans_feat_name:
+                        # print("published")
+                        self.odom_topic_callisto_pub.publish(ans_data)
+                        self.odom_topic_callisto_pub_hash.publish(get_hash)
+                        print(len(hashes), ": Callisto-Odom")
             rate.sleep()
+
 
 if __name__ == "__main__":
     MV = Map_Visualize()

@@ -7,22 +7,23 @@ import distributed_database.srv
 import nav_msgs.msg
 import rospkg
 import rospy
+import sensor_msgs.msg
 
 
 class OdomOnDetection:
     def __init__(self):
         self.odom_on_det_num = 1
-        self.odom_on_det_topic = "/robot/det_odom"
-        self.odom_on_det_name = "OdomOnDetection"
+        self.odom_on_det_topic = "/object_mapper/map"
+        self.odom_on_det_name = "Detections"
         self.add_service_name = "database_server/AddUpdateDB"
         self.add_update_db = rospy.ServiceProxy(
             self.add_service_name, distributed_database.srv.AddUpdateDB
         )
 
     def listen(self):
-        rospy.init_node("odom_on_detection_listener", anonymous=True)
+        rospy.init_node("detections_listener", anonymous=True)
         rospy.Subscriber(
-            self.odom_on_det_topic, nav_msgs.msg.Odometry, self.odom_on_det_cb
+            self.odom_on_det_topic, sensor_msgs.msg.PointCloud2, self.odom_on_det_cb
         )
         rospy.spin()
 

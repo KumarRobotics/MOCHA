@@ -5,13 +5,16 @@ import rospy
 import synchronize_utils as su
 import distributed_database.msg
 import nav_msgs.msg
+import sensor_msgs.msg
 import hash_comm
 import io
 
 MSG_TYPES = {
     nav_msgs.msg.Odometry._md5sum: {'dtype': 1,
         'priority': 3, 'obj': nav_msgs.msg.Odometry},
-    distributed_database.msg.RobotState._md5sum: {'dtype': 2,
+    sensor_msgs.msg.PointCloud2._md5sum: {'dtype': 2,
+        'priority': 3, 'obj': sensor_msgs.msg.PointCloud2},
+    distributed_database.msg.RobotState._md5sum: {'dtype': 6,
         'priority': 3, 'obj': distributed_database.msg.RobotState},
     distributed_database.msg.ObjectDetection._md5sum: {'dtype': 3,
         'priority': 3, 'obj': distributed_database.msg.ObjectDetection},
@@ -48,7 +51,7 @@ def get_robot_number(config_file, robot_name=None):
 def get_robot_name(config_file):
     """ Returns the robot name, fetched from the current ip """
     robot_num = get_robot_number(config_file)
-    robot_ip = '192.168.42.' + str(robot_num)
+    robot_ip = '192.168.11.' + str(robot_num)
     rospack = rospkg.RosPack()
     package_path = rospack.get_path('network_configs')
     robot_yaml_path = os.path.join(package_path, "config", config_file)
