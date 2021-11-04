@@ -85,7 +85,7 @@ class Map_Visualize:
             self.odom_topic_callisto + "_hash", std_msgs.msg.String, queue_size=10
         )
 
-        rate = rospy.Rate(0.2)
+        rate = rospy.Rate(2)
 
         hashes = []
 
