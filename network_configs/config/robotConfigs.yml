@@ -1,58 +1,69 @@
 groundstation:
         is-active: True
-        IP-address: "192.168.10.20"
+        IP-address: "192.168.11.100"
         using-radio: "brick-1"
         base-port: "1234"
         clients:
           "robot-io": 1
-          "robot-callisto": 1
+          "robot-callisto": 2
 
-robot-io:
-        is-active: True
-        IP-address: "192.168.10.30"
+robot-europa:
+        is-active: False
+        IP-address: "192.168.11.101"
         using-radio: "black-1"
-        base-port: "2234"
+        base-port: "3234"
         clients:
           "groundstation": 1
-          "robot-callisto": 2
+          "robot-io": 2
+          "robot-callisto": 3
 
 robot-callisto:
         is-active: True
-        IP-address: "192.168.10.32"
+        IP-address: "192.168.11.102"
         using-radio: "black-1"
         base-port: "3234"
         clients:
           "robot-io": 1
           "groundstation": 2
 
-babel-repeater-0:
+robot-io:
         is-active: True
-        IP-address: "192.168.10.10"
-        using-radio: "black-3"
-        base-port: "4234"
+        IP-address: "192.168.11.103"
+        using-radio: "black-1"
+        base-port: "2234"
         clients:
-          "babel-repeater-1": 1
+          "groundstation": 1
+          "robot-callisto": 2
 
-babel-repeater-1:
-        is-active: True
-        IP-address: "192.168.10.11"
-        using-radio: "black-3"
-        base-port: "5234"
-        clients:
-          "babel-repeater-2": 1
 
-babel-repeater-2:
-        is-active: True
-        IP-address: "192.168.10.12"
-        using-radio: "black-3"
-        base-port: "6234"
-        clients:
-          "babel-repeater-3": 1
-
-babel-repeater-3:
-        is-active: True
-        IP-address: "192.168.10.13"
-        using-radio: "black-3"
-        base-port: "7234"
-        clients:
-          "babel-repeater-0": 1
+#babel-repeater-0:
+#        is-active: False
+#        IP-address: "192.168.10.10"
+#        using-radio: "black-3"
+#        base-port: "4234"
+#        clients:
+#          "babel-repeater-1": 1
+#
+#babel-repeater-1:
+#        is-active: False
+#        IP-address: "192.168.10.11"
+#        using-radio: "black-3"
+#        base-port: "5234"
+#        clients:
+#          "babel-repeater-2": 1
+#
+#babel-repeater-2:
+#        is-active: False
+#        IP-address: "192.168.10.12"
+#        using-radio: "black-3"
+#        base-port: "6234"
+#        clients:
+#          "babel-repeater-3": 1
+#
+#babel-repeater-3:
+#        is-active: False
+#        IP-address: "192.168.10.13"
+#        using-radio: "black-3"
+#        base-port: "7234"
+#        clients:
+#          "babel-repeater-0": 1

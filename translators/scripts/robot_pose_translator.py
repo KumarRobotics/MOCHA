@@ -12,15 +12,15 @@ import rospy
 class RobotPose:
     def __init__(self):
         self.robot_pose_num = 1
-        self.robot_pose_topic = "/robot/odom"
-        self.robot_pose_name = "OdomThrottled"
+        self.robot_pose_topic = "/object_mapper/odom"
+        self.robot_pose_name = "Odom"
         self.add_service_name = "database_server/AddUpdateDB"
         self.add_update_db = rospy.ServiceProxy(
             self.add_service_name, distributed_database.srv.AddUpdateDB
         )
 
     def listen(self):
-        rospy.init_node("odom_throttled_listener", anonymous=True)
+        rospy.init_node("odom_listener", anonymous=True)
         rospy.Subscriber(
             self.robot_pose_topic, nav_msgs.msg.Odometry, self.robot_pose_cb
         )
