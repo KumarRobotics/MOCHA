@@ -15,6 +15,7 @@ class RobotPose:
         self.robot_pose_topic = "/object_mapper/odom"
         self.robot_pose_name = "Odom"
         self.add_service_name = "database_server/AddUpdateDB"
+        self.robot_name = du.get_robot_name("robotConfigs.yml")
         self.add_update_db = rospy.ServiceProxy(
             self.add_service_name, distributed_database.srv.AddUpdateDB
         )
@@ -28,7 +29,7 @@ class RobotPose:
 
     def robot_pose_cb(self, data):
         msg = data
-        feature_name = f"{self.robot_pose_name}-{self.robot_pose_num}"
+        feature_name = f"{self.robot_name}-{self.robot_pose_name}-{self.robot_pose_num}"
 
         rospy.wait_for_service(self.add_service_name)
         serialized_msg = du.serialize_ros_msg(msg)

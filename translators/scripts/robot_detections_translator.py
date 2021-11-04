@@ -16,6 +16,7 @@ class OdomOnDetection:
         self.odom_on_det_topic = "/object_mapper/map"
         self.odom_on_det_name = "Detections"
         self.add_service_name = "database_server/AddUpdateDB"
+        self.robot_name = du.get_robot_name("robotConfigs.yml")
         self.add_update_db = rospy.ServiceProxy(
             self.add_service_name, distributed_database.srv.AddUpdateDB
         )
@@ -29,7 +30,7 @@ class OdomOnDetection:
 
     def odom_on_det_cb(self, data):
         msg = data
-        feature_name = f"{self.odom_on_det_name}-{self.odom_on_det_num}"
+        feature_name = f"{self.robot_name}-{self.odom_on_det_name}-{self.odom_on_det_num}"
 
         rospy.wait_for_service(self.add_service_name)
         serialized_msg = du.serialize_ros_msg(msg)

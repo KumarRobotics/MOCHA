@@ -123,25 +123,25 @@ class Map_Visualize:
                     # msg = nav_msgs.msg.Odometry(ans_data)
                     # pdb.set_trace()
 
-                    if "io-Detections" in ans_feat_name:
+                    if "robot-io-Detections" in ans_feat_name:
                         # print("published")
                         self.detection_topic_io_pub.publish(ans_data)
                         self.detection_topic_io_pub_hash.publish(get_hash)
                         print(len(hashes), ": IO-Detection")
 
-                    elif "io-Odom" in ans_feat_name:
+                    elif "robot-io-Odom" in ans_feat_name:
                         # print("published")
                         self.odom_topic_io_pub.publish(ans_data)
                         self.odom_topic_io_pub_hash.publish(get_hash)
                         print(len(hashes), ": IO-Odom")
 
-                    elif "callisto-OdomOnDetection" in ans_feat_name:
+                    elif "robot-callisto-Detections" in ans_feat_name:
                         # print("published")
                         self.detection_topic_callisto_pub.publish(ans_data)
                         self.detection_topic_callisto_pub_hash.publish(get_hash)
                         print(len(hashes), ": Callisto-Detection")
 
-                    elif "callisto-Odom" in ans_feat_name:
+                    elif "robot-callisto-Odom" in ans_feat_name:
                         # print("published")
                         self.odom_topic_callisto_pub.publish(ans_data)
                         self.odom_topic_callisto_pub_hash.publish(get_hash)
