@@ -34,7 +34,8 @@ class Comm_node:
         package_path = rospack.get_path("network_configs")
         yaml_path = os.path.join(package_path, "config", config_file)
         with open(yaml_path, "r") as f:
-            cfg = yaml.load(f, Loader=yaml.FullLoader)
+            #cfg = yaml.load(f, Loader=yaml.FullLoader)
+            cfg = yaml.load(f)
 
         self.node_list = {}
 
