@@ -1,12 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
 
-  <include file="$(find distributed_database)/launch/integrate_commsdb.launch" />
+  <!-- Launch the distributed databae in the basestation -->
+  <include file="$(find distributed_database)/launch/integrate_commsdb.launch">
+    <arg name="client_ip_ups" value="192.168.11.100" />
+  </include>
+  <!-- Poll the database and republish the topics as ROS topics -->
   <include file="$(find topic_publisher)/launch/visualize.launch" />
   <!--
-	<node pkg="rosbag" type="record" name="rosbag_record_basestation"
-	 args="record -o /home/melodic-dev/ /quadrotor/odom_throttled_low /quadrotor/odom_on_detection /quadrotor/odom_throttled_low_hash /quadrotor/odom_on_detection_hash" />
+    <node pkg="rosbag" type="record" name="rosbag_record_basestation"
+    args="record -o /home/dcist/data/data/$(arg bagname) /callisto/det_odom /callisto/det_odom_hash /callisto/odom /callisto/odom_hash /callisto/viz /initialpose /io/det_odom /io/det_odom_hash /io/odom /io/odom_hash /io/viz /rosout_agg" />
+    <include file="$(find interface_rajant)/launch/rajant_nodes.launch"/> 
   -->
-	<!-- <include file="$(find interface_rajant)/launch/rajant_nodes.launch"/> -->
 </launch>
 
