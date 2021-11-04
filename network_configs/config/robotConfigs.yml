@@ -6,6 +6,7 @@ groundstation:
         clients:
           "robot-io": 1
           "robot-callisto": 2
+          "robot-titan": 3
 
 robot-europa:
         is-active: False
@@ -25,6 +26,7 @@ robot-callisto:
         clients:
           "robot-io": 1
           "groundstation": 2
+          "robot-titan": 3
 
 robot-io:
         is-active: True
@@ -34,6 +36,17 @@ robot-io:
         clients:
           "groundstation": 1
           "robot-callisto": 2
+          "robot-titan": 3
+
+robot-titan:
+        is-active: True
+        IP-address: "192.168.11.107"
+        using-radio: "black-1"
+        base-port: "2234"
+        clients:
+          "groundstation": 1
+          "robot-callisto": 2
+          "robot-io": 3
 
 
 #babel-repeater-0:
