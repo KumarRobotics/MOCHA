@@ -4,33 +4,33 @@ groundstation:
         using-radio: "brick-1"
         base-port: "1234"
         clients:
-          "robot-callisto": 1
-          "robot-iapetus": 2
+          "callisto": 1
+          "iapetus": 2
 
-robot-europa:
+europa:
         is-active: False
         IP-address: "192.168.11.101"
         using-radio: "black-1"
         base-port: "2234"
         clients:
           "groundstation": 1
-          "robot-io": 2
-          "robot-callisto": 3
+          "io": 2
+          "callisto": 3
 
-robot-callisto:
+callisto:
         is-active: True
         IP-address: "192.168.11.102"
         using-radio: "black-1"
         base-port: "3234"
         clients:
-          "robot-iapetus": 1
+          "iapetus": 1
           "groundstation": 2
 
-robot-iapetus:
+iapetus:
         is-active: True
         IP-address: "192.168.11.108"
         using-radio: "black-1"
         base-port: "6234"
         clients:
           "groundstation": 1
-          "robot-callisto": 2
+          "callisto": 2
