@@ -28,7 +28,7 @@ class Translator:
     def translator_cb(self, data):
         msg = data
 
-        feature_name = f"{self.__robot_name}-{self.__topic_name}-{self.__counter}"
+        feature_name = f"{self.__robot_name},{self.__topic_name},{self.__counter}"
 
         rospy.wait_for_service(self.__service_name)
         serialized_msg = self.__du.serialize_ros_msg(msg)
