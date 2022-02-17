@@ -3,10 +3,12 @@
 import os
 import sys
 
-from trasnlator import Translator
+import rospy
 import nav_msgs.msg
 import sensor_msgs.msg
 import geometry_msgs.msg
+
+from translator import Translator
 
 
 if __name__ == "__main__":

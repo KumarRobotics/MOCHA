@@ -3,11 +3,13 @@
 import os
 import sys
 
+import rospy
 import sensor_msgs.msg
 import geometry_msgs.msg
 import nav_msgs.msg
 
 from translator import Translator
+
 
 if __name__ == "__main__":
     rospy.init_node("jackal_translator", anonymous=True)
