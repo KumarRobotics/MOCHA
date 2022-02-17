@@ -36,10 +36,10 @@ class Translator:
             answ = self.__add_update_db(feature_name, 
                     msg._md5sum, serialized_msg)
             answ_hash = answ.new_hash
+            rospy.loginfo(f"Hash insert - {self.__topic_name} - {answ_hash}")
+            self.__counter += 1
         except rospy.ServiceException as exc:
-            print("Service did not process request: " + str(exc))
-        rospy.loginfo(f"Hash insert - {self.__topic_name} - {answ_hash}")
-        self.__counter += 1
+            rospy.logerr(f"Service did not process request: {exc}")
 
 
 

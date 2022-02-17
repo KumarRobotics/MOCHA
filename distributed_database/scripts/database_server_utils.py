@@ -21,6 +21,8 @@ MSG_TYPES = {
         'priority': 3, 'obj': sensor_msgs.msg.Image},
     geometry_msgs.msg.PoseStamped._md5sum: {'dtype': 5,
         'priority': 3, 'obj': geometry_msgs.msg.PoseStamped},
+    nav_msgs.msg.Path._md5sum: {'dtype': 6,
+        'priority': 3, 'obj': nav_msgs.msg.Path},
 }
 
 
