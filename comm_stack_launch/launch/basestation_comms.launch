@@ -1,16 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
-
-  <!-- Launch the distributed databae in the basestation -->
+  <arg name="robot_ip"/>
   <include file="$(find distributed_database)/launch/integrate_commsdb.launch">
-    <arg name="client_ip_ups" value="192.168.11.100" />
+    <arg name="client_ip_ups" value="$(arg robot_ip)" />
   </include>
-  <!-- Poll the database and republish the topics as ROS topics -->
   <include file="$(find topic_publisher)/launch/visualize.launch" />
-  <!--
-    <node pkg="rosbag" type="record" name="rosbag_record_basestation"
-    args="record -o /home/dcist/data/data/$(arg bagname) /callisto/det_odom /callisto/det_odom_hash /callisto/odom /callisto/odom_hash /callisto/viz /initialpose /io/det_odom /io/det_odom_hash /io/odom /io/odom_hash /io/viz /rosout_agg" />
-    <include file="$(find interface_rajant)/launch/rajant_nodes.launch"/> 
-  -->
+  <node pkg="rosbag" type="record" name="rosbag_record_basestation"
+	  args="record -o /home/dcist/data/$(arg bagname) /iapetus/asoom/map_sem_img /iapetus/asoom/map_sem_img_center_hash /iapetus/asoom/recent_key_pose_hash /iapetus/asoom/map_sem_img_center_hash /iapetus/asoom/recent_key_pose_hash /rosout_agg" />
 </launch>
 
