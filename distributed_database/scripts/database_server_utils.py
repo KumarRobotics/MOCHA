@@ -6,6 +6,7 @@ import synchronize_utils as su
 import distributed_database.msg
 import nav_msgs.msg
 import sensor_msgs.msg
+import geometry_msgs.msg
 import hash_comm
 import io
 
@@ -14,16 +15,12 @@ MSG_TYPES = {
         'priority': 3, 'obj': nav_msgs.msg.Odometry},
     sensor_msgs.msg.PointCloud2._md5sum: {'dtype': 2,
         'priority': 3, 'obj': sensor_msgs.msg.PointCloud2},
-    distributed_database.msg.RobotState._md5sum: {'dtype': 6,
-        'priority': 3, 'obj': distributed_database.msg.RobotState},
-    distributed_database.msg.ObjectDetection._md5sum: {'dtype': 3,
-        'priority': 3, 'obj': distributed_database.msg.ObjectDetection},
-    distributed_database.msg.TopologicalGraph._md5sum: {'dtype': 4,
-        'priority': 2, 'obj': distributed_database.msg.TopologicalGraph},
-    distributed_database.msg.PseudoFrontiers._md5sum: {'dtype': 5,
-        'priority': 1, 'obj': distributed_database.msg.PseudoFrontiers},
-    distributed_database.msg.PanoramicImages._md5sum: {'dtype': 6,
-        'priority': 0, 'obj': distributed_database.msg.PanoramicImages}
+    geometry_msgs.msg.PointStamped._md5sum: {'dtype': 3,
+        'priority': 3, 'obj': geometry_msgs.msg.PointStamped},
+    sensor_msgs.msg.Image._md5sum: {'dtype': 4,
+        'priority': 3, 'obj': sensor_msgs.msg.Image},
+    geometry_msgs.msg.PoseStamped._md5sum: {'dtype': 5,
+        'priority': 3, 'obj': geometry_msgs.msg.PoseStamped},
 }
 
 
