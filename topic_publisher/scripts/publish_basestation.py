@@ -21,7 +21,8 @@ import database_server_utils as du
 import distributed_database.srv
 import nav_msgs.msg
 import std_msgs.msg
-from sensor_msgs.msg import CompressedImage, PointCloud2
+import geometry_msgs.msg
+import sensor_msgs.msg
 
 
 class Map_Visualize:
@@ -38,11 +39,9 @@ class Map_Visualize:
             self.get_hash_service, distributed_database.srv.GetDataHashDB
         )
 
-        self.detection_topic_io = "/io/object_map_pc"
-        self.odom_topic_io = "/io/odom_raw"
-
-        self.detection_topic_callisto = "/callisto/object_map_pc"
-        self.odom_topic_callisto = "/callisto/odom_raw"
+        self.map_sem_img_iapetus = "/iapetus/asoom/map_sem_img"
+        self.map_sem_center_iapetus = "/iapetus/asoom/map_sem_img_center"
+        self.recent_key_pose_iapetus = "/iapetus/asoom/recent_key_pose"
 
         with open(robot_yaml_path, "r") as f:
             robot_cfg = yaml.load(f)
@@ -54,35 +53,27 @@ class Map_Visualize:
 
         self.map_pub = []
 
-        self.detection_topic_io_pub = rospy.Publisher(
-            self.detection_topic_io, PointCloud2, queue_size=10
+        self.map_sem_img_iapetus_pub = rospy.Publisher(
+            self.map_sem_img_iapetus, sensor_msgs.msg.Image, queue_size=10
         )
 
-        self.detection_topic_io_pub_hash = rospy.Publisher(
-            self.detection_topic_io + "_hash", std_msgs.msg.String, queue_size=10
+        self.map_sem_img_iapetus_pub_hash = rospy.Publisher(
+            self.map_sem_img_iapetus + "_hash", std_msgs.msg.String, queue_size=10
         )
 
-        self.odom_topic_io_pub = rospy.Publisher(
-            self.odom_topic_io, nav_msgs.msg.Odometry, queue_size=10
+        self.map_sem_center_iapetus_pub = rospy.Publisher(
+            self.map_sem_center_iapetus, geometry_msgs.msg.PointStamped, queue_size=10
         )
 
-        self.odom_topic_io_pub_hash = rospy.Publisher(
-            self.odom_topic_io + "_hash", std_msgs.msg.String, queue_size=10
+        self.map_sem_center_iapetus_pub_hash = rospy.Publisher(
+            self.map_sem_center_iapetus + "_hash", std_msgs.msg.String, queue_size=10
         )
-        self.detection_topic_callisto_pub = rospy.Publisher(
-            self.detection_topic_callisto, PointCloud2, queue_size=10
-        )
-
-        self.detection_topic_callisto_pub_hash = rospy.Publisher(
-            self.detection_topic_callisto + "_hash", std_msgs.msg.String, queue_size=10
+        self.recent_key_pose_iapetus_pub = rospy.Publisher(
+            self.recent_key_pose_iapetus, geometry_msgs.msg.PoseStamped, queue_size=10
         )
 
-        self.odom_topic_callisto_pub = rospy.Publisher(
-            self.odom_topic_callisto, nav_msgs.msg.Odometry, queue_size=10
-        )
-
-        self.odom_topic_callisto_pub_hash = rospy.Publisher(
-            self.odom_topic_callisto + "_hash", std_msgs.msg.String, queue_size=10
+        self.recent_key_pose_iapetus_pub_hash = rospy.Publisher(
+            self.recent_key_pose_iapetus + "_hash", std_msgs.msg.String, queue_size=10
         )
 
         rate = rospy.Rate(.2)
@@ -123,29 +114,23 @@ class Map_Visualize:
                     # msg = nav_msgs.msg.Odometry(ans_data)
                     # pdb.set_trace()
 
-                    if "robot-io-Detections" in ans_feat_name:
+                    if "robot-iapetus-map_image" in ans_feat_name:
                         # print("published")
-                        self.detection_topic_io_pub.publish(ans_data)
-                        self.detection_topic_io_pub_hash.publish(get_hash)
-                        print(len(hashes), ": IO-Detection")
+                        self.map_sem_img_iapetus_pub.publish(ans_data)
+                        self.map_sem_img_iapetus_pub_hash.publish(get_hash)
+                        print(len(hashes), ": Iapetus-img")
 
-                    elif "robot-io-Odom" in ans_feat_name:
+                    elif "robot-iapetus-map_center" in ans_feat_name:
                         # print("published")
-                        self.odom_topic_io_pub.publish(ans_data)
-                        self.odom_topic_io_pub_hash.publish(get_hash)
-                        print(len(hashes), ": IO-Odom")
+                        self.map_sem_center_iapetus_pub.publish(ans_data)
+                        self.map_sem_center_iapetus_pub_hash.publish(get_hash)
+                        print(len(hashes), ": Iapetus-center")
 
-                    elif "robot-callisto-Detections" in ans_feat_name:
+                    elif "robot-iapetus-recent_key_pose" in ans_feat_name:
                         # print("published")
-                        self.detection_topic_callisto_pub.publish(ans_data)
-                        self.detection_topic_callisto_pub_hash.publish(get_hash)
-                        print(len(hashes), ": Callisto-Detection")
-
-                    elif "robot-callisto-Odom" in ans_feat_name:
-                        # print("published")
-                        self.odom_topic_callisto_pub.publish(ans_data)
-                        self.odom_topic_callisto_pub_hash.publish(get_hash)
-                        print(len(hashes), ": Callisto-Odom")
+                        self.recent_key_pose_iapetus_pub.publish(ans_data)
+                        self.recent_key_pose_iapetus_pub_hash.publish(get_hash)
+                        print(len(hashes), ": Iapetus-key-pose")
             rate.sleep()
 
 
