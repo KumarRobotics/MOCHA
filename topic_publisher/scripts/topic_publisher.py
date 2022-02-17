@@ -49,12 +49,11 @@ class TopicPublisher():
             self.publishers[t] = {
                   "pub": rospy.Publisher(f"/{robot}{topic}", target[t], queue_size=10), 
                   "hash_pub": rospy.Publisher(f"/{robot}{topic}_hash", std_msgs.msg.String, queue_size=10)}
-        print(self.__robot_list)
 
     def run(self):
-        rate = rospy.Rate(.2)
+        rate = rospy.Rate(1)
+        hashes = []
         while not rospy.is_shutdown():
-            hashes = []
             for robot in self.__robot_list:
                 hashes_to_get = []
 
@@ -74,10 +73,10 @@ class TopicPublisher():
                     rospy.wait_for_service(self.__get_hash_service)
                     try:
                         answ = self.__get_hash_db(get_hash)
-                        hashes.append(get_hash)
                     except rospy.ServiceException as exc:
                         print("Service did not process request: " + str(exc))
                         continue
+                    hashes.append(get_hash)
 
                     ans_feat_name, ans_ts, ans_data, _ = self.__du.parse_answer(answ)
                     robot, feat_id, number = re.split(',', ans_feat_name)
