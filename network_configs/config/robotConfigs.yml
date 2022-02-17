@@ -6,15 +6,16 @@ groundstation:
         clients:
           "callisto": 1
           "iapetus": 2
+          "europa": 3
 
 europa:
-        is-active: False
+        is-active: True
         IP-address: "192.168.11.101"
         using-radio: "black-1"
         base-port: "2234"
         clients:
           "groundstation": 1
-          "io": 2
+          "iapetus": 2
           "callisto": 3
 
 callisto:
@@ -25,6 +26,7 @@ callisto:
         clients:
           "iapetus": 1
           "groundstation": 2
+          "europa": 3
 
 iapetus:
         is-active: True
@@ -34,3 +36,4 @@ iapetus:
         clients:
           "groundstation": 1
           "callisto": 2
+          "europa": 3
