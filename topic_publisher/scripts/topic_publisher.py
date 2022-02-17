@@ -5,6 +5,7 @@ import sys
 import rospkg
 import rospy
 import yaml
+import re
 
 import distributed_database.srv
 import nav_msgs.msg
@@ -13,7 +14,7 @@ import geometry_msgs.msg
 import sensor_msgs.msg
 
 class TopicPublisher():
-    def __init__(self, topic_dict):
+    def __init__(self, target):
         # Imports
         rospack = rospkg.RosPack()
         comms_path = rospack.get_path("distributed_database")
@@ -22,6 +23,7 @@ class TopicPublisher():
         configs_path = rospack.get_path("network_configs")
         robot_yaml_path = os.path.join(configs_path, "config", "robotConfigs.yml")
         import database_server_utils as du
+        self.__du = du
 
         # Service configuration
         self.__select_service = "database_server/SelectDB"
@@ -36,23 +38,23 @@ class TopicPublisher():
         )
 
         # List of robots to pull
-        with open(robot_yaml_path, "r") as f:
-            robot_cfg = yaml.load(f)
-        self.__robot_list = list(robot_cfg.keys())
+        self.__robot_list = []
 
         # Publisher creation
-        self.__publishers = {}
-        for topic in topic_dict.keys():
-            self.__publishers[topic] = {"pub:": rospy.Publisher(
-                topic, topic_dict[topic], queue_size=10
-            ), "hash_pub":
-        rospy.Publisher(
-            topic + "_hash", std_msgs.msg.String, queue_size=10
-        )
+        self.publishers = {}
+        for t in target.keys():
+            robot, topic = re.split(",", t)
+            if robot not in self.__robot_list:
+                self.__robot_list.append(robot)
+            self.publishers[t] = {
+                  "pub": rospy.Publisher(f"/{robot}{topic}", target[t], queue_size=10), 
+                  "hash_pub": rospy.Publisher(f"/{robot}{topic}_hash", std_msgs.msg.String, queue_size=10)}
+        print(self.__robot_list)
 
     def run(self):
         rate = rospy.Rate(.2)
         while not rospy.is_shutdown():
+            hashes = []
             for robot in self.__robot_list:
                 hashes_to_get = []
 
@@ -60,7 +62,8 @@ class TopicPublisher():
                 try:
                     answ = self.__select_db(robot, -1, -1)
                 except rospy.ServiceException as exc:
-                    print("Service did not process request: " + str(exc))
+                    rospy.logerr(f"Service did not process request {exc}")
+                    continue
                 returned_hashes = answ.hashes
 
                 for hash_ in returned_hashes:
@@ -70,20 +73,21 @@ class TopicPublisher():
                 for get_hash in hashes_to_get:
                     rospy.wait_for_service(self.__get_hash_service)
                     try:
-                        answ = self.get_hash_db(get_hash)
+                        answ = self.__get_hash_db(get_hash)
                         hashes.append(get_hash)
                     except rospy.ServiceException as exc:
                         print("Service did not process request: " + str(exc))
                         continue
 
-                    ans_feat_name, ans_ts, ans_data, _ = du.parse_answer(answ)
+                    ans_feat_name, ans_ts, ans_data, _ = self.__du.parse_answer(answ)
+                    robot, feat_id, number = re.split(',', ans_feat_name)
 
-                    for topic in topic_dict.keys():
-                        if topic in ans_feat_name:
-                            self.__publishers[topic]["pub"].publish(ans_data)
-                            self.__publishers[topic]["hash_pub"].publish(get_hash)
+                    for t in self.publishers.keys():
+                        if t == f"{robot},{feat_id}":
+                            self.publishers[t]['pub'].publish(ans_data)
+                            self.publishers[t]['hash_pub'].publish(get_hash)
                             rospy.logdebug(f"Publishing {ans_feat_name}")
-        rate.sleep()
+            rate.sleep()
 
 
 
