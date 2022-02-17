@@ -6,5 +6,5 @@
   </include>
   <node name = "input_topic_throttler" type="drop" pkg="topic_tools" args= "/upslam/global_pose 9 10 /upslam/global_pose_throttled" />
   <node pkg="translators" type="jackal_translator.py" name="jackal_translator" output="screen"/>
-  <node pkg="topic_publisher" type="publish_jackal.py" name="publish_jackal" output="screen"/>
+  <node pkg="topic_publisher" type="publish_all_experiment.py" name="publish_jackal" output="screen"/>
 </launch>
