@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
   <arg name='client_ip_ups' />
+  <arg name="output" default="output" />
 
-	<node pkg="distributed_database" type="integrate_database.py" name="integrate_database" output="screen">
+	<node pkg="distributed_database" type="integrate_database.py" name="integrate_database" output="$(arg output)">
 		<param name='client_ip' value='$(arg client_ip_ups)'/>
 	</node>
 
