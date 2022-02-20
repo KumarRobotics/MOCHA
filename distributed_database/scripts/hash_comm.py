@@ -4,20 +4,18 @@ import hashlib
 # TODO: we may want the hash not to be hexadecimal, but other type to
 # reduce bandwith
 
-
 class Hash():
     HASH_LENGTH_HEX = 12
     # Length of the hash in bits
     # We can expect a collision after approx
     # math.sqrt(2**HASH_LENGTH_BITS)
     # https://preshing.com/20110504/hash-collision-probabilities/
-    # math is fun
     HASH_LENGTH_BITS = HASH_LENGTH_HEX*4
     HASH_LENGTH = HASH_LENGTH_HEX
 
     def __init__(self, data):
         if type(data) != bytes:
-            raise 'DataTypeError'
+            raise TypeError
         self.data = data
 
     def digest(self):
@@ -46,8 +44,3 @@ if __name__ == "__main__":
                 break
             hashes.add(hi)
     print("Avg collision: %f" % np.average(collision_i))
-
-
-
-
-
