@@ -12,17 +12,17 @@ import io
 
 MSG_TYPES = {
     nav_msgs.msg.Odometry._md5sum: {'dtype': 1,
-        'priority': 2, 'obj': nav_msgs.msg.Odometry},
-    sensor_msgs.msg.PointCloud2._md5sum: {'dtype': 2,
-        'priority': 2, 'obj': sensor_msgs.msg.PointCloud2},
-    geometry_msgs.msg.PointStamped._md5sum: {'dtype': 3,
+        'priority': 1, 'obj': nav_msgs.msg.Odometry},
+    geometry_msgs.msg.PointStamped._md5sum: {'dtype': 2,
         'priority': 3, 'obj': geometry_msgs.msg.PointStamped},
-    sensor_msgs.msg.Image._md5sum: {'dtype': 4,
+    sensor_msgs.msg.Image._md5sum: {'dtype': 3,
         'priority': 3, 'obj': sensor_msgs.msg.Image},
-    geometry_msgs.msg.PoseStamped._md5sum: {'dtype': 5,
-        'priority': 2, 'obj': geometry_msgs.msg.PoseStamped},
-    nav_msgs.msg.Path._md5sum: {'dtype': 6,
-        'priority': 2, 'obj': nav_msgs.msg.Path},
+    geometry_msgs.msg.PoseStamped._md5sum: {'dtype': 4,
+        'priority': 1, 'obj': geometry_msgs.msg.PoseStamped},
+    nav_msgs.msg.Path._md5sum: {'dtype': 5,
+        'priority': 1, 'obj': nav_msgs.msg.Path},
+    geometry_msgs.msg.PoseArray._md5sum: {'dtype': 6,
+        'priority': 2, 'obj': geometry_msgs.msg.PoseArray}
 }
 
 
