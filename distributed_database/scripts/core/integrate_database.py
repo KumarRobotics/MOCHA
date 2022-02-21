@@ -5,6 +5,7 @@ import signal
 import sys
 import time
 import traceback
+from functools import partial
 
 import distributed_database.msg
 import distributed_database.srv
@@ -77,6 +78,13 @@ class Integrate:
             except:
                 traceback.print_exception(*sys.exc_info())
 
+    def timer_cb(self, robot_id, event):
+        try:
+            self.comm_nodes[robot_id].trigger_sync()
+        except:
+            rospy.logwarn("Trigger failed. Will try again soon")
+            rospy.sleep(random.random() * 5)
+
     def listen(self):
 
         rospy.init_node("integrate_database", anonymous=True)
@@ -91,30 +99,21 @@ class Integrate:
 
         signal.signal(signal.SIGINT, signal_handler)
 
-        for _ in range(30):
+        for _ in range(10):
             if self.interrupted:
                 return
             rospy.sleep(1)
 
         print("INTEGRATE: entering main loop")
 
-        while not (rospy.is_shutdown() or self.interrupted):
-            self.num_robot_in_comm = 0
+        # Start timers to sync with all the robots
+        timers = []
+        for i in range(num_robots):
+            timers.append(rospy.Timer(rospy.Duration(5), partial(self.timer_cb, i)))
+        rospy.spin()
 
-            # for i in range(num_robots):
-            #     rospy.Subscriber('rajant_log/log/' + self.this_robot + '/' + self.other_robots[i], Int32, self.comms_callback, self.comm_nodes[i])
-
-            pub = rospy.Publisher("num_robot_in_comm", Int32, queue_size=5)
-            pub.publish(self.num_robot_in_comm)
-
-            for i in range(num_robots):
-                try:
-                    self.comm_nodes[i].trigger_sync()
-                except:
-                    rospy.logwarn("Trigger failed. Will try again soon")
-                # Random sleep
-                rospy.sleep(random.random() * 5)
-            rospy.sleep(5)
+        # for i in range(num_robots):
+        #     rospy.Subscriber('rajant_log/log/' + self.this_robot + '/' + self.other_robots[i], Int32, self.comms_callback, self.comm_nodes[i])
 
 
 if __name__ == "__main__":
