@@ -7,6 +7,7 @@
   </include>
 	<!-- <include file="$(find interface_rajant)/launch/rajant_nodes.launch"/> -->
 	<node pkg="distributed_database" type="asoom_map_translator.py" name="asoom_map_translator" output="$(arg output)"/>
+  <node pkg="distributed_database" type="publish_all_experiment.py" name="publish_jackal" output="screen"/>
   <!--
 	<node pkg="detection_localizer" type="detection_localizer.py" name="detection_localizer" output="screen"/>
   -->
