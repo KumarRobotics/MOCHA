@@ -8,7 +8,7 @@ class Translator:
     def __init__(self, topic_name, msg_type):
         rospack = rospkg.RosPack()
         db_path = rospack.get_path("distributed_database")
-        scripts_path = os.path.join(db_path, "scripts")
+        scripts_path = os.path.join(db_path, "scripts/core")
         sys.path.append(scripts_path)
         import database_server_utils as du
         self.__du = du
