@@ -4,7 +4,7 @@
   <include file="$(find distributed_database)/launch/integrate_commsdb.launch">
     <arg name="client_ip_ups" value="$(arg robot_ip)" />
   </include>
-  <node pkg="topic_publisher" type="publish_all_experiment.py" name="publish_jackal" output="screen"/>
+  <node pkg="distributed_database" type="publish_all_experiment.py" name="publish_jackal" output="screen"/>
   <!--
   <node pkg="rosbag" type="record" name="rosbag_record_basestation"
 	  args="record -o /home/dcist/data/$(arg bagname) /iapetus/asoom/map_sem_img /iapetus/asoom/map_sem_img_center_hash /iapetus/asoom/recent_key_pose_hash /iapetus/asoom/map_sem_img_center_hash /iapetus/asoom/recent_key_pose_hash /rosout_agg" />

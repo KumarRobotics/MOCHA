@@ -18,9 +18,9 @@ class TopicPublisher():
         # Imports
         rospack = rospkg.RosPack()
         comms_path = rospack.get_path("distributed_database")
-        scripts_path = os.path.join(comms_path, "scripts")
+        scripts_path = os.path.join(comms_path, "scripts/core")
         sys.path.append(scripts_path)
-        configs_path = rospack.get_path("network_configs")
+        configs_path = rospack.get_path("distributed_database")
         robot_yaml_path = os.path.join(configs_path, "config", "robotConfigs.yml")
         import database_server_utils as du
         self.__du = du

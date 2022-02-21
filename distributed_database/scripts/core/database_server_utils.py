@@ -35,7 +35,7 @@ def get_robot_number(config_file, robot_name=None):
                                                 'client_ip'))
     else:
         rospack = rospkg.RosPack()
-        package_path = rospack.get_path('network_configs')
+        package_path = rospack.get_path('distributed_database')
         robot_yaml_path = os.path.join(package_path, "config", config_file)
         with open(robot_yaml_path, 'r') as f:
             robot_cfg = yaml.load(f)
@@ -52,7 +52,7 @@ def get_robot_name(config_file):
     robot_num = get_robot_number(config_file)
     robot_ip = '192.168.11.' + str(robot_num)
     rospack = rospkg.RosPack()
-    package_path = rospack.get_path('network_configs')
+    package_path = rospack.get_path('distributed_database')
     robot_yaml_path = os.path.join(package_path, "config", config_file)
     with open(robot_yaml_path, 'r') as f:
         robot_cfg = yaml.load(f)

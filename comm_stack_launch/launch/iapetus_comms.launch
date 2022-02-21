@@ -6,7 +6,7 @@
     <arg name="client_ip_ups" value="$(arg robot_ip)" />
   </include>
 	<!-- <include file="$(find interface_rajant)/launch/rajant_nodes.launch"/> -->
-	<node pkg="translators" type="asoom_map_translator.py" name="asoom_map_translator" output="$(arg output)"/>
+	<node pkg="distributed_database" type="asoom_map_translator.py" name="asoom_map_translator" output="$(arg output)"/>
   <!--
 	<node pkg="detection_localizer" type="detection_localizer.py" name="detection_localizer" output="screen"/>
   -->

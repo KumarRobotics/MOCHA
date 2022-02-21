@@ -6,6 +6,6 @@
     <arg name="client_ip_ups" value="$(arg robot_ip)" />
   </include>
   <node name = "input_topic_throttler" type="drop" pkg="topic_tools" args= "/upslam/global_pose 9 10 /upslam/global_pose_throttled" output="$(arg output)"/>
-  <node pkg="translators" type="jackal_translator.py" name="jackal_translator" output="$(arg output)"/>
-  <node pkg="topic_publisher" type="publish_all_experiment.py" name="publish_jackal" output="$(arg output)"/>
+  <node pkg="distributed_database" type="jackal_translator.py" name="jackal_translator" output="$(arg output)"/>
+  <node pkg="distributed_database" type="publish_all_experiment.py" name="publish_jackal" output="$(arg output)"/>
 </launch>
