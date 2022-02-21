@@ -18,10 +18,10 @@ import unittest
 import rospkg
 import rospy
 
-CONFIG_FILE = "testConfigs/robotConfigs.yml"
 
+class Test(unittest.TestCase):
+    CONFIG_FILE = "testConfigs/robotConfigs.yml"
 
-class test(unittest.TestCase):
     def test_simple_connection(self):
         self.answer = None
 
@@ -37,10 +37,10 @@ class test(unittest.TestCase):
 
         # Create the two robots
         node_groundstation = zmq_comm_node.Comm_node(
-            "groundstation", "charon", CONFIG_FILE, cb_groundstation, None
+            "groundstation", "charon", self.CONFIG_FILE, cb_groundstation, None
         )
         node_charon = zmq_comm_node.Comm_node(
-            "charon", "groundstation", CONFIG_FILE, None, cb_charon
+            "charon", "groundstation", self.CONFIG_FILE, None, cb_charon
         )
 
         # Generate random message
@@ -64,7 +64,7 @@ if __name__ == "__main__":
     # Get the directory path and import all the required modules to test
     rospack = rospkg.RosPack()
     pkg_path = rospack.get_path("distributed_database")
-    scripts_path = os.path.join(pkg_path, "scripts")
+    scripts_path = os.path.join(pkg_path, "scripts/core")
     sys.path.append(scripts_path)
     import zmq_comm_node
 

@@ -18,9 +18,6 @@ import database_server as ds
 import database_server_utils as du
 import synchronize_channel as sync
 
-package = "distributed_database"
-executable = "database_server.py"
-
 
 class Integrate:
     def __init__(self, config_file, this_robot):
@@ -36,7 +33,7 @@ class Integrate:
         self.num_robot_in_comm = 0
 
         rospack = rospkg.RosPack()
-        package_path = rospack.get_path("network_configs")
+        package_path = rospack.get_path("distributed_database")
         robot_yaml_path = os.path.join(package_path, "config", config_file)
         with open(robot_yaml_path, "r") as f:
             robot_cfg = yaml.load(f)

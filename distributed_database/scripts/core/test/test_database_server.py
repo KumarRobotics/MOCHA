@@ -254,7 +254,7 @@ if __name__ == '__main__':
     # Get the directory path and import all the required modules to test
     rospack = rospkg.RosPack()
     pkg_path = rospack.get_path('distributed_database')
-    scripts_path = os.path.join(pkg_path, "scripts")
+    scripts_path = os.path.join(pkg_path, "scripts/core")
     sys.path.append(scripts_path)
     import database_server_utils as du
 

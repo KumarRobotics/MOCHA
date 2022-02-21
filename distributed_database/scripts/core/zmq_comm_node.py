@@ -31,7 +31,7 @@ class Comm_node:
 
         # Open config file and get list of nodes
         rospack = rospkg.RosPack()
-        package_path = rospack.get_path("network_configs")
+        package_path = rospack.get_path("distributed_database")
         yaml_path = os.path.join(package_path, "config", config_file)
         with open(yaml_path, "r") as f:
             #cfg = yaml.load(f, Loader=yaml.FullLoader)
