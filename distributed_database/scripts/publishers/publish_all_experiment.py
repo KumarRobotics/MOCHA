@@ -14,8 +14,10 @@ if __name__ == "__main__":
         "iapetus,/asoom/recent_key_pose": geometry_msgs.msg.PoseStamped,
         "callisto,/semantic_planner/path": nav_msgs.msg.Path,
         "callisto,/upslam/global_pose_throttled": geometry_msgs.msg.PoseStamped,
+        "callisto,/semantic_planner/target_goals": geometry_msgs.msg.PoseArray,
         "europa,/semantic_planner/path": nav_msgs.msg.Path,
-        "europa,/upslam/global_pose_throttled": geometry_msgs.msg.PoseStamped
+        "europa,/upslam/global_pose_throttled": geometry_msgs.msg.PoseStamped,
+        "europa,/semantic_planner/target_goals": geometry_msgs.msg.PoseArray,
         }
 
     pub = TopicPublisher(list_of_topics)
