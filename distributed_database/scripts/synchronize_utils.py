@@ -77,7 +77,7 @@ def get_hash_list_from_dbl(dbl, filter_robot=None, filter_ts=None):
     these fields are available.  To filter by timestamp,
     you should specify a robot. Timestamps are recorded in the robot
     frame (i.e. each robot has different timestamps, so it does not make
-    any sense to filter by a global timestamp """
+    sense to filter by a global timestamp) """
 
     # Hash list is a dict with the hashes as keys and the priorities as
     # values

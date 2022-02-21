@@ -50,17 +50,15 @@ class Comm_node:
         # Verify is the assigned node is a valid one
         # Get connection port and address
         if this_node not in self.node_list:
-            sys.exit("Node %s not found in node list" % this_node)
+            sys.exit(f"Node {this_node} not found in node list")
         self.this_node = this_node
 
         # Verify that client_node is a valid one, it is not the same as
         # the server, and it is in the client list
         if client_node not in self.node_list:
-            sys.exit("Error, robot", client_node, "not in node list")
-            return
+            sys.exit(f"Error, robot {client_node} not in node list")
         if client_node == self.this_node:
             sys.exit("Cannot send to self")
-            return
         self.client_node = client_node
         if client_node not in self.node_list[self.this_node]["clients"]:
             sys.exit(
