@@ -6,7 +6,6 @@ from pprint import pprint
 import uuid
 import geometry_msgs.msg
 import rospkg
-import pdb
 
 VALID_HASH_FEATURE_0 = 'e7eb85cdc2d3'
 VALID_HASH_FEATURE_1 = 'f50a4da37e2e'

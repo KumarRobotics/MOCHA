@@ -97,12 +97,13 @@ def get_hash_list_from_dbl(dbl, filter_robot=None, filter_ts=None):
         for tag in dbl.db[robot]:
             if filter_ts is not None and dbl.db[robot][tag]['ts'] <= filter_ts:
                 continue
-            hash_list[dbl.db[robot][tag]['hash']] = dbl.db[robot][tag]['priority']
+            hash_list[dbl.db[robot][tag]['hash']] = {'prio': dbl.db[robot][tag]['priority'],
+                    'ts': dbl.db[robot][tag]['ts']}
     dbl.lock.release()
 
     # Sort the dictionary by value, and get the keys
     sorted_tuples = sorted(hash_list.items(),
-                           key=lambda kv: (kv[1], kv[0]),
+                           key=lambda kv: (kv[1]['prio'], kv[1]['ts'], kv[0]),
                            reverse=True)
     sorted_hash_list = [i[0] for i in sorted_tuples]
     return sorted_hash_list
