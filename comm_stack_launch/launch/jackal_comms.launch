@@ -5,7 +5,6 @@
   <include file="$(find distributed_database)/launch/integrate_commsdb.launch" pass_all_args="true">
     <arg name="client_ip_ups" value="$(arg robot_ip)" />
   </include>
-  <node name = "input_topic_throttler" type="drop" pkg="topic_tools" args= "/upslam/global_pose 99 100 /upslam/global_pose_throttled" output="$(arg output)"/>
   <node pkg="distributed_database" type="jackal_translator.py" name="jackal_translator" output="$(arg output)"/>
   <node pkg="distributed_database" type="publish_all_experiment.py" name="publish_jackal" output="$(arg output)"/>
 </launch>
