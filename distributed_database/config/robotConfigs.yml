@@ -1,36 +1,33 @@
 groundstation:
         is-active: True
-        IP-address: "192.168.11.100"
+        IP-address: "10.10.10.100"
         using-radio: "brick-1"
         base-port: "1234"
         clients:
           "callisto": 1
-          "iapetus": 2
           "europa": 3
 
 europa:
         is-active: True
-        IP-address: "192.168.11.101"
+        IP-address: "10.10.10.101"
         using-radio: "black-1"
         base-port: "2234"
         clients:
           "groundstation": 1
-          "iapetus": 2
           "callisto": 3
 
 callisto:
         is-active: True
-        IP-address: "192.168.11.102"
+        IP-address: "10.10.10.102"
         using-radio: "black-1"
         base-port: "3234"
         clients:
-          "iapetus": 1
           "groundstation": 2
           "europa": 3
 
 iapetus:
         is-active: True
-        IP-address: "192.168.11.108"
+        IP-address: "10.10.10.108"
         using-radio: "black-1"
         base-port: "6234"
         clients:
