@@ -50,7 +50,7 @@ def get_robot_number(config_file, robot_name=None):
 def get_robot_name(config_file):
     """ Returns the robot name, fetched from the current ip """
     robot_num = get_robot_number(config_file)
-    robot_ip = '192.168.11.' + str(robot_num)
+    robot_ip = '10.10.10.' + str(robot_num)
     rospack = rospkg.RosPack()
     package_path = rospack.get_path('distributed_database')
     robot_yaml_path = os.path.join(package_path, "config", config_file)

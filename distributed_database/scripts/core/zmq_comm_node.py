@@ -96,7 +96,7 @@ class Comm_node:
 
     def connect_send_message(self, msg):
         # TODO keep connection open instead of opening in each call
-        SEND_TIMEOUT = 500
+        SEND_TIMEOUT = 1500
         REQUEST_RETRIES = 3
 
         # Msg check
