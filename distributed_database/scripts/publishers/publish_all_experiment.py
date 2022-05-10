@@ -13,7 +13,7 @@ if __name__ == "__main__":
         "callisto,/object_mapper/map": sensor_msgs.msg.PointCloud2,
         "callisto,/object_mapper/odom": geometry_msgs.msg.PoseStamped,
         "europa,/object_mapper/map": sensor_msgs.msg.PointCloud2,
-        "europa,/object_mapper/odom": geometry_msgs.msg.PoseStamped,
+        "europa,/object_mapper/odom": nav_msgs.msg.Odometry,
         }
 
     pub = TopicPublisher(list_of_topics)
