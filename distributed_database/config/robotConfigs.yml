@@ -26,7 +26,7 @@ callisto:
           "europa": 2
 
 iapetus:
-        is-active: True
+        is-active: False
         IP-address: "10.10.10.108"
         using-radio: "black-1"
         base-port: "6234"
