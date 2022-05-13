@@ -83,7 +83,7 @@ class Integrate:
             self.comm_nodes[robot_id].trigger_sync()
         except:
             rospy.logwarn(f"{self.comm_nodes[robot_id].robot} - {self.comm_nodes[robot_id].target_robot} trigger failed. Will try again soon")
-            rospy.sleep(random.random() * 5)
+            rospy.sleep(random.random() * 15)
 
     def listen(self):
 
