@@ -99,7 +99,7 @@ class Integrate:
 
         signal.signal(signal.SIGINT, signal_handler)
 
-        for _ in range(10):
+        for _ in range(30):
             if self.interrupted:
                 return
             rospy.sleep(1)
