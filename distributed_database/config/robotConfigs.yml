@@ -5,7 +5,7 @@ groundstation:
         base-port: "1234"
         clients:
           "callisto": 1
-          "europa": 3
+          "europa": 2
 
 europa:
         is-active: True
@@ -14,7 +14,7 @@ europa:
         base-port: "2234"
         clients:
           "groundstation": 1
-          "callisto": 3
+          "callisto": 2
 
 callisto:
         is-active: True
@@ -22,8 +22,8 @@ callisto:
         using-radio: "black-1"
         base-port: "3234"
         clients:
-          "groundstation": 2
-          "europa": 3
+          "groundstation": 1
+          "europa": 2
 
 iapetus:
         is-active: True
