@@ -18,10 +18,10 @@ HASH_LENGTH = hc.Hash.HASH_LENGTH
 
 # When actively polling for an answer or for a changement in variable,
 # use this time
-CHECK_POLL_TIME=0.05
+CHECK_POLL_TIME=0.1
 CHECK_TRIGGER_TIME=0.2
 # Timeout value before an answer is considered lost
-CHECK_MAX_TIME=3
+CHECK_MAX_TIME=1
 
 # Msg codes that are used during the operation of the communication
 # channel. Important: all codes should be HEADER_LENGTH characters
