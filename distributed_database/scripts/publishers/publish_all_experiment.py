@@ -11,7 +11,7 @@ if __name__ == "__main__":
 
     list_of_topics =  {
         "callisto,/object_mapper/map": sensor_msgs.msg.PointCloud2,
-        "callisto,/object_mapper/odom": geometry_msgs.msg.PoseStamped,
+        "callisto,/object_mapper/odom": nav_msgs.msg.Odometry,
         "europa,/object_mapper/map": sensor_msgs.msg.PointCloud2,
         "europa,/object_mapper/odom": nav_msgs.msg.Odometry,
         }
