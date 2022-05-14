@@ -83,6 +83,7 @@ class TopicPublisher():
 
                     for t in self.publishers.keys():
                         if t == f"{robot},{feat_id}":
+                            assert(isinstance(ans_data, self.publishers[t]['pub'].data_class))
                             self.publishers[t]['pub'].publish(ans_data)
                             self.publishers[t]['hash_pub'].publish(get_hash)
                             rospy.logdebug(f"Publishing {ans_feat_name}")
