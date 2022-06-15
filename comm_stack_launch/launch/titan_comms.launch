@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
   <arg name="robot_ip"/>
-  <arg name="output" default="screen"/>
+  <arg name="output" default="log"/>
   <include file="$(find distributed_database)/launch/integrate_commsdb.launch" pass_all_args="true">
     <arg name="client_ip_ups" value="10.10.10.107" />
   </include>
