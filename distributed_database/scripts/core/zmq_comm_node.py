@@ -35,7 +35,7 @@ class Comm_node:
         yaml_path = os.path.join(package_path, "config", config_file)
         with open(yaml_path, "r") as f:
             #cfg = yaml.load(f, Loader=yaml.FullLoader)
-            cfg = yaml.load(f)
+            cfg = yaml.load(f, Loader=yaml.FullLoader)
 
         self.node_list = {}
 

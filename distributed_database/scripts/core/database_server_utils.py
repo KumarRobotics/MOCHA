@@ -40,7 +40,7 @@ def get_robot_number(config_file, robot_name=None):
         package_path = rospack.get_path('distributed_database')
         robot_yaml_path = os.path.join(package_path, "config", config_file)
         with open(robot_yaml_path, 'r') as f:
-            robot_cfg = yaml.load(f)
+            robot_cfg = yaml.load(f, Loader=yaml.FullLoader)
         robot_list = robot_cfg.keys()
         if robot_name not in robot_list:
             raise Exception("robot_name does not exist in " + config_file)
@@ -57,7 +57,7 @@ def get_robot_name(config_file):
     package_path = rospack.get_path('distributed_database')
     robot_yaml_path = os.path.join(package_path, "config", config_file)
     with open(robot_yaml_path, 'r') as f:
-        robot_cfg = yaml.load(f)
+        robot_cfg = yaml.load(f, Loader=yaml.FullLoader)
     for robot in robot_cfg.keys():
         if robot_cfg[robot]['IP-address'] == robot_ip:
             robot_name = robot

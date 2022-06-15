@@ -37,7 +37,7 @@ class Integrate:
         package_path = rospack.get_path("distributed_database")
         robot_yaml_path = os.path.join(package_path, "config", config_file)
         with open(robot_yaml_path, "r") as f:
-            robot_cfg = yaml.load(f)
+            robot_cfg = yaml.load(f, Loader=yaml.FullLoader)
         robot_list = robot_cfg.keys()
 
         for target_robot in robot_list:
