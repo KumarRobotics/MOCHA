@@ -4,6 +4,7 @@
   <arg name="output" default="log"/>
   <include file="$(find distributed_database)/launch/integrate_commsdb.launch" pass_all_args="true">
     <arg name="client_ip_ups" value="10.10.10.107" />
+    <arg name="output" value="output" />
   </include>
   <node pkg="distributed_database" type="asoom_map_translator.py" name="asoom_translator" output="$(arg output)"/>
   <node pkg="distributed_database" type="publish_all_experiment.py" name="publish_jackal" output="$(arg output)"/>
