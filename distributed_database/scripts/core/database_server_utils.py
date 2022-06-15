@@ -22,7 +22,9 @@ MSG_TYPES = {
     sensor_msgs.msg.PointCloud2._md5sum: {'dtype': 5,
         'priority': 1, 'obj': sensor_msgs.msg.PointCloud2},
     geometry_msgs.msg.PoseArray._md5sum: {'dtype': 6,
-        'priority': 2, 'obj': geometry_msgs.msg.PoseArray}
+        'priority': 2, 'obj': geometry_msgs.msg.PoseArray},
+    geometry_msgs.msg.PoseStamped._md5sum: {'dtype': 7,
+        'priority': 3, 'obj': geometry_msgs.msg.PoseStamped},
 }
 
 
