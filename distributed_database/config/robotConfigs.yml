@@ -6,6 +6,7 @@ groundstation:
         clients:
           "callisto": 1
           "europa": 2
+          "titan": 3
 
 europa:
         is-active: True
@@ -15,6 +16,7 @@ europa:
         clients:
           "groundstation": 1
           "callisto": 2
+          "titan": 3
 
 callisto:
         is-active: True
@@ -24,10 +26,11 @@ callisto:
         clients:
           "groundstation": 1
           "europa": 2
+          "titan": 3
 
-iapetus:
-        is-active: False
-        IP-address: "10.10.10.108"
+titan:
+        is-active: True
+        IP-address: "10.10.10.107"
         using-radio: "black-1"
         base-port: "6234"
         clients:
