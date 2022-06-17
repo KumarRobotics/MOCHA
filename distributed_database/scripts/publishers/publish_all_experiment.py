@@ -19,7 +19,7 @@ if __name__ == "__main__":
         "titan,/asoom/map_sem_img": sensor_msgs.msg.Image,
         "titan,/asoom/map_sem_img_center": geometry_msgs.msg.PointStamped,
         "titan,/asoom/recent_key_pose": geometry_msgs.msg.PoseStamped,
-        "groundstation,/target_goals": geometry_msgs.msg.PoseStamped,
+        "groundstation,/target_goals": geometry_msgs.msg.PoseArray,
         }
 
     pub = TopicPublisher(list_of_topics)
