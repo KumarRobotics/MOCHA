@@ -7,6 +7,7 @@
     <arg name="output" value="$(arg output)" />
   </include>
   <node pkg="distributed_database" type="publish_all_experiment.py" name="publish_jackal" output="log"/>
+  <node pkg="distributed_database" type="basestation_translator.py" name="basestation_translator" output="$(arg output)"/>
   <!--
   <node pkg="rosbag" type="record" name="rosbag_record_basestation"
 	  args="record -o /home/dcist/data/$(arg bagname) /iapetus/asoom/map_sem_img /iapetus/asoom/map_sem_img_center_hash /iapetus/asoom/recent_key_pose_hash /iapetus/asoom/map_sem_img_center_hash /iapetus/asoom/recent_key_pose_hash /rosout_agg" />
