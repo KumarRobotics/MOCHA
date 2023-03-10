@@ -2,6 +2,7 @@
 import threading
 import struct
 import hash_comm
+import pdb
 
 HASH_LENGTH = hash_comm.Hash.HASH_LENGTH
 
@@ -104,7 +105,7 @@ def get_hash_list_from_dbl(dbl, filter_robot=None, filter_ts=None):
     # Sort the dictionary by value, and get the keys
     sorted_tuples = sorted(hash_list.items(),
                            key=lambda kv: (kv[1]['prio'], kv[1]['ts'], kv[0]),
-                           reverse=True)
+                           reverse=False)
     sorted_hash_list = [i[0] for i in sorted_tuples]
     return sorted_hash_list
 
