@@ -107,14 +107,14 @@ class Integrate:
         print("INTEGRATE: entering main loop")
 
         # Start timers to sync with all the robots
-        timers = []
-        for i in range(num_robots):
-            timers.append(rospy.Timer(rospy.Duration(5), partial(self.timer_cb, i)))
-        rospy.spin()
-
+        # timers = []
         # for i in range(num_robots):
-        #     rospy.Subscriber('rajant_log/log/' + self.this_robot + '/' + self.other_robots[i], Int32, self.comms_callback, self.comm_nodes[i])
+        #     timers.append(rospy.Timer(rospy.Duration(5), partial(self.timer_cb, i)))
 
+        for i in range(num_robots):
+            rospy.Subscriber('rajant_log/log/' + self.this_robot + '/' + self.other_robots[i], Int32, self.comms_callback, self.comm_nodes[i])
+
+        rospy.spin()
 
 if __name__ == "__main__":
     CONFIG_FILE = "robotConfigs.yml"

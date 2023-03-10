@@ -35,6 +35,15 @@ DB_TEMPLATE = {
                 'data': bytes('Binary chunk', 'utf-8'),
                 'ack': False
                 },
+            'feature4': {
+                'dtype': 3,
+                'priority': 1,
+                'hash': None,
+                'ts': 119.2223,
+                'signature': False,
+                'data': bytes('Binary chunk', 'utf-8'),
+                'ack': False
+                },
             },
         1: {
             'feature1': {

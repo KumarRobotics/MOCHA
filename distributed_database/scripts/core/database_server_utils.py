@@ -17,13 +17,11 @@ MSG_TYPES = {
         'priority': 3, 'obj': geometry_msgs.msg.PointStamped},
     sensor_msgs.msg.Image._md5sum: {'dtype': 3,
         'priority': 3, 'obj': sensor_msgs.msg.Image},
-    nav_msgs.msg.Odometry._md5sum: {'dtype': 4,
-        'priority': 1, 'obj': nav_msgs.msg.Odometry},
-    sensor_msgs.msg.PointCloud2._md5sum: {'dtype': 5,
+    sensor_msgs.msg.PointCloud2._md5sum: {'dtype': 4,
         'priority': 1, 'obj': sensor_msgs.msg.PointCloud2},
-    geometry_msgs.msg.PoseArray._md5sum: {'dtype': 6,
+    geometry_msgs.msg.PoseArray._md5sum: {'dtype': 5,
         'priority': 2, 'obj': geometry_msgs.msg.PoseArray},
-    geometry_msgs.msg.PoseStamped._md5sum: {'dtype': 7,
+    geometry_msgs.msg.PoseStamped._md5sum: {'dtype': 6,
         'priority': 3, 'obj': geometry_msgs.msg.PoseStamped},
 }
 
