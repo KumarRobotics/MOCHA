@@ -1,39 +1,43 @@
-groundstation:
-        is-active: True
-        IP-address: "10.10.10.100"
-        using-radio: "brick-1"
-        base-port: "1234"
-        clients:
-          "callisto": 1
-          "europa": 2
-          "titan": 3
+basestation:
+  node-type: "base_station"
+  is-active: true
+  IP-address: "10.10.10.100"
+  using-radio: "brick-1"
+  base-port: "1234"
+  clients:
+    1: "callisto"
+    2: "europa"
+    3: "titan"
 
 europa:
-        is-active: True
-        IP-address: "10.10.10.101"
-        using-radio: "black-1"
-        base-port: "2234"
-        clients:
-          "groundstation": 1
-          "callisto": 2
-          "titan": 3
+  node-type: "ground_robot"
+  is-active: true
+  IP-address: "10.10.10.101"
+  using-radio: "black-1"
+  base-port: "2234"
+  clients:
+    1: "groundstation"
+    2: "callisto"
+    3: "titan"
 
 callisto:
-        is-active: True
-        IP-address: "10.10.10.102"
-        using-radio: "black-1"
-        base-port: "3234"
-        clients:
-          "groundstation": 1
-          "europa": 2
-          "titan": 3
+  node-type: "ground_robot"
+  is-active: true
+  IP-address: "10.10.10.102"
+  using-radio: "black-1"
+  base-port: "3234"
+  clients:
+    1: "groundstation"
+    2: "europa"
+    3: "titan"
 
 titan:
-        is-active: True
-        IP-address: "10.10.10.107"
-        using-radio: "black-1"
-        base-port: "6234"
-        clients:
-          "groundstation": 1
-          "callisto": 2
-          "europa": 3
+  node-type: "aerial_robot"
+  is-active: true
+  IP-address: "10.10.10.107"
+  using-radio: "black-1"
+  base-port: "6234"
+  clients:
+    1: "groundstation"
+    2: "callisto"
+    3: "europa"
