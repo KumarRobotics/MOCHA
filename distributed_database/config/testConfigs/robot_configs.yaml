@@ -1,0 +1,43 @@
+basestation:
+  node-type: "base_station"
+  is-active: True
+  IP-address: "127.0.0.1"
+  using-radio: "brick-1"
+  base-port: "1234"
+  clients:
+    - "charon"
+    - "styx"
+    - "quad1"
+
+charon:
+  is-active: True
+  node-type: "ground_robot"
+  IP-address: "127.0.0.1"
+  using-radio: "black-1"
+  base-port: "2234"
+  clients:
+    - "basestation"
+    - "styx"
+    - "quad1"
+
+styx:
+  is-active: True
+  node-type: "ground_robot"
+  IP-address: "127.0.0.1"
+  using-radio: "black-2"
+  base-port: "3234"
+  clients:
+    - "basestation"
+    - "charon"
+
+
+quad1:
+  is-active: True
+  node-type: "aerial_robot"
+  IP-address: "127.0.0.1"
+  using-radio: "blue-1"
+  base-port: "4234"
+  clients:
+    - "basestation"
+    - "charon"
+    - "quad1"
