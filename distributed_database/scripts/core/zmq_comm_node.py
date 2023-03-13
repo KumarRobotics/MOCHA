@@ -26,53 +26,43 @@ class SyncStatus(enum.Enum):
 
 class Comm_node:
     def __init__(
-        self, this_node, client_node, config_file, client_callback, server_callback
+        self, this_node, client_node, robot_configs, client_callback, server_callback
     ):
+        # Check that robot_configs is a dictionary
+        if not isinstance(robot_configs, dict):
+            rospy.logerr(f"{this_node} - robot_configs is not a dictionary")
+            rospy.signal_shutdown("robot_configs is not a dictionary")
+            return
 
-        # Open config file and get list of nodes
-        rospack = rospkg.RosPack()
-        package_path = rospack.get_path("distributed_database")
-        yaml_path = os.path.join(package_path, "config", config_file)
-        with open(yaml_path, "r") as f:
-            #cfg = yaml.load(f, Loader=yaml.FullLoader)
-            cfg = yaml.load(f, Loader=yaml.FullLoader)
+        # Check that this node is defined in the robot_configs
+        if this_node not in robot_configs.keys():
+            rospy.logerr(f"{this_node} - This node is not defined in robot_configs")
+            rospy.signal_shutdown("This node is not defined in robot_configs")
+            return
 
-        self.node_list = {}
+        # Check that the client node is defined in robot_configs
+        if client_node not in robot_configs[this_node]["clients"]:
+            rospy.logerr(f"{this_node} - Client node is not defined in robot_configs")
+            rospy.signal_shutdown("Client node is not defined in robot_configs")
+            return
 
-        # TODO may remove this in the future
-        for node in cfg:
-            self.node_list[node] = {
-                "ip": cfg[node]["IP-address"],
-                "base-port": cfg[node]["base-port"],
-                "clients": cfg[node]["clients"],
-            }
+        # Check that the client node is not the same as this node
+        if client_node == this_node:
+            rospy.logerr(f"{this_node} - Client node is the same as this node")
+            rospy.signal_shutdown("Client node is the same as this node")
+            return
 
-        # Verify is the assigned node is a valid one
-        # Get connection port and address
-        if this_node not in self.node_list:
-            sys.exit(f"Node {this_node} not found in node list")
         self.this_node = this_node
-
-        # Verify that client_node is a valid one, it is not the same as
-        # the server, and it is in the client list
-        if client_node not in self.node_list:
-            sys.exit(f"Error, robot {client_node} not in node list")
-        if client_node == self.this_node:
-            sys.exit("Cannot send to self")
         self.client_node = client_node
-        if client_node not in self.node_list[self.this_node]["clients"]:
-            sys.exit(
-                "Node %s not found in client list of node %s" % (client_node, this_node)
-            )
+        self.robot_configs = robot_configs
 
-        self.client_node = client_node
+        # The client id is the index of the list of clients
+        self.client_id = robot_configs[self.this_node]["clients"].index(client_node)
 
         # Set network properties
-        port_offset = self.node_list[self.this_node]["clients"][client_node]
         self.this_port = str(
-            int(self.node_list[self.this_node]["base-port"]) + port_offset
-        )
-        self.this_addr = self.node_list[self.this_node]["ip"]
+            int(robot_configs[self.this_node]["base-port"]) + self.client_id)
+        self.this_addr = robot_configs[self.this_node]["IP-address"]
 
         # Configure callbacks
         # We will call:
@@ -113,11 +103,11 @@ class Comm_node:
         self.syncStatus_lock.release()
 
         # We're all set, send message
-        target_robot = self.node_list[self.client_node]
-        port_offset = target_robot["clients"][self.this_node]
+        target_robot = self.robot_configs[self.client_node]
+        port_offset = target_robot["clients"].index(self.this_node)
         server_endpoint = (
             "tcp://"
-            + target_robot["ip"]
+            + target_robot["IP-address"]
             + ":"
             + str(int(target_robot["base-port"]) + port_offset)
         )
@@ -227,33 +217,3 @@ class Comm_node:
     def terminate(self):
         rospy.logdebug(f"{self.this_node} - Terminating server")
         self.server_running = False
-
-
-def server_cb(request):
-    rospy.logdebug(f"CALLBACK: request {request}")
-
-
-def signal_handler(sig, frame):
-    rospy.logdebug("Handled")
-    os._exit(1)
-
-
-if __name__ == "__main__":
-    signal.signal(signal.SIGINT, signal_handler)
-    if len(sys.argv) < 2:
-        sys.exit("We need to be somebody. Quitting...")
-    this_robot = int(sys.argv[1])
-    comm_node = Comm_node(this_robot, server_cb)
-    rospy.logdebug(f"This is robot {this_robot}")
-    rospy.logdebug(40 * "-")
-    while True:
-        while True:
-            try:
-                rts = int(input("KEY_IN: Input robot to sync:\n"))
-                if rts < 0:
-                    continue
-                break
-            except:
-                pass
-        comm_node.set_current_client(rts)
-        comm_node.connect_send_message(None)
