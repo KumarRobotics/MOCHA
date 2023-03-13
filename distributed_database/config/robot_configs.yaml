@@ -1,6 +1,5 @@
 basestation:
   node-type: "base_station"
-  is-active: true
   IP-address: "10.10.10.100"
   using-radio: "brick-1"
   base-port: "1234"
@@ -11,7 +10,6 @@ basestation:
 
 europa:
   node-type: "ground_robot"
-  is-active: true
   IP-address: "10.10.10.101"
   using-radio: "black-1"
   base-port: "2234"
@@ -22,7 +20,6 @@ europa:
 
 callisto:
   node-type: "ground_robot"
-  is-active: true
   IP-address: "10.10.10.102"
   using-radio: "black-1"
   base-port: "3234"
@@ -33,7 +30,6 @@ callisto:
 
 titan:
   node-type: "aerial_robot"
-  is-active: true
   IP-address: "10.10.10.107"
   using-radio: "black-1"
   base-port: "6234"
