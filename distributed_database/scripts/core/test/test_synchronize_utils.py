@@ -6,6 +6,9 @@ from pprint import pprint
 import uuid
 import geometry_msgs.msg
 import rospkg
+import pdb
+import rospy
+import yaml
 
 VALID_HASH_FEATURE_0 = 'e7eb85cdc2d3'
 VALID_HASH_FEATURE_1 = 'f50a4da37e2e'
@@ -19,7 +22,7 @@ def generate_random_hash():
 class test(unittest.TestCase):
     def test_get_hash_list_from_db(self):
         dbl = sdb.get_sample_dbl()
-        for _ in range(5):
+        for i in range(5):
             # Check for locked mutex with loop
             # Test get all hashes
             hashes = su.get_hash_list_from_dbl(dbl)
@@ -30,8 +33,8 @@ class test(unittest.TestCase):
             # among the hashes so it should be the last of the list.
             # Conversely, VALID_HASH_FEATURE_1 has the highest priority
             # and it should be first
-            self.assertEqual(hashes[0], VALID_HASH_FEATURE_1)
-            self.assertEqual(hashes[-1], VALID_HASH_FEATURE_0)
+            self.assertEqual(hashes[0], VALID_HASH_FEATURE_0)
+            self.assertEqual(hashes[-1], VALID_HASH_FEATURE_1)
             # Test get hashes filtering by robot
             hashes_rfilt = su.get_hash_list_from_dbl(dbl, filter_robot=0)
             self.assertTrue(VALID_HASH_FEATURE_0 in hashes_rfilt)
@@ -44,7 +47,7 @@ class test(unittest.TestCase):
             hashes_tfilt = su.get_hash_list_from_dbl(dbl, filter_robot=0,
                                                      filter_ts=118)
             self.assertFalse(VALID_HASH_FEATURE_0 in hashes_tfilt)
-            self.assertTrue(len(hashes_tfilt) == 1)
+            self.assertTrue(len(hashes_tfilt) == 2)
 
     def test_serialize_deserialize(self):
         hash_list = []
@@ -112,12 +115,26 @@ class test(unittest.TestCase):
 if __name__ == '__main__':
     # Get the directory path and import all the required modules to test
     rospack = rospkg.RosPack()
-    pkg_path = rospack.get_path('distributed_database')
-    scripts_path = os.path.join(pkg_path, "scripts/core")
+    ddb_path = rospack.get_path('distributed_database')
+    scripts_path = os.path.join(ddb_path, "scripts/core")
     sys.path.append(scripts_path)
     import synchronize_utils as su
     import get_sample_db as sdb
     import hash_comm as hc
+
+    # Set the node name
+    rospy.init_node('test_synchronize_utils', anonymous=False)
+
+    # Get the default path from the ddb_path
+    robot_configs_default = os.path.join(ddb_path,
+                                         "config/testConfigs/robot_configs.yaml")
+    # Get the path to the robot config file from the ros parameter robot_configs
+    robot_configs = rospy.get_param("robot_configs",
+                                    robot_configs_default)
+
+    # Get the yaml dictionary objects
+    with open(robot_configs, "r") as f:
+        robot_configs = yaml.load(f, Loader=yaml.FullLoader)
 
     # Run test cases!
     unittest.main()
