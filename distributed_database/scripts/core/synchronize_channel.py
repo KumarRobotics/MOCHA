@@ -18,14 +18,16 @@ HASH_LENGTH = hc.Hash.HASH_LENGTH
 
 # When actively polling for an answer or for a changement in variable,
 # use this time
-CHECK_POLL_TIME=0.1
-CHECK_TRIGGER_TIME=0.2
+CHECK_POLL_TIME = 0.1
+CHECK_TRIGGER_TIME = 0.2
 # Timeout value before an answer is considered lost
-CHECK_MAX_TIME=1
+CHECK_MAX_TIME = 1
 
 # Msg codes that are used during the operation of the communication
 # channel. Important: all codes should be HEADER_LENGTH characters
 HEADER_LENGTH = 5
+
+
 class Comm_msgs(enum.Enum):
     GHASH = 1
     GDATA = 2
@@ -34,7 +36,8 @@ class Comm_msgs(enum.Enum):
     SERRM = 5
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# SMACH states
+""" SMACH states for the synchronization state machine"""
+
 
 class Idle(smach.State):
     def __init__(self, set_client_state, get_sm_shutdown,
@@ -54,6 +57,7 @@ class Idle(smach.State):
             rospy.sleep(CHECK_TRIGGER_TIME)
         self.set_client_state('STOPPED')
         return 'to_stopped'
+
 
 class RequestHash(smach.State):
     def __init__(self, set_client_state, get_comm_node, dbl, get_answer,
@@ -87,6 +91,7 @@ class RequestHash(smach.State):
         self.sync.reset()
         return 'to_idle'
 
+
 class RequestHashReply(smach.State):
     def __init__(self, set_client_state, dbl, get_answer, sync):
         self.set_client_state = set_client_state
@@ -95,8 +100,8 @@ class RequestHashReply(smach.State):
         self.sync = sync
         smach.State.__init__(self, outcomes=['to_idle',
                                              'to_get_data'],
-                                   input_keys=['in_answer'],
-                                   output_keys=['out_hash_list'])
+                             input_keys=['in_answer'],
+                             output_keys=['out_hash_list'])
 
     def execute(self, userdata):
         self.set_client_state('REQ_HASH_REPLY')
@@ -110,6 +115,7 @@ class RequestHashReply(smach.State):
         self.sync.reset()
         return 'to_idle'
 
+
 class GetData(smach.State):
     def __init__(self, set_client_state, get_comm_node,
                  dbl, get_answer, sync):
@@ -120,10 +126,10 @@ class GetData(smach.State):
         self.sync = sync
         smach.State.__init__(self, outcomes=['to_idle',
                                              'to_get_data_reply'],
-                                   input_keys=['in_hash_list'],
-                                   output_keys=['out_hash_list',
-                                                'out_req_hash',
-                                                'out_answer'])
+                             input_keys=['in_hash_list'],
+                             output_keys=['out_hash_list',
+                                          'out_req_hash',
+                                          'out_answer'])
 
     def execute(self, userdata):
         self.set_client_state('GET_DATA')
@@ -149,6 +155,7 @@ class GetData(smach.State):
         self.sync.reset()
         return 'to_idle'
 
+
 class GetDataReply(smach.State):
     def __init__(self, set_client_state, dbl, get_answer, sync):
         self.set_client_state = set_client_state
@@ -157,10 +164,11 @@ class GetDataReply(smach.State):
         self.sync = sync
         smach.State.__init__(self, outcomes=['to_idle',
                                              'to_get_more_data'],
-                                   input_keys=['in_hash_list',
-                                               'in_answer',
-                                               'in_req_hash'],
-                                   output_keys=['out_hash_list'])
+                             input_keys=['in_hash_list',
+                                         'in_answer',
+                                         'in_req_hash'],
+                             output_keys=['out_hash_list'])
+
     def execute(self, userdata):
         self.set_client_state('GET_DATA_REPLY')
         # store result in db
@@ -178,11 +186,13 @@ class GetDataReply(smach.State):
             self.sync.reset()
             return 'to_idle'
 
+
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 """ Bistable class. Allows the communication between an external method
 in Channel and its state machine. The bistable will be set by a
 method in Channel to trigger the synchronization, and it will be reset
 inside the state machine """
+
 
 class Bistable():
     def __init__(self):
@@ -236,27 +246,27 @@ class Channel():
                                         self.get_sm_shutdown,
                                         self.get_comm_node,
                                         self.sync),
-                    transitions = {'to_req_hash': 'REQ_HASH',
-                                   'to_stopped': 'stopped'})
+                                   transitions={'to_req_hash': 'REQ_HASH',
+                                                'to_stopped': 'stopped'})
             smach.StateMachine.add('REQ_HASH',
-                                    RequestHash(self.set_client_state,
-                                                self.get_comm_node,
-                                                self.dbl,
-                                                self.get_answer,
-                                                self.sync),
-                transitions = {'to_idle': 'IDLE',
-                               'to_req_hash_reply': 'REQ_HASH_REPLY'},
-                remapping = {'out_answer': 'sm_answer' })
+                                   RequestHash(self.set_client_state,
+                                               self.get_comm_node,
+                                               self.dbl,
+                                               self.get_answer,
+                                               self.sync),
+                                   transitions={'to_idle': 'IDLE',
+                                                'to_req_hash_reply': 'REQ_HASH_REPLY'},
+                                   remapping={'out_answer': 'sm_answer'})
 
             smach.StateMachine.add('REQ_HASH_REPLY',
-                                    RequestHashReply(self.set_client_state,
-                                                     self.dbl,
-                                                     self.get_answer,
-                                                     self.sync),
-                transitions = {'to_idle': 'IDLE',
-                               'to_get_data': 'GET_DATA'},
-                remapping = {'in_answer': 'sm_answer',
-                             'out_hash_list': 'sm_hash_list' })
+                                   RequestHashReply(self.set_client_state,
+                                                    self.dbl,
+                                                    self.get_answer,
+                                                    self.sync),
+                                   transitions={'to_idle': 'IDLE',
+                                                'to_get_data': 'GET_DATA'},
+                                   remapping={'in_answer': 'sm_answer',
+                                              'out_hash_list': 'sm_hash_list'})
 
             smach.StateMachine.add('GET_DATA',
                                    GetData(self.set_client_state,
@@ -264,24 +274,24 @@ class Channel():
                                            self.dbl,
                                            self.get_answer,
                                            self.sync),
-                transitions = {'to_idle': 'IDLE',
-                               'to_get_data_reply': 'GET_DATA_REPLY'},
-                remapping = {'in_hash_list': 'sm_hash_list',
-                             'out_hash_list': 'sm_hash_list_2',
-                             'out_req_hash': 'sm_req_hash',
-                             'out_answer': 'sm_answer_2' })
+                                   transitions={'to_idle': 'IDLE',
+                                                'to_get_data_reply': 'GET_DATA_REPLY'},
+                                   remapping={'in_hash_list': 'sm_hash_list',
+                                              'out_hash_list': 'sm_hash_list_2',
+                                              'out_req_hash': 'sm_req_hash',
+                                              'out_answer': 'sm_answer_2' })
 
             smach.StateMachine.add('GET_DATA_REPLY',
                                    GetDataReply(self.set_client_state,
                                                 self.dbl,
                                                 self.get_answer,
                                                 self.sync),
-                transitions = {'to_idle': 'IDLE',
-                               'to_get_more_data': 'GET_DATA'},
-                remapping = {'in_hash_list': 'sm_hash_list_2',
-                             'in_req_hash': 'sm_req_hash',
-                             'in_answer': 'sm_answer_2',
-                             'out_hash_list': 'sm_hash_list' })
+                                   transitions={'to_idle': 'IDLE',
+                                                'to_get_more_data': 'GET_DATA'},
+                                   remapping={'in_hash_list': 'sm_hash_list_2',
+                                              'in_req_hash': 'sm_req_hash',
+                                              'in_answer': 'sm_answer_2',
+                                              'out_hash_list': 'sm_hash_list'})
 
     def run(self):
         """ Configures the zmq_comm_node and also starts the state
@@ -289,10 +299,10 @@ class Channel():
         # The comm node needs to be created first, as it may be required
         # by the SM
         self.comm_node = zmq_comm_node.Comm_node(self.robot,
-                                  self.target_robot,
-                                  self.config_file,
-                                  self.callback_client,
-                                  self.callback_server)
+                                                 self.target_robot,
+                                                 self.config_file,
+                                                 self.callback_client,
+                                                 self.callback_server)
         # Unset this flag before starting the SM thread
         self.sm_shutdown = False
         th = threading.Thread(target=self.sm_thread, args=())
