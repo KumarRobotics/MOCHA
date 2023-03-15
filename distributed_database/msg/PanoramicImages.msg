@@ -1,1 +1,0 @@
-sensor_msgs/CompressedImage img
