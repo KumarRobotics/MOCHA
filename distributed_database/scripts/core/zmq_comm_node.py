@@ -148,7 +148,7 @@ class Comm_node:
                     break
             else:
                 rospy.logdebug(
-                    "{self.this_node} - SENDMSG: No response from server, retrying..."
+                    f"{self.this_node} - SENDMSG: No response from server, retrying..."
                 )
                 # Socket is confused. Close and remove it.
                 client.setsockopt(zmq.LINGER, 0)
@@ -157,7 +157,7 @@ class Comm_node:
                 retries_left -= 1
                 if retries_left == 0:
                     rospy.logdebug(
-                        "{self.this_node} - SENDMSG: Server seems to be offline, abandoning"
+                        f"{self.this_node} - SENDMSG: Server seems to be offline, abandoning"
                     )
                     self.client_callback(None)
                     break
