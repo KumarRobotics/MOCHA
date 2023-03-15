@@ -33,16 +33,16 @@ class DBwLock():
         # Create and store things in db
         if dbm.robot not in self.db:
             self.db[dbm.robot] = {}
-        if dbm.feature_name not in self.db[dbm.robot]:
-            self.db[dbm.robot][dbm.feature_name] = {}
-        self.db[dbm.robot][dbm.feature_name]['dtype'] = dbm.dtype
-        self.db[dbm.robot][dbm.feature_name]['priority'] = dbm.priority
-        self.db[dbm.robot][dbm.feature_name]['ts'] = dbm.ts
-        self.db[dbm.robot][dbm.feature_name]['data'] = dbm.data
-        self.db[dbm.robot][dbm.feature_name]['ack'] = dbm.ack
+        if dbm.topic_name not in self.db[dbm.robot]:
+            self.db[dbm.robot][dbm.topic_name] = {}
+        self.db[dbm.robot][dbm.topic_name]['dtype'] = dbm.dtype
+        self.db[dbm.robot][dbm.topic_name]['priority'] = dbm.priority
+        self.db[dbm.robot][dbm.topic_name]['ts'] = dbm.ts
+        self.db[dbm.robot][dbm.topic_name]['data'] = dbm.data
+        self.db[dbm.robot][dbm.topic_name]['ack'] = dbm.ack
         packed_data = du.pack_data(dbm)
         checksum_data = hash_comm.Hash(packed_data).digest()
-        self.db[dbm.robot][dbm.feature_name]['hash'] = checksum_data
+        self.db[dbm.robot][dbm.topic_name]['hash'] = checksum_data
         self.lock.release()
         return checksum_data
 
@@ -97,21 +97,21 @@ class DBwLock():
         data_found = False
         self.lock.acquire()
         for robot in self.db:
-            for feature in self.db[robot]:
-                if self.db[robot][feature]['hash'] == requested_hash:
+            for topic_name in self.db[robot]:
+                if self.db[robot][topic_name]['hash'] == requested_hash:
                     data_found = True
                     req_robot = robot
-                    req_feature_name = feature
+                    req_topic_name = topic_name
         if not data_found:
             self.lock.release()
             raise Exception('packData: hash not found')
-        req_dtype = self.db[req_robot][req_feature_name]['dtype']
-        req_priority = self.db[req_robot][req_feature_name]['priority']
-        req_ts = self.db[req_robot][req_feature_name]['ts']
-        req_data = self.db[req_robot][req_feature_name]['data']
-        req_ack = self.db[req_robot][req_feature_name]['ack']
+        req_dtype = self.db[req_robot][req_topic_name]['dtype']
+        req_priority = self.db[req_robot][req_topic_name]['priority']
+        req_ts = self.db[req_robot][req_topic_name]['ts']
+        req_data = self.db[req_robot][req_topic_name]['data']
+        req_ack = self.db[req_robot][req_topic_name]['ack']
         self.lock.release()
-        dbm = DBMessage(req_robot, req_feature_name, req_dtype,
+        dbm = DBMessage(req_robot, req_topic_name, req_dtype,
                         req_priority, req_ts, req_data, req_ack)
         return dbm
 
@@ -123,14 +123,14 @@ class DBMessage():
     The messages are typically used for inserting or extracting data from
     the database.
     """
-    def __init__(self, robot, feature_name,
+    def __init__(self, robot, topic_name,
                  dtype, priority, ts, data, ack):
         """
         Initialize the DBMessage object.
 
         Args:
             robot (int): ID of the robot.
-            feature_name (str): The name of the feature.
+            topic_name (str): The name of the topic_name.
             dtype (int): Data type identifier.
             priority (int): Priority level of the message.
             ts (float): Timestamp of the message.
@@ -138,7 +138,7 @@ class DBMessage():
             ack (bool): Acknowledgement status.
         """
         self.robot = robot
-        self.feature_name = feature_name
+        self.topic_name = topic_name
         self.dtype = dtype
         self.priority = priority
         self.ts = ts
@@ -148,7 +148,7 @@ class DBMessage():
 
     def check_msg(self):
         assert isinstance(self.robot, int)
-        assert isinstance(self.feature_name, str)
+        assert isinstance(self.topic_name, str)
         assert isinstance(self.dtype, int)
         assert isinstance(self.priority, int)
         assert isinstance(self.ts, float)
@@ -160,7 +160,7 @@ class DBMessage():
             return False
         if other.robot != self.robot:
             return False
-        if other.feature_name != self.feature_name:
+        if other.topic_name != self.topic_name:
             return False
         if other.dtype != self.dtype:
             return False
@@ -175,6 +175,6 @@ class DBMessage():
         return True
 
     def __str__(self):
-        return "%d, %s, %d, %d, %f, %d" % (self.robot, self.feature_name,
+        return "%d, %s, %d, %d, %f, %d" % (self.robot, self.topic_name,
                                            self.dtype, self.priority,
                                            self.ts, self.ack)

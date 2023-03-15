@@ -44,9 +44,9 @@ def pack_data(msg):
     (sizes in parantheses (in bytes)):
     [
     robot (1 - unsigned char)
-    feature_name_length (2 - unsigned short),
-    feature_name (variable),
-    feature_dtype (1 unsigned char),
+    topic_name_length (2 - unsigned short),
+    topic_name (variable),
+    data_dtype (1 unsigned char),
     priority (1 unsigned char),
     timestamp (8 - double),
     ack (1 unsigned char),
@@ -56,9 +56,9 @@ def pack_data(msg):
     """
     assert isinstance(msg, db.DBMessage)
     serial_data = struct.pack('!B', msg.robot)
-    req_feature_len = len(msg.feature_name)
-    serial_data += struct.pack('!H', req_feature_len)
-    serial_data += msg.feature_name.encode()
+    req_topic_len = len(msg.topic_name)
+    serial_data += struct.pack('!H', req_topic_len)
+    serial_data += msg.topic_name.encode()
     serial_data += struct.pack('!B', msg.dtype)
     serial_data += struct.pack('!B', msg.priority)
     serial_data += struct.pack('!d', msg.ts)
@@ -75,14 +75,14 @@ def unpack_data(packed_data):
     # unpack robot
     p_robot = struct.unpack('!B', packed_data[:1])[0]
     pointer = 1
-    # unpack feature name
-    p_feature_len = struct.unpack('!H',
+    # unpack topic name
+    p_topic_len = struct.unpack('!H',
                                   packed_data[pointer:pointer + 2])[0]
     pointer += 2
-    p_feature_name = packed_data[pointer:pointer + p_feature_len].decode()
-    pointer += p_feature_len
-    # unpack feature type
-    p_feature_dtype = struct.unpack('!B',
+    p_topic_name = packed_data[pointer:pointer + p_topic_len].decode()
+    pointer += p_topic_len
+    # unpack topic type
+    p_topic_dtype = struct.unpack('!B',
                                     packed_data[pointer:pointer + 1])[0]
     pointer += 1
     # unpack priority
@@ -101,7 +101,7 @@ def unpack_data(packed_data):
     p_data = packed_data[pointer:]
     assert len(p_data) != 0, "Empty data in unpack_data"
 
-    dbm = db.DBMessage(p_robot, p_feature_name, p_feature_dtype,
+    dbm = db.DBMessage(p_robot, p_topic_name, p_topic_dtype,
                     p_priority, p_ts, p_data, p_ack)
     return dbm
 
@@ -134,6 +134,6 @@ def parse_answer(api_answer, msg_types):
     msg = constructor()
     msg.deserialize(api_answer.msg_content)
     ts = api_answer.timestamp
-    feature_name = api_answer.msg_name
+    topic_name = api_answer.msg_name
     ack = api_answer.ack
-    return feature_name, ts, msg, ack
+    return topic_name, ts, msg, ack

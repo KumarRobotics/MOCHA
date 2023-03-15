@@ -11,8 +11,8 @@ import rospy
 from colorama import Fore, Back, Style
 import yaml
 
-VALID_HASH_FEATURE_0 = 'e7eb85cdc2d3'
-VALID_HASH_FEATURE_1 = 'f50a4da37e2e'
+VALID_HASH_FEATURE_0 = '42c9f16fe4c0'
+VALID_HASH_FEATURE_1 = 'd9efcff693b5'
 
 
 def generate_random_hash():
@@ -71,15 +71,15 @@ class test(unittest.TestCase):
     def test_find_hash(self):
         dbl = sample_db.get_sample_dbl()
         robot = 1
-        feature = 'feature1'
-        dtype = dbl.db[robot][feature]['dtype']
-        prio = dbl.db[robot][feature]['priority']
-        ts = dbl.db[robot][feature]['ts']
-        data = dbl.db[robot][feature]['data']
-        h = dbl.db[robot][feature]['hash']
+        topic = 'topic1'
+        dtype = dbl.db[robot][topic]['dtype']
+        prio = dbl.db[robot][topic]['priority']
+        ts = dbl.db[robot][topic]['ts']
+        data = dbl.db[robot][topic]['data']
+        h = dbl.db[robot][topic]['hash']
         dbm = dbl.find_hash(h)
         self.assertEqual(dbm.robot, robot)
-        self.assertEqual(dbm.feature_name, feature)
+        self.assertEqual(dbm.topic_name, topic)
         self.assertEqual(dbm.dtype, dtype)
         self.assertEqual(dbm.priority, prio)
         self.assertAlmostEqual(dbm.ts, ts)
@@ -95,6 +95,8 @@ if __name__ == '__main__':
     import database
     import sample_db
     import hash_comm as hc
+
+    dbl = sample_db.get_sample_dbl()
 
     # Set the node name
     rospy.init_node('test_synchronize_utils', anonymous=False)
