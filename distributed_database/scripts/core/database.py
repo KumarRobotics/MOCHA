@@ -4,6 +4,69 @@ import hash_comm
 import pdb
 import database_utils as du
 
+class DBMessage():
+    """Database message object.
+
+    This class is used to represent messages in the context of a database.
+    The messages are typically used for inserting or extracting data from
+    the database.
+    """
+    def __init__(self, robot, topic_name,
+                 dtype, priority, ts, data, ack):
+        """
+        Initialize the DBMessage object.
+
+        Args:
+            robot (int): ID of the robot.
+            topic_name (str): The name of the topic_name.
+            dtype (int): Data type identifier.
+            priority (int): Priority level of the message.
+            ts (float): Timestamp of the message.
+            data (bytes): Binary data payload.
+            ack (bool): Acknowledgement status.
+        """
+        self.robot = robot
+        self.topic_name = topic_name
+        self.dtype = dtype
+        self.priority = priority
+        self.ts = ts
+        self.data = data
+        self.ack = ack
+        self.check_msg()
+
+    def check_msg(self):
+        assert isinstance(self.robot, int)
+        assert isinstance(self.topic_name, str)
+        assert isinstance(self.dtype, int)
+        assert isinstance(self.priority, int)
+        assert isinstance(self.ts, float)
+        assert isinstance(self.ack, bool)
+        assert isinstance(self.data, bytes)
+
+    def __eq__(self, other):
+        if not isinstance(other, DBMessage):
+            return False
+        if other.robot != self.robot:
+            return False
+        if other.topic_name != self.topic_name:
+            return False
+        if other.dtype != self.dtype:
+            return False
+        if other.priority != self.priority:
+            return False
+        if abs(other.ts - self.ts) > 1e-8:
+            return False
+        if other.data != self.data:
+            return False
+        if other.ack != self.ack:
+            return False
+        return True
+
+    def __str__(self):
+        return "%d, %s, %d, %d, %f, %d" % (self.robot, self.topic_name,
+                                           self.dtype, self.priority,
+                                           self.ts, self.ack)
+
 
 class DBwLock():
     """ Database with lock object
@@ -114,67 +177,3 @@ class DBwLock():
         dbm = DBMessage(req_robot, req_topic_name, req_dtype,
                         req_priority, req_ts, req_data, req_ack)
         return dbm
-
-
-class DBMessage():
-    """Database message object.
-
-    This class is used to represent messages in the context of a database.
-    The messages are typically used for inserting or extracting data from
-    the database.
-    """
-    def __init__(self, robot, topic_name,
-                 dtype, priority, ts, data, ack):
-        """
-        Initialize the DBMessage object.
-
-        Args:
-            robot (int): ID of the robot.
-            topic_name (str): The name of the topic_name.
-            dtype (int): Data type identifier.
-            priority (int): Priority level of the message.
-            ts (float): Timestamp of the message.
-            data (bytes): Binary data payload.
-            ack (bool): Acknowledgement status.
-        """
-        self.robot = robot
-        self.topic_name = topic_name
-        self.dtype = dtype
-        self.priority = priority
-        self.ts = ts
-        self.data = data
-        self.ack = ack
-        self.check_msg()
-
-    def check_msg(self):
-        assert isinstance(self.robot, int)
-        assert isinstance(self.topic_name, str)
-        assert isinstance(self.dtype, int)
-        assert isinstance(self.priority, int)
-        assert isinstance(self.ts, float)
-        assert isinstance(self.ack, bool)
-        assert isinstance(self.data, bytes)
-
-    def __eq__(self, other):
-        if not isinstance(other, DBMessage):
-            return False
-        if other.robot != self.robot:
-            return False
-        if other.topic_name != self.topic_name:
-            return False
-        if other.dtype != self.dtype:
-            return False
-        if other.priority != self.priority:
-            return False
-        if abs(other.ts - self.ts) > 1e-8:
-            return False
-        if other.data != self.data:
-            return False
-        if other.ack != self.ack:
-            return False
-        return True
-
-    def __str__(self):
-        return "%d, %s, %d, %d, %f, %d" % (self.robot, self.topic_name,
-                                           self.dtype, self.priority,
-                                           self.ts, self.ack)
