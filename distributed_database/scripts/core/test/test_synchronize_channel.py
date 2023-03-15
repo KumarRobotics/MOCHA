@@ -21,7 +21,7 @@ class Test(unittest.TestCase):
     def test_onehop_oneway_sync(self):
         dbl1 = sdb.get_sample_dbl()
         dbl2 = sdb.get_sample_dbl()
-        dbm = su.DBMessage(1, 'fetureX', 2, 1,
+        dbm = db.DBMessage(1, 'fetureX', 2, 1,
                            123.456, bytes('New data', 'utf-8'), False)
         du.add_modify_data_dbl(dbl2, dbm)
         node_1 = sync.Channel(dbl1, 'basestation',
@@ -46,7 +46,7 @@ class Test(unittest.TestCase):
         dbl2 = sdb.get_sample_dbl()
         # print(id(db1), id(db2))
         # Modify one of the features in the db
-        dbm = su.DBMessage(1, 'fetureX', 2, 1,
+        dbm = db.DBMessage(1, 'fetureX', 2, 1,
                            123.456, bytes('New data', 'utf-8'), False)
         du.add_modify_data_dbl(dbl2, dbm)
         node_1 = sync.Channel(dbl1, 'basestation',
@@ -81,10 +81,10 @@ class Test(unittest.TestCase):
         dbl1 = sdb.get_sample_dbl()
         dbl2 = sdb.get_sample_dbl()
         # Modify one of the features in the db
-        dbm = su.DBMessage(1, 'fetureX', 2, 1,
+        dbm = db.DBMessage(1, 'fetureX', 2, 1,
                            123.456, bytes('New data', 'utf-8'), False)
         du.add_modify_data_dbl(dbl1, dbm)
-        dbm = su.DBMessage(1, 'fetureY', 2, 1,
+        dbm = db.DBMessage(1, 'fetureY', 2, 1,
                            123.456, bytes('New data', 'utf-8'), False)
         du.add_modify_data_dbl(dbl2, dbm)
         node_1 = sync.Channel(dbl1, 'basestation',
@@ -120,7 +120,7 @@ class Test(unittest.TestCase):
         dbl_groundstation = sdb.get_sample_dbl()
         dbl_robot2 = sdb.get_sample_dbl()
         # Modify one of the features in the db
-        dbm = su.DBMessage(1, 'fetureX', 2, 1,
+        dbm = db.DBMessage(1, 'fetureX', 2, 1,
                            123.456, bytes('New data', 'utf-8'), False)
         du.add_modify_data_dbl(dbl_robot1, dbm)
         node_1 = sync.Channel(dbl_robot1, 'charon',
@@ -174,7 +174,7 @@ if __name__ == '__main__':
     import get_sample_db as sdb
     import synchronize_channel as sync
     import database_server_utils as du
-    import synchronize_utils as su
+    import database as db
 
     # Get the default path from the ddb_path
     robot_configs_default = os.path.join(ddb_path,
