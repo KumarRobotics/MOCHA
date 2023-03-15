@@ -8,6 +8,7 @@ import geometry_msgs.msg
 import rospkg
 import pdb
 import rospy
+from colorama import Fore, Back, Style
 import yaml
 
 VALID_HASH_FEATURE_0 = 'e7eb85cdc2d3'
@@ -20,6 +21,10 @@ def generate_random_hash():
 
 
 class test(unittest.TestCase):
+    def setUp(self):
+        test_name = self._testMethodName
+        print("\n", Fore.RED, 20*"=", test_name, 20*"=", Style.RESET_ALL)
+
     def test_get_hash_list_from_db(self):
         dbl = sdb.get_sample_dbl()
         for i in range(5):

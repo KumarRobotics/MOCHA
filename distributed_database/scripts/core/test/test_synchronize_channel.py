@@ -10,10 +10,15 @@ import rospkg
 import rospy
 import multiprocessing
 from pprint import pprint
+from colorama import Fore, Style
+
 
 class Test(unittest.TestCase):
+    def setUp(self):
+        test_name = self._testMethodName
+        print("\n", Fore.RED, 20*"=", test_name, 20*"=", Style.RESET_ALL)
+
     def test_onehop_oneway_sync(self):
-        print(40*"=", "onehop_oneway_sync")
         dbl1 = sdb.get_sample_dbl()
         dbl2 = sdb.get_sample_dbl()
         dbm = su.DBMessage(1, 'fetureX', 2, 1,
@@ -36,7 +41,6 @@ class Test(unittest.TestCase):
         time.sleep(4)
 
     def test_convoluted_onehop_oneway_sync(self):
-        print(40*"=", "convoluted_onehop_oneway_sync")
         self.maxDiff=None
         dbl1 = sdb.get_sample_dbl()
         dbl2 = sdb.get_sample_dbl()
@@ -77,7 +81,6 @@ class Test(unittest.TestCase):
         time.sleep(4)
 
     def test_convoluted_onehop_twoway_sync(self):
-        print(40*"=")
         self.maxDiff=None
         dbl1 = sdb.get_sample_dbl()
         dbl2 = sdb.get_sample_dbl()
@@ -121,7 +124,6 @@ class Test(unittest.TestCase):
 
 
     def test_twohop_oneway_sync(self):
-        print(40*"=")
         dbl_robot1 = sdb.get_sample_dbl()
         dbl_groundstation = sdb.get_sample_dbl()
         dbl_robot2 = sdb.get_sample_dbl()
@@ -169,7 +171,8 @@ class Test(unittest.TestCase):
         time.sleep(4)
 
 if __name__ == '__main__':
-    rospy.init_node('test_synchronize_channel', anonymous=False)
+    rospy.init_node('test_synchronize_channel', anonymous=False,
+                    log_level=rospy.DEBUG)
 
     # Get the directory path and import all the required modules to test
     rospack = rospkg.RosPack()

@@ -18,9 +18,14 @@ import yaml
 import rospkg
 import pdb
 import rospy
+from colorama import Fore, Style
 
 
 class Test(unittest.TestCase):
+    def setUp(self):
+        test_name = self._testMethodName
+        print("\n", Fore.RED, 20*"=", test_name, 20*"=", Style.RESET_ALL)
+
     def test_simple_connection(self):
         self.answer = None
 
