@@ -62,11 +62,7 @@ class Test(unittest.TestCase):
 
         # Trigger a synchronization
         for i in range(10):
-            try:
-                node_2.trigger_sync()
-            except Exception as e:
-                print("Exception")
-                pass
+            node_2.trigger_sync()
         node_1.trigger_sync()
 
         # Wait for comms propagation
@@ -104,11 +100,7 @@ class Test(unittest.TestCase):
 
         # Trigger a synchronization
         for i in range(10):
-            try:
-                node_2.trigger_sync()
-            except Exception as e:
-                print("Exception")
-                pass
+            node_2.trigger_sync()
         node_1.trigger_sync()
 
         # Wait for comms propagation

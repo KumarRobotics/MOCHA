@@ -7,6 +7,7 @@ import synchronize_utils as su
 import database_server_utils as du
 import hash_comm as hc
 import zmq_comm_node
+import logging
 import rospy
 import pdb
 
@@ -102,7 +103,7 @@ class RequestHashReply(smach.State):
         # print("REQUESTHASH: All ->", deserialized)
         hash_list = su.hashes_not_in_local(self.dbl, deserialized)
         if len(hash_list):
-            print("REQUESTHASH: Unique ->", hash_list)
+            rospy.logdebug(f"REQUESTHASH: Unique -> {hash_list}")
             userdata.out_hash_list = hash_list
             return 'to_get_data'
         self.sync.reset()
@@ -128,7 +129,7 @@ class GetData(smach.State):
         comm = self.get_comm_node()
         hash_list = userdata.in_hash_list.copy()
         req_hash = hash_list.pop()
-        print("GETDATA:", req_hash)
+        rospy.logdebug(f"GETDATA: {req_hash}")
         # Ask for hash
         msg = Comm_msgs.GDATA.name.encode() + req_hash.encode()
         comm.connect_send_message(msg)
@@ -163,10 +164,9 @@ class GetDataReply(smach.State):
         # store result in db
         dbm = su.unpack_data(userdata.in_answer)
         hash_list = userdata.in_hash_list.copy()
-        print(dbm)
         du.add_modify_data_dbl(self.dbl, dbm)
         hash_list.remove(userdata.in_req_hash)
-        print("HASH_LIST", hash_list, "REQ_HASH", userdata.in_req_hash)
+        rospy.logdebug(f"HASH_LIST {hash_list} REQ_HASH {userdata.in_req_hash}")
         # Transition back
         if hash_list:
             userdata.out_hash_list = hash_list
@@ -213,6 +213,11 @@ class Channel():
         assert type(target_robot) is str
         assert type(robot_configs) is dict
 
+        # Override smach logger to use rospy loggers
+        # Use rospy.logdebug for smach info as it is too verbose
+        # def set_loggers(info,warn,debug,error):
+        smach.set_loggers(rospy.logdebug, rospy.logwarn,
+                          rospy.logdebug, rospy.logerr)
 
         # Basic parameters of the communication channel
         self.this_robot = this_robot
@@ -323,23 +328,25 @@ class Channel():
 
     def get_comm_node(self):
         if not self.comm_node:
+            rospy.logerr("Requesting for an empty comm node")
             raise Exception("Requesting for an empty comm node")
         return self.comm_node
 
     def trigger_sync(self):
         if self.sync.get_state():
-            raise Exception("Sync has been already requested")
-        self.sync.set()
+            rospy.logdebug(f"{self.this_robot} - Sync has been already requested")
+        else:
+            self.sync.set()
 
     def callback_client(self, msg):
         if not msg is None:
-            print("CALLBACK_CLIENT:", self.this_robot, "- len:", len(msg))
+            rospy.logdebug(f"CALLBACK_CLIENT: {self.this_robot} - len: {len(msg)}")
         else:
-            print("CALLBACK_CLIENT:", "None")
+            rospy.logdebug(f"CALLBACK_CLIENT: {self.this_robot} - None")
         self.client_answer = msg
 
     def callback_server(self, msg):
-        print("CALLBACK_SERVER:", self.this_robot, msg)
+        rospy.logdebug(f"CALLBACK_SERVER: {self.this_robot} - {msg}")
         header = msg[:HEADER_LENGTH].decode()
         data = msg[HEADER_LENGTH:]
 
