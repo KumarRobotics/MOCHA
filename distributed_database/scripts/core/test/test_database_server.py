@@ -11,6 +11,7 @@ import pdb
 from pprint import pprint
 import distributed_database.srv
 import distributed_database.msg
+from colorama import Fore, Style
 
 CONFIG_FILE = "testConfigs/robotConfigs.yml"
 
@@ -19,6 +20,10 @@ executable = 'database_server.py'
 
 
 class Test(unittest.TestCase):
+    def setUp(self):
+        test_name = self._testMethodName
+        print("\n", Fore.RED, 20*"=", test_name, 20*"=", Style.RESET_ALL)
+
     def setUp(self):
         # startNode and stopNode are used to start the database_server
         # node during the test case. *Do not* start the database_server
