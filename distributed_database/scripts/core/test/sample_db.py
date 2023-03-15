@@ -9,7 +9,7 @@ import database_utils as du
 
 DB_TEMPLATE = {
         0: {
-            'feature1': {
+            'topic1': {
                 'dtype': 1,
                 'priority': 3,
                 'hash': None,
@@ -18,7 +18,7 @@ DB_TEMPLATE = {
                 'data': bytes('Binary chunk', 'utf-8'),
                 'ack': False
                 },
-            'feature2': {
+            'topic2': {
                 'dtype': 2,
                 'priority': 0,
                 'hash': None,
@@ -27,7 +27,7 @@ DB_TEMPLATE = {
                 'data': bytes('Binary chunk', 'utf-8'),
                 'ack': False
                 },
-            'feature3': {
+            'topic3': {
                 'dtype': 3,
                 'priority': 1,
                 'hash': None,
@@ -36,7 +36,7 @@ DB_TEMPLATE = {
                 'data': bytes('Binary chunk', 'utf-8'),
                 'ack': False
                 },
-            'feature4': {
+            'topic4': {
                 'dtype': 3,
                 'priority': 1,
                 'hash': None,
@@ -47,7 +47,7 @@ DB_TEMPLATE = {
                 },
             },
         1: {
-            'feature1': {
+            'topic1': {
                 'dtype': 1,
                 'priority': 4,
                 'hash': None,
@@ -56,7 +56,7 @@ DB_TEMPLATE = {
                 'data': bytes('Binary chunk', 'utf-8'),
                 'ack': False
                 },
-            'feature2': {
+            'topic2': {
                 'dtype': 2,
                 'priority': 2,
                 'hash': None,
@@ -72,15 +72,15 @@ DB_TEMPLATE = {
 def get_sample_dbl():
     DB = copy.deepcopy(DB_TEMPLATE)
     for robot in DB:
-        for feature in DB[robot]:
-            ts = DB[robot][feature]['ts']
-            data = DB[robot][feature]['data']
-            dtype = DB[robot][feature]['dtype']
-            prio = DB[robot][feature]['priority']
-            ack = DB[robot][feature]['ack']
-            c = db.DBMessage(robot, feature, dtype, prio, ts, data, ack)
+        for topic in DB[robot]:
+            ts = DB[robot][topic]['ts']
+            data = DB[robot][topic]['data']
+            dtype = DB[robot][topic]['dtype']
+            prio = DB[robot][topic]['priority']
+            ack = DB[robot][topic]['ack']
+            c = db.DBMessage(robot, topic, dtype, prio, ts, data, ack)
             packed = du.pack_data(c)
             checksum = hash_comm.Hash(packed).digest()
-            DB[robot][feature]['hash'] = checksum
+            DB[robot][topic]['hash'] = checksum
     dbl = db.DBwLock(DB)
     return dbl

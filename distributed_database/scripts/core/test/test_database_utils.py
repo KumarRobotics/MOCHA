@@ -11,9 +11,8 @@ import rospy
 from colorama import Fore, Back, Style
 import yaml
 
-VALID_HASH_FEATURE_0 = 'e7eb85cdc2d3'
-VALID_HASH_FEATURE_1 = 'f50a4da37e2e'
-
+VALID_HASH_FEATURE_0 = '42c9f16fe4c0'
+VALID_HASH_FEATURE_1 = 'd9efcff693b5'
 
 def generate_random_hash():
     rand = str(uuid.uuid4().hex).encode()
@@ -42,7 +41,7 @@ class test(unittest.TestCase):
         with self.assertRaises(Exception):
             du.deserialize_hashes(serialized[1:])
 
-    def test_pack_unpack_data_feature(self):
+    def test_pack_unpack_data_topic(self):
         dbl = sample_db.get_sample_dbl()
         dbm = dbl.find_hash(VALID_HASH_FEATURE_1)
         packed = du.pack_data(dbm)
