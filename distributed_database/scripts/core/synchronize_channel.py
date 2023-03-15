@@ -40,29 +40,25 @@ class Comm_msgs(enum.Enum):
 
 
 class Idle(smach.State):
-    def __init__(self, set_client_state, get_sm_shutdown,
+    def __init__(self, get_sm_shutdown,
                  get_comm_node, sync):
-        self.set_client_state = set_client_state
         self.get_sm_shutdown = get_sm_shutdown
         self.sync = sync
         smach.State.__init__(self, outcomes=['to_req_hash',
                                              'to_stopped'])
 
     def execute(self, userdata):
-        self.set_client_state('IDLE')
         while not self.get_sm_shutdown():
             if self.sync.get_state():
                 # trigger sync and reset bistable
                 return 'to_req_hash'
             rospy.sleep(CHECK_TRIGGER_TIME)
-        self.set_client_state('STOPPED')
         return 'to_stopped'
 
 
 class RequestHash(smach.State):
-    def __init__(self, set_client_state, get_comm_node, dbl, get_answer,
+    def __init__(self, get_comm_node, dbl, get_answer,
             sync):
-        self.set_client_state = set_client_state
         self.get_comm_node = get_comm_node
         self.dbl = dbl
         self.get_answer = get_answer
@@ -73,7 +69,6 @@ class RequestHash(smach.State):
                                        'to_req_hash_reply'])
 
     def execute(self, userdata):
-        self.set_client_state('REQ_HASH')
         # Request current comm node
         comm = self.get_comm_node()
         # Ask server for hash
@@ -93,8 +88,7 @@ class RequestHash(smach.State):
 
 
 class RequestHashReply(smach.State):
-    def __init__(self, set_client_state, dbl, get_answer, sync):
-        self.set_client_state = set_client_state
+    def __init__(self, dbl, get_answer, sync):
         self.dbl = dbl
         self.get_answer = get_answer
         self.sync = sync
@@ -104,7 +98,6 @@ class RequestHashReply(smach.State):
                              output_keys=['out_hash_list'])
 
     def execute(self, userdata):
-        self.set_client_state('REQ_HASH_REPLY')
         deserialized = su.deserialize_hashes(userdata.in_answer)
         # print("REQUESTHASH: All ->", deserialized)
         hash_list = su.hashes_not_in_local(self.dbl, deserialized)
@@ -117,9 +110,8 @@ class RequestHashReply(smach.State):
 
 
 class GetData(smach.State):
-    def __init__(self, set_client_state, get_comm_node,
+    def __init__(self, get_comm_node,
                  dbl, get_answer, sync):
-        self.set_client_state = set_client_state
         self.get_comm_node = get_comm_node
         self.dbl = dbl
         self.get_answer = get_answer
@@ -132,7 +124,6 @@ class GetData(smach.State):
                                           'out_answer'])
 
     def execute(self, userdata):
-        self.set_client_state('GET_DATA')
         # Request current comm node
         comm = self.get_comm_node()
         hash_list = userdata.in_hash_list.copy()
@@ -157,8 +148,7 @@ class GetData(smach.State):
 
 
 class GetDataReply(smach.State):
-    def __init__(self, set_client_state, dbl, get_answer, sync):
-        self.set_client_state = set_client_state
+    def __init__(self, dbl, get_answer, sync):
         self.dbl = dbl
         self.get_answer = get_answer
         self.sync = sync
@@ -170,7 +160,6 @@ class GetDataReply(smach.State):
                              output_keys=['out_hash_list'])
 
     def execute(self, userdata):
-        self.set_client_state('GET_DATA_REPLY')
         # store result in db
         dbm = su.unpack_data(userdata.in_answer)
         hash_list = userdata.in_hash_list.copy()
@@ -217,20 +206,26 @@ class Bistable():
 # Channel class
 
 class Channel():
-    def __init__(self, dbl, this_robot, target_robot, config_file):
+    def __init__(self, dbl, this_robot, target_robot, robot_configs):
+        # Check input arguments
+        assert type(dbl) is su.DBwLock
+        assert type(this_robot) is str
+        assert type(target_robot) is str
+        assert type(robot_configs) is dict
+
+
         # Basic parameters of the communication channel
-        self.robot = this_robot
+        self.this_robot = this_robot
         self.target_robot = target_robot
         self.dbl = dbl
         # Config file used to fetch configurations
-        self.config_file = config_file
-        # Variable written by the state machine. Useful to synchronize
-        # with specific events
-        self.client_state = 'STOPPED'
+        self.robot_configs = robot_configs
+
         # Bistable used to start the synchronization. It will be enabled
         # by self.start_sync(), and it will be disabled inside the state
         # machine once the synchronization starts
         self.sync = Bistable()
+
         # Change to false before running the state machine. Otherwise,
         # when the SM reaches the idle state it will stop
         self.sm_shutdown = True
@@ -242,15 +237,13 @@ class Channel():
         self.sm = smach.StateMachine(outcomes=['failure', 'stopped'])
         with self.sm:
             smach.StateMachine.add('IDLE',
-                                   Idle(self.set_client_state,
-                                        self.get_sm_shutdown,
+                                   Idle(self.get_sm_shutdown,
                                         self.get_comm_node,
                                         self.sync),
                                    transitions={'to_req_hash': 'REQ_HASH',
                                                 'to_stopped': 'stopped'})
             smach.StateMachine.add('REQ_HASH',
-                                   RequestHash(self.set_client_state,
-                                               self.get_comm_node,
+                                   RequestHash(self.get_comm_node,
                                                self.dbl,
                                                self.get_answer,
                                                self.sync),
@@ -259,8 +252,7 @@ class Channel():
                                    remapping={'out_answer': 'sm_answer'})
 
             smach.StateMachine.add('REQ_HASH_REPLY',
-                                   RequestHashReply(self.set_client_state,
-                                                    self.dbl,
+                                   RequestHashReply(self.dbl,
                                                     self.get_answer,
                                                     self.sync),
                                    transitions={'to_idle': 'IDLE',
@@ -269,8 +261,7 @@ class Channel():
                                               'out_hash_list': 'sm_hash_list'})
 
             smach.StateMachine.add('GET_DATA',
-                                   GetData(self.set_client_state,
-                                           self.get_comm_node,
+                                   GetData(self.get_comm_node,
                                            self.dbl,
                                            self.get_answer,
                                            self.sync),
@@ -282,8 +273,7 @@ class Channel():
                                               'out_answer': 'sm_answer_2' })
 
             smach.StateMachine.add('GET_DATA_REPLY',
-                                   GetDataReply(self.set_client_state,
-                                                self.dbl,
+                                   GetDataReply(self.dbl,
                                                 self.get_answer,
                                                 self.sync),
                                    transitions={'to_idle': 'IDLE',
@@ -298,9 +288,9 @@ class Channel():
         machine thread"""
         # The comm node needs to be created first, as it may be required
         # by the SM
-        self.comm_node = zmq_comm_node.Comm_node(self.robot,
+        self.comm_node = zmq_comm_node.Comm_node(self.this_robot,
                                                  self.target_robot,
-                                                 self.config_file,
+                                                 self.robot_configs,
                                                  self.callback_client,
                                                  self.callback_server)
         # Unset this flag before starting the SM thread
@@ -312,13 +302,18 @@ class Channel():
     def stop(self):
         # Set the flag and wait until the state machine finishes
         self.sm_shutdown = True
-        while self.client_state != "STOPPED":
-            rospy.sleep(.05)
-        # Close the zmq node
-        self.comm_node.terminate()
 
     def sm_thread(self):
+        # Start the state machine and wait until it ends
+        rospy.logwarn(f"Channel {self.this_robot} - {self.target_robot} started")
         outcome = self.sm.execute()
+        exit_msg = f"Channel {self.this_robot} - {self.target_robot}" + \
+            f" finished with outcome: {outcome}"
+        if outcome == 'failure':
+            rospy.logerr(exit_msg)
+        elif outcome == 'stopped':
+            rospy.logwarn(exit_msg)
+        self.comm_node.terminate()
 
     def get_answer(self):
         return self.client_answer
@@ -336,18 +331,15 @@ class Channel():
             raise Exception("Sync has been already requested")
         self.sync.set()
 
-    def set_client_state(self, client_state):
-        self.client_state = client_state
-
     def callback_client(self, msg):
         if not msg is None:
-            print("CALLBACK_CLIENT:", self.robot, "- len:", len(msg))
+            print("CALLBACK_CLIENT:", self.this_robot, "- len:", len(msg))
         else:
             print("CALLBACK_CLIENT:", "None")
         self.client_answer = msg
 
     def callback_server(self, msg):
-        print("CALLBACK_SERVER:", self.robot, msg)
+        print("CALLBACK_SERVER:", self.this_robot, msg)
         header = msg[:HEADER_LENGTH].decode()
         data = msg[HEADER_LENGTH:]
 

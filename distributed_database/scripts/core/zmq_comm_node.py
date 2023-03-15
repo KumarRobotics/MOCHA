@@ -28,32 +28,25 @@ class Comm_node:
     def __init__(
         self, this_node, client_node, robot_configs, client_callback, server_callback
     ):
-        # Check that robot_configs is a dictionary
-        if not isinstance(robot_configs, dict):
-            rospy.logerr(f"{this_node} - robot_configs is not a dictionary")
-            rospy.signal_shutdown("robot_configs is not a dictionary")
-            return
+        # Check input arguments
+        assert isinstance(this_node, str)
+        assert isinstance(client_node, str)
+        assert isinstance(robot_configs, dict)
 
-        # Check that this node is defined in the robot_configs
-        if this_node not in robot_configs.keys():
-            rospy.logerr(f"{this_node} - This node is not defined in robot_configs")
-            rospy.signal_shutdown("This node is not defined in robot_configs")
-            return
-
-        # Check that the client node is defined in robot_configs
-        if client_node not in robot_configs[this_node]["clients"]:
-            rospy.logerr(f"{this_node} - Client node is not defined in robot_configs")
-            rospy.signal_shutdown("Client node is not defined in robot_configs")
-            return
-
-        # Check that the client node is not the same as this node
-        if client_node == this_node:
-            rospy.logerr(f"{this_node} - Client node is the same as this node")
-            rospy.signal_shutdown("Client node is the same as this node")
-            return
-
+        # Check that this_node and client_node exist in the config file
+        if this_node not in robot_configs:
+            rospy.logerr(f"{this_node} - Comm_node: this_node not in config file")
+            rospy.signal_shutdown("this_node not in config file")
+            rospy.spin()
         self.this_node = this_node
+
+        if client_node not in robot_configs[self.this_node]["clients"]:
+            rospy.logerr(f"{this_node} - Comm_node: client_node not in config file")
+            rospy.signal_shutdown("client_node not in config file")
+            rospy.spin()
+
         self.client_node = client_node
+
         self.robot_configs = robot_configs
 
         # The client id is the index of the list of clients
