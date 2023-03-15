@@ -10,6 +10,10 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
+# Execute all the commands of this script in the directory where the script is
+# located
+cd "$(dirname "${BASH_SOURCE[0]}")"
+
 # Run roscore in the background and save its PID to kill it later
 roscore > /dev/null 2>&1 &
 PID=$(ps -ef | grep roscore | grep -v grep | awk '{print $2}')
