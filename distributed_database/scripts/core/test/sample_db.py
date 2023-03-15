@@ -4,7 +4,8 @@ from pprint import pprint
 import sys
 sys.path.append('..')
 import hash_comm
-import synchronize_utils as su
+import database as db
+import database_utils as du
 
 DB_TEMPLATE = {
         0: {
@@ -77,18 +78,9 @@ def get_sample_dbl():
             dtype = DB[robot][feature]['dtype']
             prio = DB[robot][feature]['priority']
             ack = DB[robot][feature]['ack']
-            c = su.DBMessage(robot, feature, dtype, prio, ts, data, ack)
-            packed = su.pack_data(c)
+            c = db.DBMessage(robot, feature, dtype, prio, ts, data, ack)
+            packed = du.pack_data(c)
             checksum = hash_comm.Hash(packed).digest()
             DB[robot][feature]['hash'] = checksum
-    dbl = su.DBwLock(DB)
+    dbl = db.DBwLock(DB)
     return dbl
-
-
-if __name__ == '__main__':
-    r = get_sample_dbl()
-    pprint(r.db)
-
-    # pprint.pprint(DB)
-    # with open('db.pickle', 'wb') as f:
-    #     pickle.dump(DB, f)

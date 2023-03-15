@@ -3,7 +3,7 @@
 import enum
 import threading
 import smach
-import synchronize_utils as su
+import database as db
 import database_server_utils as du
 import hash_comm as hc
 import zmq_comm_node
@@ -99,9 +99,9 @@ class RequestHashReply(smach.State):
                              output_keys=['out_hash_list'])
 
     def execute(self, userdata):
-        deserialized = su.deserialize_hashes(userdata.in_answer)
+        deserialized = db.deserialize_hashes(userdata.in_answer)
         # print("REQUESTHASH: All ->", deserialized)
-        hash_list = su.hashes_not_in_local(self.dbl, deserialized)
+        hash_list = db.hashes_not_in_local(self.dbl, deserialized)
         if len(hash_list):
             rospy.logdebug(f"REQUESTHASH: Unique -> {hash_list}")
             userdata.out_hash_list = hash_list
@@ -162,7 +162,7 @@ class GetDataReply(smach.State):
 
     def execute(self, userdata):
         # store result in db
-        dbm = su.unpack_data(userdata.in_answer)
+        dbm = db.unpack_data(userdata.in_answer)
         hash_list = userdata.in_hash_list.copy()
         du.add_modify_data_dbl(self.dbl, dbm)
         hash_list.remove(userdata.in_req_hash)
@@ -208,7 +208,7 @@ class Bistable():
 class Channel():
     def __init__(self, dbl, this_robot, target_robot, robot_configs):
         # Check input arguments
-        assert type(dbl) is su.DBwLock
+        assert type(dbl) is db.DBwLock
         assert type(this_robot) is str
         assert type(target_robot) is str
         assert type(robot_configs) is dict
@@ -352,8 +352,8 @@ class Channel():
 
         if header == Comm_msgs.GHASH.name:
             # Returns all the hashes that this node has
-            hashes = su.get_hash_list_from_dbl(self.dbl)
-            serialized = su.serialize_hashes(hashes)
+            hashes = db.get_hash_list_from_dbl(self.dbl)
+            serialized = db.serialize_hashes(hashes)
             return serialized
         if header == Comm_msgs.GDATA.name:
             r_hash = data.decode()
@@ -362,8 +362,8 @@ class Channel():
             if len(data) != HASH_LENGTH:
                 return Comm_msgs.SERRM.name
             try:
-                dbm = su.find_hash_dbl(self.dbl, r_hash)
-                packed = su.pack_data(dbm)
+                dbm = db.find_hash_dbl(self.dbl, r_hash)
+                packed = db.pack_data(dbm)
                 return packed
             except Exception:
                 return Comm_msgs.SERRM.name
