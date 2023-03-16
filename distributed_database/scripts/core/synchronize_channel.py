@@ -4,7 +4,7 @@ import enum
 import threading
 import smach
 import database as db
-import database_server_utils as du
+import database_utils as du
 import hash_comm as hc
 import zmq_comm_node
 import logging
@@ -80,6 +80,7 @@ class RequestHash(smach.State):
         while i < int(CHECK_MAX_TIME/CHECK_POLL_TIME):
             answer = self.get_answer()
             if answer is not None:
+                rospy.logdebug(f"{comm.this_node} - Channel - REQUESTHASH: {answer}")
                 userdata.out_answer = answer
                 return 'to_req_hash_reply'
             rospy.sleep(CHECK_POLL_TIME)
@@ -99,11 +100,12 @@ class RequestHashReply(smach.State):
                              output_keys=['out_hash_list'])
 
     def execute(self, userdata):
-        deserialized = db.deserialize_hashes(userdata.in_answer)
+        deserialized = du.deserialize_hashes(userdata.in_answer)
         # print("REQUESTHASH: All ->", deserialized)
-        hash_list = db.hashes_not_in_local(self.dbl, deserialized)
+        hash_list = self.dbl.hashes_not_in_local(deserialized)
+        rospy.logdebug(f"======== - REQUESTHASH: {hash_list}")
         if len(hash_list):
-            rospy.logdebug(f"REQUESTHASH: Unique -> {hash_list}")
+            # rospy.logdebug(f"{self.this_robot} - REQUESTHASH: Unique -> {hash_list}")
             userdata.out_hash_list = hash_list
             return 'to_get_data'
         self.sync.reset()
@@ -129,7 +131,7 @@ class GetData(smach.State):
         comm = self.get_comm_node()
         hash_list = userdata.in_hash_list.copy()
         req_hash = hash_list.pop()
-        rospy.logdebug(f"GETDATA: {req_hash}")
+        rospy.logdebug(f"{comm.this_node} - Channel - GETDATA: {req_hash}")
         # Ask for hash
         msg = Comm_msgs.GDATA.name.encode() + req_hash.encode()
         comm.connect_send_message(msg)
@@ -162,11 +164,11 @@ class GetDataReply(smach.State):
 
     def execute(self, userdata):
         # store result in db
-        dbm = db.unpack_data(userdata.in_answer)
+        dbm = du.unpack_data(userdata.in_answer)
         hash_list = userdata.in_hash_list.copy()
-        du.add_modify_data_dbl(self.dbl, dbm)
+        self.dbl.add_modify_data(dbm)
         hash_list.remove(userdata.in_req_hash)
-        rospy.logdebug(f"HASH_LIST {hash_list} REQ_HASH {userdata.in_req_hash}")
+        # rospy.logdebug(f"HASH_LIST {hash_list} REQ_HASH {userdata.in_req_hash}")
         # Transition back
         if hash_list:
             userdata.out_hash_list = hash_list
@@ -329,43 +331,48 @@ class Channel():
     def get_comm_node(self):
         if not self.comm_node:
             rospy.logerr("Requesting for an empty comm node")
-            raise Exception("Requesting for an empty comm node")
+            rospy.signal_shutdown("Requesting for an empty comm node")
+            rospy.spin()
         return self.comm_node
 
     def trigger_sync(self):
         if self.sync.get_state():
-            rospy.logdebug(f"{self.this_robot} - Sync has been already requested")
+            rospy.logdebug(f"{self.this_robot} - Channel - Sync has been already requested")
         else:
             self.sync.set()
 
     def callback_client(self, msg):
         if not msg is None:
-            rospy.logdebug(f"CALLBACK_CLIENT: {self.this_robot} - len: {len(msg)}")
+            rospy.logdebug(f"{self.this_robot} - Channel - CALLBACK_CLIENT: len: {len(msg)}")
         else:
-            rospy.logdebug(f"CALLBACK_CLIENT: {self.this_robot} - None")
+            rospy.logdebug(f"{self.this_robot} - Channel - CALLBACK_CLIENT - None")
         self.client_answer = msg
 
     def callback_server(self, msg):
-        rospy.logdebug(f"CALLBACK_SERVER: {self.this_robot} - {msg}")
+        rospy.logdebug(f"{self.this_robot} - Channel - CALLBACK_SERVER: {msg}")
         header = msg[:HEADER_LENGTH].decode()
         data = msg[HEADER_LENGTH:]
 
         if header == Comm_msgs.GHASH.name:
             # Returns all the hashes that this node has
-            hashes = db.get_hash_list_from_dbl(self.dbl)
-            serialized = db.serialize_hashes(hashes)
+            hashes = self.dbl.get_hash_list()
+            rospy.logdebug(f"{self.this_robot} - Channel - Sending {len(hashes)} hashes")
+            rospy.logdebug(f"{self.this_robot} - Channel - {hashes}")
+            serialized = du.serialize_hashes(hashes)
             return serialized
         if header == Comm_msgs.GDATA.name:
             r_hash = data.decode()
             # Returns a packed data for the requires hash
             # One hash at a time
             if len(data) != HASH_LENGTH:
+                rospy.logerr(f"{self.this_robot} - Wrong hash length: {len(data)}")
                 return Comm_msgs.SERRM.name
             try:
-                dbm = db.find_hash_dbl(self.dbl, r_hash)
-                packed = db.pack_data(dbm)
+                dbm = self.dbl.find_hash(r_hash)
+                packed = du.pack_data(dbm)
                 return packed
             except Exception:
+                rospy.logerr(f"{self.this_robot} - Hash not found: {r_hash}")
                 return Comm_msgs.SERRM.name
         if header == Comm_msgs.SHASH.name:
             pass

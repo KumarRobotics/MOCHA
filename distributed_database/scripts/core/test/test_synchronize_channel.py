@@ -19,11 +19,12 @@ class Test(unittest.TestCase):
         print("\n", Fore.RED, 20*"=", test_name, 20*"=", Style.RESET_ALL)
 
     def test_onehop_oneway_sync(self):
-        dbl1 = sdb.get_sample_dbl()
-        dbl2 = sdb.get_sample_dbl()
+        dbl1 = sample_db.get_sample_dbl()
+        dbl2 = sample_db.get_sample_dbl()
         dbm = db.DBMessage(1, 'fetureX', 2, 1,
                            123.456, bytes('New data', 'utf-8'), False)
-        du.add_modify_data_dbl(dbl2, dbm)
+        dbl2.add_modify_data(dbm)
+        print(dbl1.db)
         node_1 = sync.Channel(dbl1, 'basestation',
                               'charon', robot_configs)
         node_2 = sync.Channel(dbl2, 'charon',
@@ -42,13 +43,13 @@ class Test(unittest.TestCase):
 
     def test_convoluted_onehop_oneway_sync(self):
         self.maxDiff=None
-        dbl1 = sdb.get_sample_dbl()
-        dbl2 = sdb.get_sample_dbl()
+        dbl1 = sample_db.get_sample_dbl()
+        dbl2 = sample_db.get_sample_dbl()
         # print(id(db1), id(db2))
         # Modify one of the features in the db
         dbm = db.DBMessage(1, 'fetureX', 2, 1,
                            123.456, bytes('New data', 'utf-8'), False)
-        du.add_modify_data_dbl(dbl2, dbm)
+        dbl2.add_modify_data(dbm)
         node_1 = sync.Channel(dbl1, 'basestation',
                               'charon', robot_configs)
         node_1.run()
@@ -78,15 +79,15 @@ class Test(unittest.TestCase):
 
     def test_convoluted_onehop_twoway_sync(self):
         self.maxDiff=None
-        dbl1 = sdb.get_sample_dbl()
-        dbl2 = sdb.get_sample_dbl()
+        dbl1 = sample_db.get_sample_dbl()
+        dbl2 = sample_db.get_sample_dbl()
         # Modify one of the features in the db
         dbm = db.DBMessage(1, 'fetureX', 2, 1,
                            123.456, bytes('New data', 'utf-8'), False)
-        du.add_modify_data_dbl(dbl1, dbm)
+        dbl1.add_modify_data(dbm)
         dbm = db.DBMessage(1, 'fetureY', 2, 1,
                            123.456, bytes('New data', 'utf-8'), False)
-        du.add_modify_data_dbl(dbl2, dbm)
+        dbl2.add_modify_data(dbm)
         node_1 = sync.Channel(dbl1, 'basestation',
                               'charon', robot_configs)
         node_1.run()
@@ -114,15 +115,14 @@ class Test(unittest.TestCase):
         # already in use
         time.sleep(4)
 
-
     def test_twohop_oneway_sync(self):
-        dbl_robot1 = sdb.get_sample_dbl()
-        dbl_groundstation = sdb.get_sample_dbl()
-        dbl_robot2 = sdb.get_sample_dbl()
+        dbl_robot1 = sample_db.get_sample_dbl()
+        dbl_groundstation = sample_db.get_sample_dbl()
+        dbl_robot2 = sample_db.get_sample_dbl()
         # Modify one of the features in the db
         dbm = db.DBMessage(1, 'fetureX', 2, 1,
                            123.456, bytes('New data', 'utf-8'), False)
-        du.add_modify_data_dbl(dbl_robot1, dbm)
+        dbl_robot1.add_modify_data(dbm)
         node_1 = sync.Channel(dbl_robot1, 'charon',
                               'basestation', robot_configs)
         node_2 = sync.Channel(dbl_groundstation,
@@ -171,9 +171,9 @@ if __name__ == '__main__':
     ddb_path = rospack.get_path('distributed_database')
     scripts_path = os.path.join(ddb_path, "scripts/core")
     sys.path.append(scripts_path)
-    import get_sample_db as sdb
+    import sample_db
     import synchronize_channel as sync
-    import database_server_utils as du
+    import database_utils as du
     import database as db
 
     # Get the default path from the ddb_path

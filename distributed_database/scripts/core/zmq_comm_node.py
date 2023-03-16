@@ -35,13 +35,13 @@ class Comm_node:
 
         # Check that this_node and client_node exist in the config file
         if this_node not in robot_configs:
-            rospy.logerr(f"{this_node} - Comm_node: this_node not in config file")
+            rospy.logerr(f"{this_node} - Node: this_node not in config file")
             rospy.signal_shutdown("this_node not in config file")
             rospy.spin()
         self.this_node = this_node
 
         if client_node not in robot_configs[self.this_node]["clients"]:
-            rospy.logerr(f"{this_node} - Comm_node: client_node not in config file")
+            rospy.logerr(f"{this_node} - Node: client_node not in config file")
             rospy.signal_shutdown("client_node not in config file")
             rospy.spin()
 
@@ -84,13 +84,13 @@ class Comm_node:
 
         # Msg check
         if not isinstance(msg, bytes):
-            rospy.logdebug(f"{self.this_node} - SENDMSG: msg has to be bytes")
+            rospy.logdebug(f"{self.this_node} - Node - SENDMSG: msg has to be bytes")
             return
 
         # Check that we are in the right state
         self.syncStatus_lock.acquire()
         if self.syncStatus != SyncStatus.IDLE:
-            rospy.logdebug(f"{self.this_node} - SENDMSG: Sync is running, abort")
+            rospy.logdebug(f"{self.this_node} - Node - SENDMSG: Sync is running, abort")
             return
         self.client_thread = SyncStatus.SYNCHRONIZING
         self.syncStatus_lock.release()
@@ -106,7 +106,7 @@ class Comm_node:
         )
 
         rospy.logdebug(
-            f"{self.this_node} - SENDMSG: Connecting to server {server_endpoint}"
+            f"{self.this_node} - Node - SENDMSG: Connecting to server {server_endpoint}"
         )
         client = self.context.socket(zmq.REQ)
         client.connect(server_endpoint)
@@ -118,7 +118,7 @@ class Comm_node:
         rnd_uuid = str(uuid.uuid4().hex).encode()
         msg_id = hash_comm.Hash(rnd_uuid).bindigest()
         full_msg = msg_id + msg
-        rospy.logdebug(f"{self.this_node} - SENDMSG: Sending ({full_msg})")
+        rospy.logdebug(f"{self.this_node} - Node - SENDMSG: Sending ({full_msg})")
         client.send(full_msg)
 
         retries_left = REQUEST_RETRIES
@@ -129,26 +129,26 @@ class Comm_node:
                 reply = client.recv()
                 if not reply:
                     rospy.logdebug(
-                        f"{self.this_node} - SENDMSG: No response from the server"
+                        f"{self.this_node} - Node - SENDMSG: No response from the server"
                     )
                     break
                 header = reply[0:HASH_LENGTH]
                 data = reply[HASH_LENGTH:]
                 if header == msg_id:
                     rospy.logdebug(
-                        f"{self.this_node} - SENDMSG: Server replied OK ({len(reply)} bytes)"
+                        f"{self.this_node} - Node - SENDMSG: Server replied ({len(reply)} bytes)"
                     )
                     self.client_callback(data)
                     break
                 else:
                     sys.exit(
-                        f"{self.this_node} - SENDMSG: Malformed reply from server: {reply}"
+                        f"{self.this_node} - Node - SENDMSG: Malformed reply from server: {reply}"
                     )
                     self.client_callback(None)
                     break
             else:
                 rospy.logdebug(
-                    f"{self.this_node} - SENDMSG: No response from server, retrying..."
+                    f"{self.this_node} - Node - SENDMSG: No response from server, retrying..."
                 )
                 # Socket is confused. Close and remove it.
                 client.setsockopt(zmq.LINGER, 0)
@@ -157,12 +157,12 @@ class Comm_node:
                 retries_left -= 1
                 if retries_left == 0:
                     rospy.logdebug(
-                        f"{self.this_node} - SENDMSG: Server seems to be offline, abandoning"
+                        f"{self.this_node} - Node - SENDMSG: Server seems to be offline, abandoning"
                     )
                     self.client_callback(None)
                     break
                 rospy.logdebug(
-                    f"{self.this_node} - SENDMSG: Reconnecting and resending ({full_msg})"
+                    f"{self.this_node} - Node - SENDMSG: Reconnecting and resending ({full_msg})"
                 )
                 # Create new connection
                 client = self.context.socket(zmq.REQ)
@@ -188,25 +188,30 @@ class Comm_node:
             except zmq.ZMQError as e:
                 if e.errno == zmq.EAGAIN:
                     rospy.logdebug(
-                        f"{self.this_node} - SERVER_RUNNING: {self.server_running}"
+                        f"{self.this_node} - Node - SERVER_RUNNING: {self.server_running}"
                     )
                     continue
                 else:
                     sys.exit("SERVER unknown error")
-            rospy.logdebug(f"{self.this_node} - SERVER: Got {request}")
+            rospy.logdebug(f"{self.this_node} - Node - SERVER: Got {request}")
             header = request[0:HASH_LENGTH]
             data = request[HASH_LENGTH:]
             reply = self.server_callback(data)
             if reply == None:
-                raise Exception(f"{self.this_node} - SERVER: reply cannot be none")
+                rospy.logerr(f"{self.this_node} - Node - SERVER: reply cannot be none")
+                rospy.signal_shutdown("Reply none")
+                rospy.spin()
             if not isinstance(reply, bytes):
-                raise Exception(f"{self.this_node} - SERVER: reply has to be bytes")
+                rospy.logerr(f"{self.this_node} - Node - SERVER: reply has to be bytes")
+                rospy.signal_shutdown("Reply not bytes")
+                rospy.spin()
             ans = header + reply
             self.server.send(ans)
-            rospy.logdebug(f"{self.this_node} - SERVER: Replied {len(ans)} bytes")
+            rospy.logdebug(f"{self.this_node} - Node - SERVER: Replied {len(ans)} bytes")
+            rospy.logdebug(f"{self.this_node} - SERVER: {ans}")
         self.server.close()
         self.context.term()
 
     def terminate(self):
-        rospy.logdebug(f"{self.this_node} - Terminating server")
+        rospy.logdebug(f"{self.this_node} - Node - Terminating server")
         self.server_running = False
