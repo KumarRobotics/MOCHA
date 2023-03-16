@@ -12,7 +12,7 @@ BOLD='\033[1m'
 NC='\033[0m' # No Color
 
 # TESTS_TO_RUN is a list of tests that should be executed in the CI
-TESTS_TO_RUN="test_database_utils.py test_database.py test_zmq_comm_node.py"
+TESTS_TO_RUN="test_database_utils.py test_database.py test_zmq_comm_node.py test_synchronize_channel.py"
 
 # The first argument is the path to the catkin workspace + catkin_ws
 CATKIN_WS="$1/catkin_ws"

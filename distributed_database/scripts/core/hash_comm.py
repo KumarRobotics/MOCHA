@@ -31,9 +31,10 @@ class Hash():
 if __name__ == "__main__":
     import random
     import numpy as np
-    MAX_DATA = 10000000
+    expected_collision = np.sqrt(2**Hash.HASH_LENGTH_BITS)
+    MAX_DATA = 10000000000
     collision_i = np.array([])
-    for loop in range(100):
+    for loop in range(10):
         hashes = set()
         for i in range(MAX_DATA):
             randstr = str(random.random())
@@ -43,4 +44,7 @@ if __name__ == "__main__":
                 collision_i = np.append(collision_i, i)
                 break
             hashes.add(hi)
+            if i % 1000000 == 0:
+                # print with only 3 decimals
+                print(f"{loop} {i} - Expected rate {(i/expected_collision):.3f}")
     print("Avg collision: %f" % np.average(collision_i))

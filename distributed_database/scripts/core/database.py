@@ -125,7 +125,7 @@ class DBwLock():
         if filter_ts is not None:
             assert isinstance(filter_ts, (float, int))
             if filter_robot is None:
-                raise Exception("get_hash_list_from_db: ts without robot")
+                raise Exception("get_hash_list: ts without robot")
 
         # To avoid inconsistencies, the db is locked while searching
         self.lock.acquire()
@@ -165,6 +165,7 @@ class DBwLock():
                     data_found = True
                     req_robot = robot
                     req_topic_name = topic_name
+
         if not data_found:
             self.lock.release()
             raise Exception('packData: hash not found')
