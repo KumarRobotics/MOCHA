@@ -7,7 +7,7 @@ ground_robot:
   - msg_topic: "/object_mapper/map"
     msg_type: "sensor_msgs/PointCloud2"
     msg_priority: "NO_PRIORITY"
-    msg_history: "WHOLE_HISTORY"
+    msg_history: "LAST_MESSAGE"
 
   - msg_topic: "/spomp_global/reachability_history"
     msg_type: "spomp/LocalReachabilityArray"
