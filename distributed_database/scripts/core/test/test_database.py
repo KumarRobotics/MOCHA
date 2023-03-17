@@ -24,6 +24,11 @@ class test(unittest.TestCase):
     def setUp(self):
         test_name = self._testMethodName
         print("\n", Fore.RED, 20*"=", test_name, 20*"=", Style.RESET_ALL)
+        super().setUp()
+
+    def tearDown(self):
+        rospy.sleep(1)
+        super().tearDown()
 
     def test_get_hash_list(self):
         dbl = sample_db.get_sample_dbl()
