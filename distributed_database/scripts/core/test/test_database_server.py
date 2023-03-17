@@ -99,7 +99,7 @@ class Test(unittest.TestCase):
 
         # Parse answer and compare results
         ans_topic_name, ans_ts, ans_data, _ = du.parse_answer(answ,
-                                                              self.dbs.msg_types)
+                                                              msg_types)
 
         self.assertEqual(topic_name, ans_topic_name)
         self.assertEqual(ans_data, sample_msg)
@@ -231,7 +231,7 @@ class Test(unittest.TestCase):
             self.assertTrue(False)
 
         # Check that the Ack bit is effectively false
-        _, _, _, ans_ack = du.parse_answer(answ, self.dbs.msg_types)
+        _, _, _, ans_ack = du.parse_answer(answ, msg_types)
         self.assertFalse(ans_ack)
 
         # Toggle the Ack Bit. This is what the basestation will do to
@@ -253,7 +253,7 @@ class Test(unittest.TestCase):
             self.assertTrue(False)
 
         # Check that the Ack bit is effectively True
-        _, _, _, ans_ack = du.parse_answer(answ, self.dbs.msg_types)
+        _, _, _, ans_ack = du.parse_answer(answ, msg_types)
         self.assertTrue(ans_ack)
 
 
@@ -289,6 +289,8 @@ if __name__ == '__main__':
     # Get the yaml dictionary objects
     with open(topic_configs, "r") as f:
         topic_configs = yaml.load(f, Loader=yaml.FullLoader)
+
+    msg_types = du.msg_types(topic_configs)
 
     # Set the ~robot_name param to charon
     rospy.set_param("~robot_name", "charon")
