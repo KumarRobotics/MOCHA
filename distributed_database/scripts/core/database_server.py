@@ -52,31 +52,8 @@ class DatabaseServer:
                           self.set_ack_bit_cb)
         self.service_list.append(s)
 
-        # Build the message_type object from the topic_configs file
-        msg_list = []
-        for robot in topic_configs:
-            for topic in topic_configs[robot]:
-                msg = topic['msg_type']
-                # Check if the message is a valid one: it has only two parts
-                # and all the characters are alphanumeric or _
-                parts = msg.split('/')
-                if not (len(parts) == 2 and
-                        all(part.replace("_", "").isalnum()
-                            for part in parts)):
-                    rospy.logerr(f"Error: msg_type {msg} not valid")
-                    self.shutdown()
-                    rospy.signal_shutdown("Error: msg_type {msg} not valid")
-                    rospy.spin()
-                msg_list.append(topic['msg_type'])
+        self.msg_types = du.msg_types(self.topic_configs)
 
-        self.msg_types = {}
-        for i, msg in enumerate(set(msg_list)):
-            package_name, msg_name = msg.split('/')
-            package = importlib.import_module(package_name + '.msg')
-            message_type = getattr(package, msg_name)
-            self.msg_types[message_type._md5sum] = {"dtype": i,
-                                                    "obj": message_type,
-                                                    "name": msg}
         # Expand the topic_configs message to include the pointer to the object,
         # and translate the priority to a numberic value
         # for robot in topic_configs:

@@ -4,6 +4,7 @@ import database as db
 import hash_comm
 import io
 import pdb
+import importlib
 
 HASH_LENGTH = hash_comm.Hash.HASH_LENGTH
 
@@ -135,3 +136,39 @@ def parse_answer(api_answer, msg_types):
     topic_name = api_answer.msg_name
     ack = api_answer.ack
     return topic_name, ts, msg, ack
+
+def msg_types(topic_configs):
+    """
+    Extracts message types from the topic_configs dictionary and validates them. 
+    Returns a dictionary with message type MD5 sums as keys and information about the message type as values.
+        The value is a dictionary containing 
+        - 'dtype' (an integer ID for the message type),
+        - 'obj' (the message type object itself)
+        - 'name' (the name of the message type).
+    """
+    assert isinstance(topic_configs, dict)
+
+    msg_list = []
+    for robot in topic_configs:
+        for topic in topic_configs[robot]:
+            msg = topic['msg_type']
+            # Check if the message is a valid one: it has only two parts
+            # and all the characters are alphanumeric or _
+            parts = msg.split('/')
+            if not (len(parts) == 2 and
+                    all(part.replace("_", "").isalnum()
+                        for part in parts)):
+                rospy.logerr(f"Error: msg_type {msg} not valid")
+                self.shutdown()
+                rospy.signal_shutdown("Error: msg_type {msg} not valid")
+                rospy.spin()
+            msg_list.append(topic['msg_type'])
+    msg_types = {}
+    for i, msg in enumerate(set(msg_list)):
+        package_name, msg_name = msg.split('/')
+        package = importlib.import_module(package_name + '.msg')
+        message_type = getattr(package, msg_name)
+        msg_types[message_type._md5sum] = {"dtype": i,
+                                                "obj": message_type,
+                                                "name": msg}
+    return msg_types
