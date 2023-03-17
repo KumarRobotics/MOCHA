@@ -3,6 +3,7 @@ import rospy
 import database as db
 import hash_comm
 import io
+import pdb
 
 HASH_LENGTH = hash_comm.Hash.HASH_LENGTH
 
@@ -126,11 +127,8 @@ def deserialize_ros_msg(s_msg, msg_type):
     msgd.deserialize(s_msg)
     return msgd
 
-def get_msg_types(topic_configs):
-    assert isinstance(topic_configs, dict)
-
 def parse_answer(api_answer, msg_types):
-    constructor = MSG_TYPES[api_answer.msg_type_hash]['obj']
+    constructor = msg_types[api_answer.msg_type_hash]['obj']
     msg = constructor()
     msg.deserialize(api_answer.msg_content)
     ts = api_answer.timestamp
