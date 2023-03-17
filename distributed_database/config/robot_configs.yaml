@@ -4,9 +4,9 @@ basestation:
   using-radio: "brick-1"
   base-port: "1234"
   clients:
-    1: "callisto"
-    2: "europa"
-    3: "titan"
+    - "callisto"
+    - "europa"
+    - "titan"
 
 europa:
   node-type: "ground_robot"
@@ -14,9 +14,9 @@ europa:
   using-radio: "black-1"
   base-port: "2234"
   clients:
-    1: "groundstation"
-    2: "callisto"
-    3: "titan"
+    - "groundstation"
+    - "callisto"
+    - "titan"
 
 callisto:
   node-type: "ground_robot"
@@ -24,9 +24,9 @@ callisto:
   using-radio: "black-1"
   base-port: "3234"
   clients:
-    1: "groundstation"
-    2: "europa"
-    3: "titan"
+    - "groundstation"
+    - "europa"
+    - "titan"
 
 titan:
   node-type: "aerial_robot"
@@ -34,6 +34,6 @@ titan:
   using-radio: "black-1"
   base-port: "6234"
   clients:
-    1: "groundstation"
-    2: "callisto"
-    3: "europa"
+    - "groundstation"
+    - "callisto"
+    - "europa"

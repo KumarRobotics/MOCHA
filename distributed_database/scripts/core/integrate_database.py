@@ -7,118 +7,129 @@ import time
 import traceback
 from functools import partial
 
-import distributed_database.msg
-import distributed_database.srv
 import roslaunch
 import rospkg
 import rospy
 import yaml
-from std_msgs.msg import Int32
+import std_msgs.msg
 
 import database_server as ds
-import database_server_utils as du
+import database_utils as du
 import synchronize_channel as sync
 
 
-class Integrate:
-    def __init__(self, config_file, this_robot):
+class IntegrateDatabase:
+    def __init__(self):
+        rospy.init_node("integrate_database", anonymous=False)
 
-        self.this_robot = this_robot
+        self.this_robot = rospy.get_param("~robot_name")
+        self.rssi_threshold = rospy.get_param("~rssi_threshold", 20)
+        self.all_channels = []
 
-        self.config_file = config_file
+        # Load and check robot configs
+        self.robot_configs_file = rospy.get_param("~robot_configs")
+        with open(self.robot_configs_file, "r") as f:
+            self.robot_configs = yaml.load(f, Loader=yaml.FullLoader)
+        if self.this_robot not in self.robot_configs.keys():
+            self.shutdown("Robot not in config file")
 
-        self.DBServer = ds.DatabaseServer(self.config_file)
+        # Load and check radio configs
+        self.radio_configs_file = rospy.get_param("~radio_configs")
+        with open(self.radio_configs_file, "r") as f:
+            self.radio_configs = yaml.load(f, Loader=yaml.FullLoader)
+        self.radio = self.robot_configs[self.this_robot]["using-radio"]
+        if self.radio not in self.radio_configs.keys():
+            self.shutdown("Radio not in config file")
 
-        self.comm_nodes = []
-        self.other_robots = []
+        # Load and check topic configs
+        self.topic_configs_file = rospy.get_param("~topic_configs")
+        with open(self.topic_configs_file, "r") as f:
+            self.topic_configs = yaml.load(f, Loader=yaml.FullLoader)
+        self.node_type = self.robot_configs[self.this_robot]["node-type"]
+        if self.node_type not in self.topic_configs.keys():
+            self.shutdown("Node type not in config file")
+
+        # Create a database server object
+        self.DBServer = ds.DatabaseServer(self.robot_configs, self.topic_configs)
+
         self.num_robot_in_comm = 0
 
-        rospack = rospkg.RosPack()
-        package_path = rospack.get_path("distributed_database")
-        robot_yaml_path = os.path.join(package_path, "config", config_file)
-        with open(robot_yaml_path, "r") as f:
-            robot_cfg = yaml.load(f, Loader=yaml.FullLoader)
-        robot_list = robot_cfg.keys()
-
-        for target_robot in robot_list:
-            if target_robot not in robot_cfg[self.this_robot]["clients"].keys():
-                rospy.logwarn(
-                    f'Skipping target:"{target_robot}" as it is not in the graph of this robot'
-                )
-                continue
-
-            if robot_cfg[target_robot]["is-active"] and target_robot != self.this_robot:
-                node = sync.Channel(
-                    self.DBServer.dbl, self.this_robot, target_robot, "robotConfigs.yml"
-                )
-                self.comm_nodes.append(node)
-
-                self.other_robots.append(target_robot)
-                node.run()
-                try:
-                    time.sleep(2)
-                except KeyboardInterrupt:
-                    print("INTEGRATE: Killed while initializing (cleaning up nodes)")
-                    for node in self.comm_nodes:
-                        node.comm_node.terminate()
-                    return
-
-        print("INTEGRATE: Created all nodes!")
-        self.listen()
-
-    def comms_callback(self, data, comm_node):
-
-        rssi = data.data
-
-        if rssi > 20:
-            self.num_robot_in_comm += 1
-            try:
-                comm_node.trigger_sync()
-                time.sleep(10)
-            except:
-                traceback.print_exception(*sys.exc_info())
-
-    def timer_cb(self, robot_id, event):
-        try:
-            self.comm_nodes[robot_id].trigger_sync()
-        except:
-            rospy.logwarn(f"{self.comm_nodes[robot_id].robot} - {self.comm_nodes[robot_id].target_robot} trigger failed. Will try again soon")
-            rospy.sleep(random.random() * 15)
-
-    def listen(self):
-
-        rospy.init_node("integrate_database", anonymous=True)
-        num_robots = len(self.other_robots)
+        # Handle possible interruptions
         self.interrupted = False
 
         def signal_handler(sig, frame):
-            print("INTEGRATE: Got signal (killing comm nodes)")
+            rospy.logwarn(f"{self.this_robot} - Integrate - " +
+                          f"Got signal. Killing comm nodes.")
             self.interrupted = True
-            for node in self.comm_nodes:
-                node.comm_node.terminate()
-
+            rospy.signal_shutdown("Killed by user")
         signal.signal(signal.SIGINT, signal_handler)
 
-        for _ in range(30):
-            if self.interrupted:
+        rospy.loginfo(f"{self.this_robot} - Integrate - " +
+                      "Created all communication channels!")
+
+        # Start comm channels with other robots
+        self.other_robots = [i for i in list(self.robot_configs.keys()) if i !=
+                             self.this_robot]
+        for other_robot in self.other_robots:
+            if other_robot not in self.robot_configs[self.this_robot]["clients"]:
+                rospy.logwarn(
+                    f"{self.this_robot} - Integrate - "+
+                    f"Skipping channel {self.this_robot}->{other_robot} " +
+                    "as it is not in the graph of this robot"
+                )
+                continue
+            # Start communication channel
+            channel = sync.Channel(self.DBServer.dbl,
+                                   self.this_robot,
+                                   other_robot, self.robot_configs)
+            self.all_channels.append(channel)
+            channel.run()
+
+            # Attach a radio trigger to each channel. This will be triggered
+            # when the RSSI is high enough. You can use another approach here
+            # such as using a timer to periodically trigger the sync
+            rospy.Subscriber('rajant_listener/' +
+                             self.this_robot + '/'
+                             + other_robot,
+                             std_msgs.msg.Int32,
+                             self.rssi_cb,
+                             channel)
+
+        # Wait for all the robots to start
+        for _ in range(100):
+            if self.interrupted or rospy.is_shutdown():
+                self.shutdown("Killed while waiting for other robots")
                 return
-            rospy.sleep(1)
+            rospy.sleep(.1)
 
-        print("INTEGRATE: entering main loop")
-
-        # Start timers to sync with all the robots
-        # timers = []
-        # for i in range(num_robots):
-        #     timers.append(rospy.Timer(rospy.Duration(5), partial(self.timer_cb, i)))
-
-        for i in range(num_robots):
-            rospy.Subscriber('rajant_log/log/' + self.this_robot + '/' + self.other_robots[i], Int32, self.comms_callback, self.comm_nodes[i])
-
+        # Spin!
         rospy.spin()
 
-if __name__ == "__main__":
-    CONFIG_FILE = "robotConfigs.yml"
-    this_robot = du.get_robot_name(CONFIG_FILE)
-    print(this_robot)
+    def shutdown(self, reason):
+        assert isinstance(reason, str)
+        rospy.logerr(f"{self.this_robot} - Integrate - " + reason)
+        for channel in self.all_channels:
+            channel.comm_node.terminate()
+            self.all_channels.remove(channel)
+        rospy.logwarn(f"{self.this_robot} - Integrate - " + "Killed Channels")
+        self.DBServer.shutdown()
+        rospy.logwarn(f"{self.this_robot} - Integrate - " + "Killed DB")
+        rospy.signal_shutdown(reason)
+        rospy.logwarn(f"{self.this_robot} - Integrate - " + "Shutting down")
+        rospy.spin()
 
-    InAll = Integrate(CONFIG_FILE, this_robot)
+
+    def rssi_cb(self, data, comm_node):
+        rssi = data.data
+        if rssi > self.rssi_threshold:
+            self.num_robot_in_comm += 1
+            try:
+                comm_node.trigger_sync()
+                time.sleep(5)
+            except:
+                traceback.print_exception(*sys.exc_info())
+
+
+if __name__ == "__main__":
+    # Start the node
+    IntegrateDatabase()

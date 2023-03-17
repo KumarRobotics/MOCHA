@@ -312,7 +312,7 @@ class Channel():
 
     def sm_thread(self):
         # Start the state machine and wait until it ends
-        rospy.logwarn(f"Channel {self.this_robot} - {self.target_robot} started")
+        rospy.logwarn(f"Channel {self.this_robot} -> {self.target_robot} started")
         outcome = self.sm.execute()
         exit_msg = f"Channel {self.this_robot} - {self.target_robot}" + \
             f" finished with outcome: {outcome}"
