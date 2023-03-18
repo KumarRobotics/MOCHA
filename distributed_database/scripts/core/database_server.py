@@ -54,25 +54,6 @@ class DatabaseServer:
 
         self.msg_types = du.msg_types(self.topic_configs)
 
-        # Expand the topic_configs message to include the pointer to the object,
-        # and translate the priority to a numberic value
-        # for robot in topic_configs:
-        #     for topic in topic_configs[robot]:
-        #         topic['msg_type_obj'] = imported_msgs[topic["msg_type"]]
-        #         if topic["msg_priority"] == "NO_PRIORITY":
-        #             topic["msg_priority_num"] = 0
-        #         elif topic["msg_priority"] == "LOW_PRIORITY":
-        #             topic["msg_priority_num"] = 1
-        #         elif topic["msg_priority"] == "MEDIUM_PRIORITY":
-        #             topic["msg_priority_num"] = 2
-        #         elif topic["msg_priority"] == "HIGH_PRIORITY":
-        #             topic["msg_priority_num"] = 3
-        #         else:
-        #             rospy.logerr(f"Error: msg_prio {topic['msg_priority']}" +
-        #                          " not valid")
-        #             rospy.signal_shutdown("Error: msg_priority not valid")
-        #             rospy.spin()
-
     def add_update_db_service_cb(self, req):
         curr_time = rospy.get_time()
         if not len(req.msg_name):
