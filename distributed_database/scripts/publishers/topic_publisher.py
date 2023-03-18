@@ -19,11 +19,14 @@ import distributed_database.srv
 #            self._pub.publish(data)
 #            # rospy.logwarn(f"publishing: {self._topic_name} - {self._most_recent}")
 
-class TopicPublisher(msg_history="WHOLE_HISTORY"):
-    def __init__(self, target):
+class TopicPublisher():
+    def __init__(self, this_robot, target, msg_history="WHOLE_HISTORY"):
+
+        self.this_robot = this_robot
+
         # Service configuration
-        self.__select_service = "database_server/SelectDB"
-        self.__get_hash_service = "database_server/GetDataHashDB"
+        self.__select_service = "integrate_database/SelectDB"
+        self.__get_hash_service = "integrate_database/GetDataHashDB"
 
         self.__select_db = rospy.ServiceProxy(
             self.__select_service, distributed_database.srv.SelectDB
@@ -49,24 +52,30 @@ class TopicPublisher(msg_history="WHOLE_HISTORY"):
                                               std_msgs.msg.String, queue_size=10)}
 
     def run(self):
-        rospy.loginfo("Starting TopicPublisher")
+        rospy.loginfo(f"{self.this_robot} - Topic Publisher - Started")
         rate = rospy.Rate(1)
-        hashes = []
+        hashes = set()
+        try:
+            rospy.wait_for_service(self.__select_service)
+        except rospy.ROSInterruptException as exc:
+            rospy.logdebug("Service did not process request: " +
+                           str(exc))
+            rospy.signal_shutdown("Service did not process request")
+            rospy.spin()
         while not rospy.is_shutdown():
             for robot in self.__robot_list:
-                hashes_to_get = []
+                hashes_to_get = set()
 
-                rospy.wait_for_service(self.__select_service)
                 try:
                     answ = self.__select_db(robot, -1, -1)
                 except rospy.ServiceException as exc:
-                    rospy.logerr(f"Service did not process request {exc}")
+                    rospy.logdebug(f"Service did not process request {exc}")
                     continue
                 returned_hashes = answ.hashes
 
                 for hash_ in returned_hashes:
                     if hash_ not in hashes:
-                        hashes_to_get.append(hash_)
+                        hashes_to_get.add(hash_)
 
                 for get_hash in hashes_to_get:
                     rospy.wait_for_service(self.__get_hash_service)
@@ -76,13 +85,14 @@ class TopicPublisher(msg_history="WHOLE_HISTORY"):
                         rospy.logerr("Service did not process request: " +
                                      str(exc))
                         continue
-                    hashes.append(get_hash)
+                    hashes.add(get_hash)
 
-                    ans_feat_name, ans_ts, ans_data, _ = self.__du.parse_answer(answ)
+                    ans_feat_name, ans_ts, ans_data, _ = du.parse_answer(answ,
+                                                                         msg_types)
                     robot, feat_id, number = re.split(',', ans_feat_name)
 
                     for t in self.publishers.keys():
-                        if t == f"{robot}, {feat_id}":
+                        if t == f"{robot},{feat_id}":
                             assert isinstance(ans_data,
                                               self.publishers[t]['pub'].data_class)
                             self.publishers[t]['pub'].publish(ans_data)
@@ -92,7 +102,7 @@ class TopicPublisher(msg_history="WHOLE_HISTORY"):
 
 
 if __name__ == "__main__":
-    rospy.init_node("distributed_database_publisher", anonymous=True)
+    rospy.init_node("distributed_database_publisher", anonymous=False)
 
     # Get the distributed_database path
     rospack = rospkg.RosPack()
@@ -145,5 +155,5 @@ if __name__ == "__main__":
             # msg_obj = msg_objects[msg_type]
             list_of_topics[topic_to_publish] = msg_type
 
-    pub = TopicPublisher(list_of_topics)
+    pub = TopicPublisher(this_robot, list_of_topics)
     pub.run()
