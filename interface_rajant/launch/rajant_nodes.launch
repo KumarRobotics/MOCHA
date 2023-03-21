@@ -1,7 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
+  <arg name="robot_name" default="charon" />
+  <arg name="robot_configs" default="$(find distributed_database)/config/robot_configs.yaml"/>
+  <arg name="radio_configs" default="$(find distributed_database)/config/radio_configs.yaml"/>
 
-  <node pkg="interface_rajant" type="rajant_log.py" name="rajant_log" output="screen"/>
-  <node pkg="interface_rajant" type="rajant_listener.py" name="rajant_listener" output="screen"/>
+  <node pkg="interface_rajant" type="rajant_log.py" name="rajant_log" output="screen">
+    <param name="robot_name" value="$(arg robot_name)" />
+  </node>
+
+  <node pkg="interface_rajant" type="rajant_listener.py" name="rajant_listener" output="screen">
+    <param name="robot_name" value="$(arg robot_name)" />
+  </node>
 
 </launch>
