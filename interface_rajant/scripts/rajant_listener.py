@@ -13,21 +13,46 @@ from std_msgs.msg import String
 from std_msgs.msg import Int32
 import rospkg
 
-CONFIG_FILE = "robotConfigs.yml"
-
 class RajantListener():
+    def __init__(self, this_robot, robot_configs, radio_configs):
 
-    def __init__(self, this_robot):
-
+        # Check input args
+        assert isinstance(this_robot, str)
+        assert isinstance(robot_configs, dict)
+        assert isinstance(radio_configs, dict)
         self.MAC_DICT = {}
+
         self.this_robot = this_robot
-
-        rospy.init_node('rajant_listener', anonymous=True)
-
+        self.robot_cfg = robot_configs
+        self.radio_cfg = radio_configs
         self.rate = rospy.Rate(.5)
 
-    def generate_publishers(self):
+        rospy.init_node('rajant_listener', anonymous=False)
 
+        fake_rssi = -20
+
+        for radio in self.radio_cfg.keys():
+            for address in self.radio_cfg[radio]['MAC-address']:
+                self.MAC_DICT[address] = {}
+                self.MAC_DICT[address]['rssi'] = fake_rssi
+                self.MAC_DICT[address]['timestamp'] = rospy.Time.now()
+                self.MAC_DICT[address]['radio'] = radio
+
+        self.MAC_DICT = self.generate_publishers()
+
+        rospy.Subscriber('rajant_log/log', String, self.update_dict)
+
+        while not rospy.is_shutdown():
+            self.rate.sleep()
+            for mac in self.MAC_DICT.keys():
+                if 'publisher' in self.MAC_DICT[mac].keys():
+                    rospy.loginfo(self.MAC_DICT[mac]['rssi'])
+                    self.MAC_DICT[mac]['publisher'].publish(self.MAC_DICT[mac]['rssi'])
+
+                    #rospy.sleep(0.1)
+
+
+    def generate_publishers(self):
         for mac in self.MAC_DICT.keys():
             for robot in self.robot_cfg.keys():
                 if self.MAC_DICT[mac]['radio'] == self.robot_cfg[robot]['using-radio'] and robot != self.this_robot:
@@ -62,49 +87,32 @@ class RajantListener():
 
     def rajant_listener(self):
 
-        rospack = rospkg.RosPack()
-        package_path = rospack.get_path('network_configs')
-        # Get both config files
-        radio_cfg_path = os.path.join(package_path, 'config', 'radioConfigs.yml')
-        with open(radio_cfg_path, 'r') as f:
-            self.radio_cfg = yaml.load(f)
-
-        robot_cfg_path = os.path.join(package_path, 'config', 'robotConfigs.yml')
-        with open(robot_cfg_path, 'r') as f:
-            self.robot_cfg = yaml.load(f)
-
-        fake_rssi = -20
-
-        for radio in self.radio_cfg.keys():
-            for address in self.radio_cfg[radio]['MAC-address']:
-                self.MAC_DICT[address] = {}
-                self.MAC_DICT[address]['rssi'] = fake_rssi
-                self.MAC_DICT[address]['timestamp'] = rospy.Time.now()
-                self.MAC_DICT[address]['radio'] = radio
-
-        self.MAC_DICT = self.generate_publishers()
-
-        rospy.Subscriber('rajant_log/log', String, self.update_dict)
-
-        while not rospy.is_shutdown():
-            self.rate.sleep()
-            for mac in self.MAC_DICT.keys():
-                if 'publisher' in self.MAC_DICT[mac].keys():
-                    rospy.loginfo(self.MAC_DICT[mac]['rssi'])
-                    self.MAC_DICT[mac]['publisher'].publish(self.MAC_DICT[mac]['rssi'])
-
-                    #rospy.sleep(0.1)
-
 if __name__ == '__main__':
 
     rospack = rospkg.RosPack()
     comms_path = rospack.get_path('distributed_database')
     scripts_path = os.path.join(comms_path, 'scripts')
     sys.path.append(scripts_path)
-    import database_server as ds
-    import database_server_utils as du
 
-    this_robot = du.get_robot_name(CONFIG_FILE)
-    RL = RajantListener(this_robot)
+    # Get robot name from the ~robot_name param
+    robot_name = rospy.get_param('~robot_name', 'charon')
+
+    # Get robot configs
+    robot_configs_file = rospy.get_param("~robot_configs")
+    with open(robot_configs_file, "r") as f:
+       robot_configs = yaml.load(f, Loader=yaml.FullLoader)
+   if robot_name not in robot_configs.keys():
+       rospy.shutdown("Robot not in config file")
+       rospy.spin()
+
+    # Get radio configs
+    radio_configs_file = rospy.get_param("~radio_configs")
+    with open(radio_configs_file, "r") as f:
+        radio_configs = yaml.load(f, Loader=yaml.FullLoader)
+    radio = robot_configs[this_robot]["using-radio"]
+    if radio not in radio_configs.keys():
+        rospy.shutdown("Radio not in config file")
+        rospy.spin()
+
+    RL = RajantListener(robot_name, robot_configs, radio_configs)
     RL.rajant_listener()
-
