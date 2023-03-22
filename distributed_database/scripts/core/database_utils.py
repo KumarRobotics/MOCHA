@@ -163,6 +163,9 @@ def msg_types(topic_configs):
                 rospy.signal_shutdown("Error: msg_type {msg} not valid")
                 rospy.spin()
             msg_list.append(topic['msg_type'])
+    # Important: sort the msg_list so we have a deterministic order
+    msg_list.sort()
+
     msg_types = {}
     for i, msg in enumerate(set(msg_list)):
         package_name, msg_name = msg.split('/')
