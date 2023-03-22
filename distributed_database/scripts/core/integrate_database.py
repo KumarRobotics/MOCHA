@@ -88,9 +88,7 @@ class IntegrateDatabase:
             # Attach a radio trigger to each channel. This will be triggered
             # when the RSSI is high enough. You can use another approach here
             # such as using a timer to periodically trigger the sync
-            rospy.Subscriber('rajant_listener/' +
-                             self.this_robot + '/'
-                             + other_robot,
+            rospy.Subscriber('rajant/rssi/' + other_robot,
                              std_msgs.msg.Int32,
                              self.rssi_cb,
                              channel)
@@ -118,14 +116,13 @@ class IntegrateDatabase:
         rospy.logwarn(f"{self.this_robot} - Integrate - " + "Shutting down")
         rospy.spin()
 
-
     def rssi_cb(self, data, comm_node):
         rssi = data.data
         if rssi > self.rssi_threshold:
             self.num_robot_in_comm += 1
             try:
+                rospy.loginfo(f"{self.this_robot}: Triggering communication with {comm_node.target_robot}")
                 comm_node.trigger_sync()
-                time.sleep(5)
             except:
                 traceback.print_exception(*sys.exc_info())
 

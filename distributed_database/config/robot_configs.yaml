@@ -15,7 +15,7 @@ europa:
   using-radio: "blue-2"
   base-port: "2234"
   clients:
-    - "groundstation"
+    - "basestation"
     - "callisto"
     - "io"
     - "titan"
@@ -26,7 +26,7 @@ callisto:
   using-radio: "blue-6"
   base-port: "3234"
   clients:
-    - "groundstation"
+    - "basestation"
     - "europa"
     - "io"
     - "titan"
@@ -37,7 +37,7 @@ io:
   using-radio: "blue-5"
   base-port: "4234"
   clients:
-    - "groundstation"
+    - "basestation"
     - "europa"
     - "callisto"
     - "titan"
@@ -48,7 +48,7 @@ titan:
   using-radio: "blue-1"
   base-port: "6234"
   clients:
-    - "groundstation"
+    - "basestation"
     - "callisto"
     - "europa"
     - "io"
