@@ -2,7 +2,6 @@
 import unittest
 import sys
 import os
-from pprint import pprint
 import uuid
 import geometry_msgs.msg
 import rospkg
@@ -11,8 +10,8 @@ import rospy
 from colorama import Fore, Back, Style
 import yaml
 
-VALID_HASH_FEATURE_0 = '42c9f16fe4c0'
-VALID_HASH_FEATURE_1 = 'd9efcff693b5'
+ROBOT0_TOPIC2_PRIO0 = '42c9f16fe4c0'
+ROBOT1_TOPIC1_PRIO4 = 'd9efcff693b5'
 
 
 def generate_random_hash():
@@ -36,27 +35,27 @@ class test(unittest.TestCase):
             # Check for locked mutex with loop
             # Test get all hashes
             hashes = dbl.get_hash_list()
-            self.assertTrue(VALID_HASH_FEATURE_0 in hashes)
-            self.assertTrue(VALID_HASH_FEATURE_1 in hashes)
+            self.assertTrue(ROBOT0_TOPIC2_PRIO0 in hashes)
+            self.assertTrue(ROBOT1_TOPIC1_PRIO4 in hashes)
             # The order of hashes should also be respected by the
-            # priority. VALID_HASH_FEATURE_0 has the lowest priority
+            # priority. ROBOT0_TOPIC2_PRIO0 has the lowest priority
             # among the hashes so it should be the last of the list.
-            # Conversely, VALID_HASH_FEATURE_1 has the highest priority
+            # Conversely, ROBOT1_TOPIC1_PRIO4 has the highest priority
             # and it should be first
-            self.assertEqual(hashes[0], VALID_HASH_FEATURE_0)
-            self.assertEqual(hashes[-1], VALID_HASH_FEATURE_1)
+            self.assertEqual(hashes[-1], ROBOT0_TOPIC2_PRIO0)
+            self.assertEqual(hashes[0], ROBOT1_TOPIC1_PRIO4)
             # Test get hashes filtering by robot
             hashes_rfilt = dbl.get_hash_list(filter_robot=0)
-            self.assertTrue(VALID_HASH_FEATURE_0 in hashes_rfilt)
-            self.assertFalse(VALID_HASH_FEATURE_1 in hashes_rfilt)
+            self.assertTrue(ROBOT0_TOPIC2_PRIO0 in hashes_rfilt)
+            self.assertFalse(ROBOT1_TOPIC1_PRIO4 in hashes_rfilt)
             # Test for assertion when giving a robot without a ts
             with self.assertRaises(Exception):
                 _ = dbl.get_hash_list(filter_ts=0.0)
             # Test timestamp filtering. Only one timestamp should be
-            # remaining (and it is not VALID_HASH_FEATURE_0).
+            # remaining (and it is not ROBOT0_TOPIC2_PRIO0).
             hashes_tfilt = dbl.get_hash_list(filter_robot=0,
                                              filter_ts=118)
-            self.assertFalse(VALID_HASH_FEATURE_0 in hashes_tfilt)
+            self.assertFalse(ROBOT0_TOPIC2_PRIO0 in hashes_tfilt)
             self.assertTrue(len(hashes_tfilt) == 2)
 
     def test_hashes_not_in_local(self):
