@@ -11,8 +11,8 @@ import rospy
 from colorama import Fore, Back, Style
 import yaml
 
-VALID_HASH_FEATURE_0 = '42c9f16fe4c0'
-VALID_HASH_FEATURE_1 = 'd9efcff693b5'
+ROBOT0_TOPIC2_PRIO0 = '42c9f16fe4c0'
+ROBOT1_TOPIC1_PRIO4 = 'd9efcff693b5'
 
 def generate_random_hash():
     rand = str(uuid.uuid4().hex).encode()
@@ -48,7 +48,7 @@ class test(unittest.TestCase):
 
     def test_pack_unpack_data_topic(self):
         dbl = sample_db.get_sample_dbl()
-        dbm = dbl.find_hash(VALID_HASH_FEATURE_1)
+        dbm = dbl.find_hash(ROBOT1_TOPIC1_PRIO4)
         packed = du.pack_data(dbm)
         # print(packed)
         u_dbm = du.unpack_data(packed)
@@ -56,9 +56,9 @@ class test(unittest.TestCase):
 
     def test_verify_checksum(self):
         dbl = sample_db.get_sample_dbl()
-        dbm = dbl.find_hash(VALID_HASH_FEATURE_1)
+        dbm = dbl.find_hash(ROBOT1_TOPIC1_PRIO4)
         packed = du.pack_data(dbm)
-        msg = VALID_HASH_FEATURE_1.encode() + packed
+        msg = ROBOT1_TOPIC1_PRIO4.encode() + packed
         self.assertTrue(du.verify_checksum_msg(msg))
 
 
