@@ -9,8 +9,11 @@ import pdb
 import rospy
 from colorama import Fore, Back, Style
 import yaml
+import pprint
 
 ROBOT0_TOPIC2_PRIO0 = '42c9f16fe4c0'
+ROBOT0_TOPIC3_PRIO1 = '9df5d73948fe'
+ROBOT0_TOPIC4_PRIO1 = '7b5e724ed9cd'
 ROBOT1_TOPIC1_PRIO4 = 'd9efcff693b5'
 
 
@@ -48,6 +51,13 @@ class test(unittest.TestCase):
             hashes_rfilt = dbl.get_hash_list(filter_robot=0)
             self.assertTrue(ROBOT0_TOPIC2_PRIO0 in hashes_rfilt)
             self.assertFalse(ROBOT1_TOPIC1_PRIO4 in hashes_rfilt)
+            # TOPIC2 should also be the last hash after filtering
+            self.assertEqual(hashes_rfilt[-1], ROBOT0_TOPIC2_PRIO0)
+            # TOPIC 4 and 3 should be the second and third hashes. Their
+            # priority is 1, so they should be ordered by timestamp
+            # latest timestamp
+            self.assertEqual(hashes_rfilt[1], ROBOT0_TOPIC4_PRIO1)
+            self.assertEqual(hashes_rfilt[2], ROBOT0_TOPIC3_PRIO1)
             # Test for assertion when giving a robot without a ts
             with self.assertRaises(Exception):
                 _ = dbl.get_hash_list(filter_ts=0.0)

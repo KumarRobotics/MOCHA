@@ -136,7 +136,7 @@ class DBwLock():
                 if filter_ts is not None and self.db[robot][tag]['ts'] <= filter_ts:
                     continue
                 hash_list[self.db[robot][tag]['hash']] = {'prio': self.db[robot][tag]['priority'],
-                        'ts': self.db[robot][tag]['ts']}
+                                                          'ts': self.db[robot][tag]['ts']}
         self.lock.release()
 
         # Sort the dictionary by value, and get the keys
