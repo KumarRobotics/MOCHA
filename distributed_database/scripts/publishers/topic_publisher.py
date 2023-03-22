@@ -41,15 +41,14 @@ class TopicPublisher():
 
         # Publisher creation
         self.publishers = {}
+        self.hash_pub = rospy.Publisher("topic_publisher/hashes",
+                                        std_msgs.msg.String, queue_size=10)
         for t in target.keys():
             robot, topic = re.split(",", t)
             if robot not in self.__robot_list:
                 self.__robot_list.append(robot)
-            self.publishers[t] = {
-                  "pub": rospy.Publisher(f"/{robot}{topic}",
-                                         target[t], queue_size=10), 
-                  "hash_pub": rospy.Publisher(f"/{robot}{topic}_hash",
-                                              std_msgs.msg.String, queue_size=10)}
+            self.publishers[t] = rospy.Publisher(f"/{robot}{topic}",
+                                                 target[t], queue_size=10)
 
     def run(self):
         rospy.loginfo(f"{self.this_robot} - Topic Publisher - Started")
@@ -95,8 +94,8 @@ class TopicPublisher():
                         if t == f"{robot},{feat_id}":
                             assert isinstance(ans_data,
                                               self.publishers[t]['pub'].data_class)
-                            self.publishers[t]['pub'].publish(ans_data)
-                            self.publishers[t]['hash_pub'].publish(get_hash)
+                            self.publishers[t].publish(ans_data)
+                            self.hash_pub.publish(get_hash)
                             rospy.logdebug(f"Publishing {ans_feat_name}")
             rate.sleep()
 
@@ -149,7 +148,7 @@ if __name__ == "__main__":
         topic_list = topic_configs[robot_type]
         for topic in topic_list:
             msg_topic = topic["msg_topic"]
-            # join all strings with a /, stripping the leading / from the topic 
+            # join all strings with a /, stripping the leading / from the topic
             topic_to_publish = ",".join([robot, msg_topic])
             msg_type = msg_objects[topic["msg_type"]]
             # msg_obj = msg_objects[msg_type]
