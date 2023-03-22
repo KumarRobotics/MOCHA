@@ -3,13 +3,18 @@
   <arg name="robot_name" default="charon" />
   <arg name="robot_configs" default="$(find distributed_database)/config/robot_configs.yaml"/>
   <arg name="radio_configs" default="$(find distributed_database)/config/radio_configs.yaml"/>
+  <arg name="output" default="screen" />
 
-  <node pkg="interface_rajant" type="rajant_log.py" name="rajant_log" output="screen">
+  <node pkg="interface_rajant" type="rajant_query.py" name="rajant_query" output="$(arg output)">
     <param name="robot_name" value="$(arg robot_name)" />
+    <param name="robot_configs" value="$(arg robot_configs)" />
+    <param name="radio_configs" value="$(arg radio_configs)" />
   </node>
 
-  <node pkg="interface_rajant" type="rajant_listener.py" name="rajant_listener" output="screen">
+  <node pkg="interface_rajant" type="rajant_parser.py" name="rajant_parser" output="$(arg output)">
     <param name="robot_name" value="$(arg robot_name)" />
+    <param name="robot_configs" value="$(arg robot_configs)" />
+    <param name="radio_configs" value="$(arg radio_configs)" />
   </node>
 
 </launch>
