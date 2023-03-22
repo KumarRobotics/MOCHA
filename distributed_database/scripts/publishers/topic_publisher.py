@@ -47,8 +47,10 @@ class TopicPublisher():
             robot, topic = re.split(",", t)
             if robot not in self.__robot_list:
                 self.__robot_list.append(robot)
-            self.publishers[t] = rospy.Publisher(f"/{robot}{topic}",
-                                                 target[t], queue_size=10)
+            self.publishers[t] = {"pub": rospy.Publisher(f"/{robot}{topic}",
+                                                         target[t],
+                                                         queue_size=10),
+                                  "ts": -1}
 
     def run(self):
         rospy.loginfo(f"{self.this_robot} - Topic Publisher - Started")
@@ -94,9 +96,13 @@ class TopicPublisher():
                         if t == f"{robot},{feat_id}":
                             assert isinstance(ans_data,
                                               self.publishers[t]['pub'].data_class)
-                            self.publishers[t].publish(ans_data)
-                            self.hash_pub.publish(get_hash)
-                            rospy.logdebug(f"Publishing {ans_feat_name}")
+                            # FIXME: remove this line once we have proper time
+                            # filtering implemented
+                            if ans_ts > self.publishers[t]["ts"]:
+                                ans_ts = self.publishers[t]["ts"]
+                                self.publishers[t]["pub"].publish(ans_data)
+                                self.hash_pub.publish(get_hash)
+                                rospy.logdebug(f"Publishing {ans_feat_name}")
             rate.sleep()
 
 
