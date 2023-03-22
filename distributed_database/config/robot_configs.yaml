@@ -6,34 +6,49 @@ basestation:
   clients:
     - "callisto"
     - "europa"
+    - "io"
     - "titan"
 
 europa:
   node-type: "ground_robot"
   IP-address: "10.10.10.101"
-  using-radio: "black-1"
+  using-radio: "blue-2"
   base-port: "2234"
   clients:
     - "groundstation"
     - "callisto"
+    - "io"
     - "titan"
 
 callisto:
   node-type: "ground_robot"
   IP-address: "10.10.10.102"
-  using-radio: "black-1"
+  using-radio: "blue-6"
   base-port: "3234"
   clients:
     - "groundstation"
     - "europa"
+    - "io"
+    - "titan"
+
+io:
+  node-type: "ground_robot"
+  IP-address: "10.10.10.103"
+  using-radio: "blue-5"
+  base-port: "4234"
+  clients:
+    - "groundstation"
+    - "europa"
+    - "callisto"
     - "titan"
 
 titan:
   node-type: "aerial_robot"
   IP-address: "10.10.10.107"
-  using-radio: "black-1"
+  using-radio: "blue-1"
   base-port: "6234"
   clients:
     - "groundstation"
     - "callisto"
     - "europa"
+    - "io"
