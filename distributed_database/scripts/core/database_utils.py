@@ -167,11 +167,11 @@ def msg_types(topic_configs):
     msg_list.sort()
 
     msg_types = {}
-    for i, msg in enumerate(set(msg_list)):
+    for i, msg in enumerate(msg_list):
         package_name, msg_name = msg.split('/')
         package = importlib.import_module(package_name + '.msg')
         message_type = getattr(package, msg_name)
         msg_types[message_type._md5sum] = {"dtype": i,
-                                                "obj": message_type,
-                                                "name": msg}
+                                           "obj": message_type,
+                                           "name": msg}
     return msg_types
