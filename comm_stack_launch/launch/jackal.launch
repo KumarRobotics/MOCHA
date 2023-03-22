@@ -1,11 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
-  <arg name="robot_ip"/>
-  <arg name="output" default="log"/>
-  <include file="$(find distributed_database)/launch/integrate_commsdb.launch" pass_all_args="true">
-    <arg name="client_ip_ups" value="$(arg robot_ip)" />
-    <arg name="output" value="$(arg output)" />
-  </include>
-  <node pkg="distributed_database" type="jackal_translator.py" name="jackal_translator" output="$(arg output)"/>
-  <node pkg="distributed_database" type="publish_all_experiment.py" name="publish_jackal" output="$(arg output)"/>
+  <arg name="robot_name" default="callisto"/>
+  <arg name="robot_configs" default="$(find distributed_database)/config/robot_configs.yaml"/>
+  <arg name="topic_configs" default="$(find distributed_database)/config/topic_configs.yaml"/>
+  <arg name="radio_configs" default="$(find distributed_database)/config/radio_configs.yaml"/>
+  <arg name="output" default="screen"/>
+
+  <!-- Launch database, publishers and translators -->
+  <include file="$(find distributed_database)/launch/database_translators_publishers.launch" pass_all_args="True"/>
+
+  <!-- Launch Rajant interface -->
+  <include file="$(find interface_rajant)/launch/rajant_nodes.launch" pass_all_args="True"/>
+
 </launch>
+
