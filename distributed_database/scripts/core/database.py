@@ -142,7 +142,7 @@ class DBwLock():
         # Sort the dictionary by value, and get the keys
         sorted_tuples = sorted(hash_list.items(),
                                key=lambda kv: (kv[1]['prio'], kv[1]['ts'], kv[0]),
-                               reverse=False)
+                               reverse=True)
         sorted_hash_list = [i[0] for i in sorted_tuples]
         return sorted_hash_list
 
