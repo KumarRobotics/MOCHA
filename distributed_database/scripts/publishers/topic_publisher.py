@@ -28,6 +28,14 @@ class TopicPublisher():
         self.__select_service = "integrate_database/SelectDB"
         self.__get_hash_service = "integrate_database/GetDataHashDB"
 
+        try:
+            rospy.wait_for_service(self.__select_service)
+            rospy.wait_for_service(self.__get_hash_service)
+        except rospy.ROSInterruptException as exc:
+            rospy.logdebug("Service did not process request: " +
+                           str(exc))
+            rospy.signal_shutdown("Service did not process request")
+            rospy.spin()
         self.__select_db = rospy.ServiceProxy(
             self.__select_service, distributed_database.srv.SelectDB
         )
@@ -56,16 +64,9 @@ class TopicPublisher():
         rospy.loginfo(f"{self.this_robot} - Topic Publisher - Started")
         rate = rospy.Rate(1)
         hashes = set()
-        try:
-            rospy.wait_for_service(self.__select_service)
-        except rospy.ROSInterruptException as exc:
-            rospy.logdebug("Service did not process request: " +
-                           str(exc))
-            rospy.signal_shutdown("Service did not process request")
-            rospy.spin()
         while not rospy.is_shutdown():
             for robot in self.__robot_list:
-                hashes_to_get = set()
+                hashes_to_get = []
 
                 try:
                     answ = self.__select_db(robot, -1, -1)
@@ -73,13 +74,16 @@ class TopicPublisher():
                     rospy.logdebug(f"Service did not process request {exc}")
                     continue
                 returned_hashes = answ.hashes
+                if len(returned_hashes) == 0:
+                    rate.sleep()
+                    continue
 
                 for hash_ in returned_hashes:
                     if hash_ not in hashes:
-                        hashes_to_get.add(hash_)
+                        hashes_to_get.append(hash_)
 
                 for get_hash in hashes_to_get:
-                    rospy.wait_for_service(self.__get_hash_service)
+                    rospy.logdebug(f"Getting hash {get_hash}")
                     try:
                         answ = self.__get_hash_db(get_hash)
                     except rospy.ServiceException as exc:
@@ -99,11 +103,13 @@ class TopicPublisher():
                             # FIXME: remove this line once we have proper time
                             # filtering implemented
                             if ans_ts > self.publishers[t]["ts"]:
-                                ans_ts = self.publishers[t]["ts"]
+                                self.publishers[t]["ts"] = ans_ts
                                 self.publishers[t]["pub"].publish(ans_data)
                                 self.hash_pub.publish(get_hash)
                                 rospy.logdebug(f"Publishing {ans_feat_name}")
-            rate.sleep()
+                            else:
+                                rospy.logdebug(f"Skipping {ans_feat_name} as there is an old ts")
+                rate.sleep()
 
 
 if __name__ == "__main__":
