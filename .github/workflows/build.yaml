@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     container: osrf/ros:${{ matrix.ros_distro }}-desktop
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Apt dependencies
         run: |
