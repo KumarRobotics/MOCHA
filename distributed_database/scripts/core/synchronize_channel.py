@@ -130,7 +130,8 @@ class GetData(smach.State):
         # Request current comm node
         comm = self.get_comm_node()
         hash_list = userdata.in_hash_list.copy()
-        req_hash = hash_list.pop()
+        # Get the first hash of the list, the one with the higher priority
+        req_hash = hash_list.pop(0)
         rospy.logdebug(f"{comm.this_node} - Channel - GETDATA: {req_hash}")
         # Ask for hash
         msg = Comm_msgs.GDATA.name.encode() + req_hash.encode()
