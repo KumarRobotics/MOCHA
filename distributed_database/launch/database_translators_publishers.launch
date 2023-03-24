@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+  <arg name="robot_name" default="charon"/>
+  <arg name="robot_configs" default="$(find distributed_database)/config/testConfigs/robot_configs.yaml" />
+  <arg name="topic_configs" default="$(find distributed_database)/config/testConfigs/topic_configs.yaml" />
+  <arg name="radio_configs" default="$(find distributed_database)/config/radio_configs.yaml" />
+  <arg name="output" default="screen" />
+
+  <node pkg="distributed_database" type="integrate_database.py"
+    name="integrate_database" output="$(arg output)"
+    required="true">
+		<param name='robot_name' value='$(arg robot_name)'/>
+    <param name='robot_configs' value='$(arg robot_configs)'/>
+    <param name='radio_configs' value='$(arg radio_configs)'/>
+    <param name='topic_configs' value='$(arg topic_configs)'/>
+	</node>
+
+  <node pkg="distributed_database" type="translator.py"
+    name="translator" output="$(arg output)"
+    required="true">
+		<param name='robot_name' value='$(arg robot_name)'/>
+    <param name='robot_configs' value='$(arg robot_configs)'/>
+    <param name='topic_configs' value='$(arg topic_configs)'/>
+	</node>
+
+  <node pkg="distributed_database" type="topic_publisher.py"
+    name="topic_publisher" output="$(arg output)"
+    required="true">
+		<param name='robot_name' value='$(arg robot_name)'/>
+    <param name='robot_configs' value='$(arg robot_configs)'/>
+    <param name='topic_configs' value='$(arg topic_configs)'/>
+	</node>
+
+</launch>

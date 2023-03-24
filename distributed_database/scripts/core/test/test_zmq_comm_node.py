@@ -2,11 +2,11 @@
 
 """ test_zmq_comm_node.py
 This file tests the basic functionality between two communication nodes.
- - Two nodes are created: groundstation and charon. The configuration for these are
-   defined in CONFIG_FILE. The client of each node is set to the other one.
+ - Two nodes are created: basestation and charon. The configuration for these are
+   defined in the configuration file. The client of each node is set to the other one.
  - We generate a random message that groundstation sends to charon. Upon reception,
    cb_charon is called. The return value of this function is transmitted to the groundstation.
- - The groundstation receives the messag3e
+ - The groundstation receives the message
 """
 
 import os
@@ -14,19 +14,28 @@ import random
 import string
 import sys
 import unittest
-
+import yaml
 import rospkg
+import pdb
 import rospy
+from colorama import Fore, Style
 
 
 class Test(unittest.TestCase):
-    CONFIG_FILE = "testConfigs/robotConfigs.yml"
+    def setUp(self):
+        test_name = self._testMethodName
+        print("\n", Fore.RED, 20*"=", test_name, 20*"=", Style.RESET_ALL)
+        super().setUp()
+
+    def tearDown(self):
+        rospy.sleep(1)
+        super().tearDown()
 
     def test_simple_connection(self):
         self.answer = None
 
         def cb_groundstation(value):
-            rospy.logdebug(f"cb_groundstation: {value}")
+            rospy.logdebug(f"cb_basestation")
             self.answer = value
 
         def cb_charon(value):
@@ -37,10 +46,10 @@ class Test(unittest.TestCase):
 
         # Create the two robots
         node_groundstation = zmq_comm_node.Comm_node(
-            "groundstation", "charon", self.CONFIG_FILE, cb_groundstation, None
+            "basestation", "charon", robot_configs, cb_groundstation, None
         )
         node_charon = zmq_comm_node.Comm_node(
-            "charon", "groundstation", self.CONFIG_FILE, None, cb_charon
+            "charon", "basestation", robot_configs, None, cb_charon
         )
 
         # Generate random message
@@ -63,13 +72,24 @@ class Test(unittest.TestCase):
 if __name__ == "__main__":
     # Get the directory path and import all the required modules to test
     rospack = rospkg.RosPack()
-    pkg_path = rospack.get_path("distributed_database")
-    scripts_path = os.path.join(pkg_path, "scripts/core")
+    ddb_path = rospack.get_path("distributed_database")
+    scripts_path = os.path.join(ddb_path, "scripts/core")
     sys.path.append(scripts_path)
     import zmq_comm_node
 
     # Create a ROS node using during the test
-    rospy.init_node("test_zmq_comm_node", log_level=rospy.DEBUG, anonymous=True)
+    rospy.init_node("test_zmq_comm_node", log_level=rospy.DEBUG, anonymous=False)
+
+    # Get the default path from the ddb_path
+    robot_configs_default = os.path.join(ddb_path,
+                                         "config/testConfigs/robot_configs.yaml")
+    # Get the path to the robot config file from the ros parameter robot_configs
+    robot_configs = rospy.get_param("robot_configs",
+                                    robot_configs_default)
+
+    # Get the yaml dictionary objects
+    with open(robot_configs, "r") as f:
+        robot_configs = yaml.load(f, Loader=yaml.FullLoader)
 
     # Run test cases!
     unittest.main()

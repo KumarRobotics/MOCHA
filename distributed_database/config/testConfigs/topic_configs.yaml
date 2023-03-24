@@ -1,0 +1,27 @@
+ground_robot:
+  - msg_topic: "/odometry"
+    msg_type: "nav_msgs/Odometry"
+    msg_priority: "NO_PRIORITY"
+    msg_history: "LAST_MESSAGE"
+
+  - msg_topic: "/pose"
+    msg_type: "geometry_msgs/PointStamped"
+    msg_priority: "NO_PRIORITY"
+    msg_history: "WHOLE_HISTORY"
+
+aerial_robot:
+  - msg_topic: "/image"
+    msg_type: "sensor_msgs/Image"
+    msg_priority: "HIGH_PRIORITY"
+    msg_history: "LAST_MESSAGE"
+
+  - msg_topic: "/pose"
+    msg_type: "geometry_msgs/PointStamped"
+    msg_priority: "NO_PRIORITY"
+    msg_history: "LAST_MESSAGE"
+
+base_station:
+  - msg_topic: "/target_goals"
+    msg_type: "geometry_msgs/PoseArray"
+    msg_priority: "HIGH_PRIORITY"
+    msg_history: "LAST_MESSAGE"
