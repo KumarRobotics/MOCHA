@@ -88,7 +88,7 @@ class IntegrateDatabase:
             # Attach a radio trigger to each channel. This will be triggered
             # when the RSSI is high enough. You can use another approach here
             # such as using a timer to periodically trigger the sync
-            rospy.Subscriber('rajant/rssi/' + other_robot,
+            rospy.Subscriber('ddb/rajant/rssi/' + other_robot,
                              std_msgs.msg.Int32,
                              self.rssi_cb,
                              channel)
