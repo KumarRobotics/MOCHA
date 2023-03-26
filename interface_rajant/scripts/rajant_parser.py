@@ -44,7 +44,7 @@ class RajantParser():
                 if self.MAC_DICT[mac]['radio'] == self.robot_cfg[robot]['using-radio'] and robot != self.this_robot:
                     self.MAC_DICT[mac]['publisher'] = rospy.Publisher('ddb/rajant/rssi/' + robot, Int32, queue_size = 10)
 
-        rospy.Subscriber('rajant/log', String, self.update_dict)
+        rospy.Subscriber('ddb/rajant/log', String, self.update_dict)
         rospy.spin()
 
 
