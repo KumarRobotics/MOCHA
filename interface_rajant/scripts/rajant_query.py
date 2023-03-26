@@ -115,7 +115,7 @@ if __name__ == "__main__":
             p = Popen(['java',
                        '-jar',
                        java_bin,
-                       TARGET_IP], stdout=PIPE, close_fds=ON_POSIX)
+                       target_ip], stdout=PIPE, close_fds=ON_POSIX)
             q = Queue()
             t = Thread(target=enqueue_output, args=(p.stdout, q))
             t.daemon = True  # thread dies with the program
