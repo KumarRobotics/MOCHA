@@ -10,6 +10,7 @@ import zmq_comm_node
 import logging
 import rospy
 import pdb
+from std_msgs.msg import Empty
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # General configuration variables
@@ -152,10 +153,11 @@ class GetData(smach.State):
 
 
 class GetDataReply(smach.State):
-    def __init__(self, dbl, get_answer, sync):
+    def __init__(self, dbl, get_answer, sync, sync_complete_pub):
         self.dbl = dbl
         self.get_answer = get_answer
         self.sync = sync
+        self.sync_complete_pub = sync_complete_pub
         smach.State.__init__(self, outcomes=['to_idle',
                                              'to_get_more_data'],
                              input_keys=['in_hash_list',
@@ -175,6 +177,7 @@ class GetDataReply(smach.State):
             userdata.out_hash_list = hash_list
             return 'to_get_more_data'
         else:
+            self.sync_complete_pub.publish()
             self.sync.reset()
             return 'to_idle'
 
@@ -243,6 +246,12 @@ class Channel():
         self.comm_node = None
         # Create state machine and add states
         self.sm = smach.StateMachine(outcomes=['failure', 'stopped'])
+
+        # Create topic to notify that the transmission ended
+        self.sync_complete_pub = rospy.Publisher(f"ddb/sync_complete/{self.target_robot}",
+                                                 Empty,
+                                                 queue_size=1)
+
         with self.sm:
             smach.StateMachine.add('IDLE',
                                    Idle(self.get_sm_shutdown,
@@ -283,7 +292,8 @@ class Channel():
             smach.StateMachine.add('GET_DATA_REPLY',
                                    GetDataReply(self.dbl,
                                                 self.get_answer,
-                                                self.sync),
+                                                self.sync,
+                                                self.sync_complete_pub),
                                    transitions={'to_idle': 'IDLE',
                                                 'to_get_more_data': 'GET_DATA'},
                                    remapping={'in_hash_list': 'sm_hash_list_2',
