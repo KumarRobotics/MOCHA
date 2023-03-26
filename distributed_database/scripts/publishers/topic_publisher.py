@@ -49,7 +49,7 @@ class TopicPublisher():
 
         # Publisher creation
         self.publishers = {}
-        self.hash_pub = rospy.Publisher("topic_publisher/hashes",
+        self.hash_pub = rospy.Publisher("ddb/topic_publisher/hashes",
                                         std_msgs.msg.String, queue_size=10)
         for t in target.keys():
             robot, topic = re.split(",", t)

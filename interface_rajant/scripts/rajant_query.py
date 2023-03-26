@@ -89,7 +89,7 @@ if __name__ == "__main__":
         rospy.spin()
 
     # Create ros publisher
-    pub = rospy.Publisher('rajant/log', std_msgs.msg.String, queue_size=10)
+    pub = rospy.Publisher('ddb/rajant/log', std_msgs.msg.String, queue_size=10)
 
     rospack = rospkg.RosPack()
     ros_path = rospack.get_path('interface_rajant')
