@@ -10,7 +10,7 @@ import zmq_comm_node
 import logging
 import rospy
 import pdb
-from std_msgs.msg import Empty
+from std_msgs.msg import Time
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # General configuration variables
@@ -177,7 +177,7 @@ class GetDataReply(smach.State):
             userdata.out_hash_list = hash_list
             return 'to_get_more_data'
         else:
-            self.sync_complete_pub.publish()
+            self.sync_complete_pub.publish(Time(rospy.get_rostime()))
             self.sync.reset()
             return 'to_idle'
 
@@ -249,7 +249,7 @@ class Channel():
 
         # Create topic to notify that the transmission ended
         self.sync_complete_pub = rospy.Publisher(f"ddb/sync_complete/{self.target_robot}",
-                                                 Empty,
+                                                 Time,
                                                  queue_size=1)
 
         with self.sm:
