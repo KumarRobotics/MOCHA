@@ -91,10 +91,11 @@ class RequestHash(smach.State):
 
 
 class RequestHashReply(smach.State):
-    def __init__(self, dbl, get_answer, sync):
+    def __init__(self, dbl, get_answer, sync, sync_complete_pub):
         self.dbl = dbl
         self.get_answer = get_answer
         self.sync = sync
+        self.sync_complete_pub = sync_complete_pub
         smach.State.__init__(self, outcomes=['to_idle',
                                              'to_get_data'],
                              input_keys=['in_answer'],
@@ -108,9 +109,12 @@ class RequestHashReply(smach.State):
         hash_list = self.dbl.headers_not_in_local(deserialized, newer=True)
         rospy.logdebug(f"======== - REQUESTHASH: {hash_list}")
         if len(hash_list):
+            # We have hashes. Go get them
             # rospy.logdebug(f"{self.this_robot} - REQUESTHASH: Unique -> {hash_list}")
             userdata.out_hash_list = hash_list
             return 'to_get_data'
+        # We have no hashes. Sync is complete
+        self.sync_complete_pub.publish(Time(rospy.get_rostime()))
         self.sync.reset()
         return 'to_idle'
 
@@ -273,7 +277,8 @@ class Channel():
             smach.StateMachine.add('REQ_HASH_REPLY',
                                    RequestHashReply(self.dbl,
                                                     self.get_answer,
-                                                    self.sync),
+                                                    self.sync,
+                                                    self.sync_complete_pub),
                                    transitions={'to_idle': 'IDLE',
                                                 'to_get_data': 'GET_DATA'},
                                    remapping={'in_answer': 'sm_answer',
