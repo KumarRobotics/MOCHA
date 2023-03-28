@@ -15,8 +15,8 @@ from std_msgs.msg import Time
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # General configuration variables
 
-# Get the hash length from hash_comm
-HASH_LENGTH = hc.Hash.HASH_LENGTH
+# Get the header length from hash_comm
+HEADER_LENGTH = hc.TsHeader.HEADER_LENGTH
 
 # When actively polling for an answer or for a changement in variable,
 # use this time
@@ -26,12 +26,12 @@ CHECK_TRIGGER_TIME = 0.2
 CHECK_MAX_TIME = 1
 
 # Msg codes that are used during the operation of the communication
-# channel. Important: all codes should be HEADER_LENGTH characters
-HEADER_LENGTH = 5
+# channel. Important: all codes should be CODE_LENGTH characters
+CODE_LENGTH = 5
 
 
 class Comm_msgs(enum.Enum):
-    GHASH = 1
+    GHEAD = 1
     GDATA = 2
     SHASH = 3
     GERRM = 4
@@ -74,7 +74,7 @@ class RequestHash(smach.State):
         # Request current comm node
         comm = self.get_comm_node()
         # Ask server for hash
-        msg = Comm_msgs.GHASH.name.encode()
+        msg = Comm_msgs.GHEAD.name.encode()
         comm.connect_send_message(msg)
         # Wait for an answer in a polling fashion
         i = 0
@@ -101,9 +101,9 @@ class RequestHashReply(smach.State):
                              output_keys=['out_hash_list'])
 
     def execute(self, userdata):
-        deserialized = du.deserialize_hashes(userdata.in_answer)
+        deserialized = du.deserialize_headers(userdata.in_answer)
         # print("REQUESTHASH: All ->", deserialized)
-        hash_list = self.dbl.hashes_not_in_local(deserialized)
+        hash_list = self.dbl.headers_not_in_local(deserialized)
         rospy.logdebug(f"======== - REQUESTHASH: {hash_list}")
         if len(hash_list):
             # rospy.logdebug(f"{self.this_robot} - REQUESTHASH: Unique -> {hash_list}")
@@ -135,7 +135,7 @@ class GetData(smach.State):
         req_hash = hash_list.pop(0)
         rospy.logdebug(f"{comm.this_node} - Channel - GETDATA: {req_hash}")
         # Ask for hash
-        msg = Comm_msgs.GDATA.name.encode() + req_hash.encode()
+        msg = Comm_msgs.GDATA.name.encode() + req_hash
         comm.connect_send_message(msg)
         # Wait for an answer in a polling fashion
         i = 0
@@ -167,7 +167,7 @@ class GetDataReply(smach.State):
 
     def execute(self, userdata):
         # store result in db
-        dbm = du.unpack_data(userdata.in_answer)
+        dbm = du.unpack_data(userdata.in_req_hash, userdata.in_answer)
         hash_list = userdata.in_hash_list.copy()
         self.dbl.add_modify_data(dbm)
         hash_list.remove(userdata.in_req_hash)
@@ -361,29 +361,30 @@ class Channel():
 
     def callback_server(self, msg):
         rospy.logdebug(f"{self.this_robot} - Channel - CALLBACK_SERVER: {msg}")
-        header = msg[:HEADER_LENGTH].decode()
-        data = msg[HEADER_LENGTH:]
+        header = msg[:CODE_LENGTH].decode()
+        data = msg[CODE_LENGTH:]
 
-        if header == Comm_msgs.GHASH.name:
-            # Returns all the hashes that this node has
-            hashes = self.dbl.get_hash_list()
-            rospy.logdebug(f"{self.this_robot} - Channel - Sending {len(hashes)} hashes")
-            rospy.logdebug(f"{self.this_robot} - Channel - {hashes}")
-            serialized = du.serialize_hashes(hashes)
+        if header == Comm_msgs.GHEAD.name:
+            # Returns all the headers that this node has
+            headers = self.dbl.get_header_list()
+            rospy.logdebug(f"{self.this_robot} - Channel - Sending {len(headers)} headers")
+            rospy.logdebug(f"{self.this_robot} - Channel - {headers}")
+            serialized = du.serialize_headers(headers)
             return serialized
         if header == Comm_msgs.GDATA.name:
-            r_hash = data.decode()
-            # Returns a packed data for the requires hash
-            # One hash at a time
-            if len(data) != HASH_LENGTH:
-                rospy.logerr(f"{self.this_robot} - Wrong hash length: {len(data)}")
+            r_header = data
+            # Returns a packed data for the requires header
+            # One header at a time
+            pdb.set_trace
+            if len(data) != HEADER_LENGTH:
+                rospy.logerr(f"{self.this_robot} - Wrong header length: {len(data)}")
                 return Comm_msgs.SERRM.name
             try:
-                dbm = self.dbl.find_hash(r_hash)
+                dbm = self.dbl.find_header(r_header)
                 packed = du.pack_data(dbm)
                 return packed
             except Exception:
-                rospy.logerr(f"{self.this_robot} - Hash not found: {r_hash}")
+                rospy.logerr(f"{self.this_robot} - Header not found: {r_header}")
                 return Comm_msgs.SERRM.name
         if header == Comm_msgs.SHASH.name:
             pass
