@@ -6,6 +6,7 @@ import pdb
 import database_utils as du
 import numpy as np
 import hash_comm
+import copy
 
 
 class DBMessage():
@@ -85,7 +86,7 @@ class DBwLock():
     def __init__(self, sample_db=None):
         if sample_db is not None:
             assert isinstance(sample_db, dict)
-            self.db = sample_db
+            self.db = copy.deepcopy(sample_db)
         else:
             self.db = {}
         self.lock = threading.Lock()
@@ -236,4 +237,5 @@ class DBwLock():
                     out += f"      Prio: {msg.priority}\n"
                     out += f"      Data: {msg.data}\n"
                     out += f"      Header: {header}\n"
+        self.lock.release()
         return out

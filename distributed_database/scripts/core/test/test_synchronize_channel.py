@@ -11,6 +11,7 @@ import rospy
 import multiprocessing
 from pprint import pprint
 from colorama import Fore, Style
+import pprint
 
 
 class Test(unittest.TestCase):
@@ -26,10 +27,9 @@ class Test(unittest.TestCase):
     def test_onehop_oneway_sync(self):
         dbl1 = sample_db.get_sample_dbl()
         dbl2 = sample_db.get_sample_dbl()
-        dbm = db.DBMessage(1, 'fetureX', 2, 1,
-                           123.456, bytes('New data', 'utf-8'), False)
+        dbm = db.DBMessage(1, 1, 2, 1,
+                           rospy.Time(123.456), bytes('New data', 'utf-8'))
         dbl2.add_modify_data(dbm)
-        print(dbl1.db)
         node_1 = sync.Channel(dbl1, 'basestation',
                               'charon', robot_configs)
         node_2 = sync.Channel(dbl2, 'charon',
@@ -52,8 +52,8 @@ class Test(unittest.TestCase):
         dbl2 = sample_db.get_sample_dbl()
         # print(id(db1), id(db2))
         # Modify one of the features in the db
-        dbm = db.DBMessage(1, 'fetureX', 2, 1,
-                           123.456, bytes('New data', 'utf-8'), False)
+        dbm = db.DBMessage(1, 2, 2, 1,
+                           rospy.Time(123.456), bytes('New data', 'utf-8'))
         dbl2.add_modify_data(dbm)
         node_1 = sync.Channel(dbl1, 'basestation',
                               'charon', robot_configs)
@@ -87,11 +87,11 @@ class Test(unittest.TestCase):
         dbl1 = sample_db.get_sample_dbl()
         dbl2 = sample_db.get_sample_dbl()
         # Modify one of the features in the db
-        dbm = db.DBMessage(1, 'fetureX', 2, 1,
-                           123.456, bytes('New data', 'utf-8'), False)
+        dbm = db.DBMessage(1, 2,  2, 1,
+                           rospy.Time(123.456), bytes('New data', 'utf-8'))
         dbl1.add_modify_data(dbm)
-        dbm = db.DBMessage(1, 'fetureY', 2, 1,
-                           123.456, bytes('New data', 'utf-8'), False)
+        dbm = db.DBMessage(1, 3, 2, 1,
+                           rospy.Time(123.456), bytes('New data', 'utf-8'))
         dbl2.add_modify_data(dbm)
         node_1 = sync.Channel(dbl1, 'basestation',
                               'charon', robot_configs)
@@ -125,8 +125,8 @@ class Test(unittest.TestCase):
         dbl_groundstation = sample_db.get_sample_dbl()
         dbl_robot2 = sample_db.get_sample_dbl()
         # Modify one of the features in the db
-        dbm = db.DBMessage(1, 'fetureX', 2, 1,
-                           123.456, bytes('New data', 'utf-8'), False)
+        dbm = db.DBMessage(1, 2, 2, 1,
+                           rospy.Time(123.456), bytes('New data', 'utf-8'))
         dbl_robot1.add_modify_data(dbm)
         node_1 = sync.Channel(dbl_robot1, 'charon',
                               'basestation', robot_configs)
