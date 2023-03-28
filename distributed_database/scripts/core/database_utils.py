@@ -5,6 +5,7 @@ import hash_comm
 import io
 import pdb
 import importlib
+import random
 
 HEADER_LENGTH = hash_comm.TsHeader.HEADER_LENGTH
 
@@ -169,7 +170,6 @@ def msg_types(topic_configs):
                     all(part.replace("_", "").isalnum()
                         for part in parts)):
                 rospy.logerr(f"Error: msg_type {msg} not valid")
-                self.shutdown()
                 rospy.signal_shutdown("Error: msg_type {msg} not valid")
                 rospy.spin()
             msg_list.append(topic['msg_type'])
@@ -185,3 +185,12 @@ def msg_types(topic_configs):
                                            "obj": message_type,
                                            "name": msg}
     return msg_types
+
+def generate_random_header():
+    # generate random robot_id and topic_id, between 0 and 255
+    robot_id = random.randint(0, 255)
+    topic_id = random.randint(0, 255)
+    # Generate a random rospy timestamp
+    time = rospy.Time.from_sec(random.random())
+    h = hash_comm.TsHeader.from_data(robot_id, topic_id, time)
+    return h.bindigest()
