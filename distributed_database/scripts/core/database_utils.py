@@ -10,7 +10,7 @@ import random
 HEADER_LENGTH = hash_comm.TsHeader.HEADER_LENGTH
 
 
-def get_robot_number(robot_configs, robot_name):
+def get_robot_id_from_name(robot_configs, robot_name):
     """ Returns the current robot number, based on the name of the
     robot. If no name is provided, returns the number of the current
     robot. """
@@ -19,27 +19,29 @@ def get_robot_number(robot_configs, robot_name):
     assert isinstance(robot_configs, dict)
     assert robot_name is not None and isinstance(robot_name, str)
 
-    if robot_name not in robot_configs.keys():
-        rospy.logerr(f"{robot_name} does not exist in robot_configs")
-        rospy.signal_shutdown("robot_name does not exist in robot_configs")
-        rospy.spin()
-    robot_ip = robot_configs[robot_name]['IP-address']
-    robot_num = int(robot_ip.split('.')[3])
-    return robot_num
+    # The robot id is the index of the dictionary
+    robot_list = list(robot_configs.keys())
+    robot_list.sort()
+    robot_id = robot_list.index(robot_name)
+    return robot_id
 
 
-def get_topic_id_from_name(robot_configs, topic_configs, robot_name, topic_name):
+def get_robot_name_from_id(robot_configs, robot_id):
+    assert isinstance(robot_configs, dict)
+    assert robot_id is not None and isinstance(robot_id, int)
+    robots = {get_robot_id_from_name(robot_configs, robot): robot for robot
+              in robot_configs}
+    return robots[robot_id]
+
+
+def get_topic_id_from_name(robot_configs, topic_configs,
+                           robot_name, topic_name):
     """ Returns the topic id for a particular robot,
     by searching the topic name"""
     assert isinstance(robot_configs, dict)
     assert isinstance(topic_configs, dict)
     assert robot_name is not None and isinstance(robot_name, str)
     assert topic_name is not None and isinstance(topic_name, str)
-
-    if robot_name not in robot_configs.keys():
-        rospy.logerr(f"{robot_name} does not exist in robot_configs")
-        rospy.signal_shutdown("robot_name does not exist in robot_configs")
-        rospy.spin()
 
     list_topics = topic_configs[robot_configs[robot_name]["node-type"]]
     id = None
@@ -139,23 +141,25 @@ def deserialize_ros_msg(s_msg, msg_type):
     msgd.deserialize(s_msg)
     return msgd
 
+
 def parse_answer(api_answer, msg_types):
-    constructor = msg_types[api_answer.msg_type_hash]['obj']
+    constructor = msg_types[api_answer.robot_id][api_answer.topic_id]['obj']
     msg = constructor()
     msg.deserialize(api_answer.msg_content)
+    robot_id = api_answer.robot_id
+    topic_id = api_answer.topic_id
     ts = api_answer.timestamp
-    topic_name = api_answer.msg_name
-    ack = api_answer.ack
-    return topic_name, ts, msg, ack
+    return robot_id, topic_id, ts, msg
 
-def msg_types(topic_configs):
+
+def msg_types(robot_configs, topic_configs):
     """
-    Extracts message types from the topic_configs dictionary and validates them.
-    Returns a dictionary with message type MD5 sums as keys and information about the message type as values.
+    Extracts message types from the topic_configs dictionary and validates
+    them. Returns a dictionary with message type names as keys and
+    information about the message type as values.
         The value is a dictionary containing
         - 'dtype' (an integer ID for the message type),
         - 'obj' (the message type object itself)
-        - 'name' (the name of the message type).
     """
     assert isinstance(topic_configs, dict)
 
@@ -177,14 +181,29 @@ def msg_types(topic_configs):
     msg_list.sort()
 
     msg_types = {}
-    for i, msg in enumerate(msg_list):
-        package_name, msg_name = msg.split('/')
-        package = importlib.import_module(package_name + '.msg')
-        message_type = getattr(package, msg_name)
-        msg_types[message_type._md5sum] = {"dtype": i,
-                                           "obj": message_type,
-                                           "name": msg}
+    for robot in robot_configs:
+        robot_id = get_robot_id_from_name(robot_configs, robot)
+        if robot_id not in msg_types.keys():
+            msg_types[robot_id] = {}
+        for i, topic in enumerate(topic_configs[robot_configs[robot]["node-type"]]):
+            msg = topic['msg_type']
+            msg_id = msg_list.index(msg)
+            package_name, msg_name = msg.split('/')
+            package = importlib.import_module(package_name + '.msg')
+            message_type = getattr(package, msg_name)
+            msg_types[robot_id][i] = {"dtype": msg_id,
+                                      "obj": message_type}
     return msg_types
+
+def get_priority_number(priority_string):
+    PRIORITY_LUT = {"NO_PRIORITY": 0,
+                    "LOW_PRIORITY": 1,
+                    "MEDIUM_PRIORITY": 2,
+                    "HIGH_PRIORITY": 3}
+    assert isinstance(priority_string, str)
+    assert priority_string in PRIORITY_LUT
+    return PRIORITY_LUT[priority_string]
+
 
 def generate_random_header():
     # generate random robot_id and topic_id, between 0 and 255

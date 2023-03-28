@@ -1,5 +1,5 @@
-string robot_name
-float64 ts_limit
-int8 feature_id
+uint8   robot_id
+uint8   topic_id
+time    ts_limit
 ---
-string[] hashes
+uint8[] headers

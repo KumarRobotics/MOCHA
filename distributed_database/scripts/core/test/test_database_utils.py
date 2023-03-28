@@ -69,6 +69,11 @@ class test(unittest.TestCase):
                                                    topic_configs, robot, id)
             self.assertEqual(topic["msg_topic"], topic_find)
 
+    def test_robot_id(self):
+        for robot in robot_configs:
+            number = du.get_robot_id_from_name(robot_configs, robot)
+            robot_name = du.get_robot_name_from_id(robot_configs, number)
+            self.assertEqual(robot, robot_name)
 
 if __name__ == '__main__':
     # Get the directory path and import all the required modules to test
