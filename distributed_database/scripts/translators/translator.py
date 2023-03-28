@@ -46,8 +46,7 @@ class Translator:
 
 
 if __name__ == "__main__":
-    rospy.init_node("topic_translator", anonymous=False,
-                    log_level=rospy.DEBUG)
+    rospy.init_node("topic_translator", anonymous=False)
 
     # Get the distributed_database path
     rospack = rospkg.RosPack()
