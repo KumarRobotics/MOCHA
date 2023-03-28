@@ -9,17 +9,19 @@ import yaml
 import pdb
 
 class Translator:
-    def __init__(self, this_robot, topic_name, prio, msg_type):
+    def __init__(self, this_robot, this_robot_id,
+                 topic_name, topic_id, msg_type):
         self.__du = du
 
         self.__counter = 0
         self.__topic_name = topic_name
+        self.__topic_id = topic_id
         self.__this_robot = this_robot
+        self.__this_robot_id = this_robot_id
         self.__service_name = "integrate_database/AddUpdateDB"
         self.__add_update_db = rospy.ServiceProxy(
                 self.__service_name, distributed_database.srv.AddUpdateDB
         )
-        self.__prio = prio
 
         rospy.Subscriber(
             self.__topic_name, msg_type, self.translator_cb
@@ -28,25 +30,24 @@ class Translator:
     def translator_cb(self, data):
         msg = data
 
-        feature_name = f"{self.__this_robot},{self.__topic_name},{self.__counter}"
-
         rospy.wait_for_service(self.__service_name)
         serialized_msg = self.__du.serialize_ros_msg(msg)
         try:
-            answ = self.__add_update_db(feature_name,
-                                        msg._md5sum,
-                                        self.__prio,
+            ts = rospy.get_rostime()
+            answ = self.__add_update_db(self.__topic_id,
+                                        ts,
                                         serialized_msg)
-            answ_hash = answ.new_hash
-            rospy.logdebug(f"{self.__this_robot} - Hash insert " +
-                           f"- {self.__topic_name} - {answ_hash}")
+            answ_header = answ.new_header
+            rospy.logdebug(f"{self.__this_robot} - Header insert " +
+                           f"- {self.__topic_name} - {answ_header}")
             self.__counter += 1
         except rospy.ServiceException as exc:
             rospy.logerr(f"Service did not process request: {exc}")
 
 
 if __name__ == "__main__":
-    rospy.init_node("topic_translator", anonymous=False)
+    rospy.init_node("topic_translator", anonymous=False,
+                    log_level=rospy.DEBUG)
 
     # Get the distributed_database path
     rospack = rospkg.RosPack()
@@ -79,23 +80,15 @@ if __name__ == "__main__":
     this_robot_topics = topic_configs[robot_configs[this_robot]["node-type"]]
 
     # Get msg_types dict used to publish the topics
-    msg_types = du.msg_types(topic_configs)
+    msg_types = du.msg_types(robot_configs, topic_configs)
 
-    # Flip the dict so that we have name: obj
-    msg_objects = {}
-    for msg in msg_types:
-        msg_objects[msg_types[msg]["name"]] = msg_types[msg]["obj"]
-
-    for topic in this_robot_topics:
-        # Translate priority into a number
-        if topic["msg_priority"] not in PRIORITY_LUT.keys():
-            rospy.logerr(f"Error: msg_prio {topic['msg_priority']}" +
-                         f" not in {PRIORITY_LUT.keys()}")
-            rospy.signal_shutdown("Error: msg_priority not valid")
-            rospy.spin()
-        prio = PRIORITY_LUT[topic["msg_priority"]]
+    for topic_id, topic in enumerate(this_robot_topics):
+        # Get robot id
+        robot_id = du.get_robot_id_from_name(robot_configs, this_robot)
+        obj = msg_types[robot_id][topic_id]["obj"]
         Translator(this_robot,
+                   robot_id,
                    topic["msg_topic"],
-                   prio,
-                   msg_objects[topic["msg_type"]])
+                   topic_id,
+                   obj)
     rospy.spin()
