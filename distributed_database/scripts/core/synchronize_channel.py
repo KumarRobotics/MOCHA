@@ -103,7 +103,7 @@ class RequestHashReply(smach.State):
     def execute(self, userdata):
         deserialized = du.deserialize_headers(userdata.in_answer)
         # print("REQUESTHASH: All ->", deserialized)
-        # FIXME(fernando): select the synchronization method
+        # FIXME(fernando): Configure this depending on the message type
         # depending on the message type
         hash_list = self.dbl.headers_not_in_local(deserialized, newer=True)
         rospy.logdebug(f"======== - REQUESTHASH: {hash_list}")
@@ -368,7 +368,8 @@ class Channel():
 
         if header == Comm_msgs.GHEAD.name:
             # Returns all the headers that this node has
-            headers = self.dbl.get_header_list()
+            # FIXME(Fernando): Configure this depending on the message type
+            headers = self.dbl.get_header_list(filter_latest=True)
             rospy.logdebug(f"{self.this_robot} - Channel - Sending {len(headers)} headers")
             rospy.logdebug(f"{self.this_robot} - Channel - {headers}")
             serialized = du.serialize_headers(headers)

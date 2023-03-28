@@ -11,10 +11,11 @@ from colorama import Fore, Back, Style
 import yaml
 import pprint
 
-ROBOT0_TOPIC2_PRIO0 = b'\x00\x00\x00u\x00\xde'
-ROBOT0_TOPIC3_PRIO1 = b'\x00\x01\x00v\x00\xde'
-ROBOT0_TOPIC4_PRIO1 = b'\x00\x01\x00w\x00\xde'
-ROBOT1_TOPIC1_PRIO4 = b'\x01\x00\x01O\x00\xdc'
+ROBOT0_TOPIC0_PRIO0 = b'\x00\x00\x00u\x00\xde'
+ROBOT0_TOPIC1_PRIO1_OLD = b'\x00\x01\x00v\x00\xde'
+ROBOT0_TOPIC1_PRIO1_NEW = b'\x00\x01\x00w\x00\xde'
+ROBOT1_TOPIC0_PRIO4_NEW = b'\x01\x00\x01O\x00\xdc'
+ROBOT1_TOPIC0_PRIO4_OLD = b'\x01\x00\x01O\x00\xc7'
 
 
 class test(unittest.TestCase):
@@ -33,32 +34,43 @@ class test(unittest.TestCase):
             # Check for locked mutex with loop
             # Test get all headers
             headers = dbl.get_header_list()
-            self.assertTrue(ROBOT0_TOPIC2_PRIO0 in headers)
-            self.assertTrue(ROBOT1_TOPIC1_PRIO4 in headers)
+            self.assertTrue(ROBOT0_TOPIC0_PRIO0 in headers)
+            self.assertTrue(ROBOT1_TOPIC0_PRIO4_OLD in headers)
             # The order of headers should also be respected by the
-            # priority. ROBOT0_TOPIC2_PRIO0 has the lowest priority
+            # priority. ROBOT0_TOPIC0_PRIO0 has the lowest priority
             # among the headers so it should be the last of the list.
-            # Conversely, ROBOT1_TOPIC1_PRIO4 has the highest priority
+            # Conversely, ROBOT1_TOPIC0_PRIO4_NEW has the highest priority
             # and it should be first
-            self.assertEqual(headers[-1], ROBOT0_TOPIC2_PRIO0)
-            self.assertEqual(headers[0], ROBOT1_TOPIC1_PRIO4)
+            self.assertEqual(headers[-1], ROBOT0_TOPIC0_PRIO0)
+            self.assertEqual(headers[0], ROBOT1_TOPIC0_PRIO4_NEW)
             # Test get headers filtering by robot
             headers_rfilt = dbl.get_header_list(filter_robot_id=0)
-            self.assertTrue(ROBOT0_TOPIC2_PRIO0 in headers_rfilt)
-            self.assertFalse(ROBOT1_TOPIC1_PRIO4 in headers_rfilt)
+            self.assertTrue(ROBOT0_TOPIC0_PRIO0 in headers_rfilt)
+            self.assertFalse(ROBOT1_TOPIC0_PRIO4_NEW in headers_rfilt)
             # TOPIC2 should also be the last header after filtering
-            self.assertEqual(headers_rfilt[-1], ROBOT0_TOPIC2_PRIO0)
+            self.assertEqual(headers_rfilt[-1], ROBOT0_TOPIC0_PRIO0)
             # TOPIC 4 and 3 should be the second and third headers. Their
             # priority is 1, so they should be ordered by timestamp
             # latest timestamp
-            self.assertEqual(headers_rfilt[1], ROBOT0_TOPIC4_PRIO1)
-            self.assertEqual(headers_rfilt[2], ROBOT0_TOPIC3_PRIO1)
+            self.assertEqual(headers_rfilt[1], ROBOT0_TOPIC1_PRIO1_NEW)
+            self.assertEqual(headers_rfilt[2], ROBOT0_TOPIC1_PRIO1_OLD)
             # Test timestamp filtering. Only one timestamp should be
-            # remaining (and it is not ROBOT0_TOPIC2_PRIO0).
+            # remaining (and it is not ROBOT0_TOPIC0_PRIO0).
             headers_tfilt = dbl.get_header_list(filter_robot_id=0,
-                                                filter_ts=118)
-            self.assertFalse(ROBOT0_TOPIC2_PRIO0 in headers_tfilt)
+                                                filter_latest=True)
+            self.assertTrue(ROBOT0_TOPIC0_PRIO0 in headers_tfilt)
+            self.assertTrue(ROBOT0_TOPIC1_PRIO1_NEW in headers_tfilt)
+            self.assertFalse(ROBOT0_TOPIC1_PRIO1_OLD in headers_tfilt)
+            self.assertFalse(ROBOT1_TOPIC0_PRIO4_OLD in headers_tfilt)
+            self.assertFalse(ROBOT1_TOPIC0_PRIO4_NEW in headers_tfilt)
             self.assertTrue(len(headers_tfilt) == 2)
+            headers_tfilt = dbl.get_header_list(filter_latest=True)
+            self.assertTrue(ROBOT0_TOPIC0_PRIO0 in headers_tfilt)
+            self.assertTrue(ROBOT0_TOPIC1_PRIO1_NEW in headers_tfilt)
+            self.assertTrue(ROBOT1_TOPIC0_PRIO4_NEW in headers_tfilt)
+            self.assertFalse(ROBOT0_TOPIC1_PRIO1_OLD in headers_tfilt)
+            self.assertFalse(ROBOT1_TOPIC0_PRIO4_OLD in headers_tfilt)
+            self.assertTrue(len(headers_tfilt) == 3)
 
     def test_headers_not_in_local(self):
         dbl = sample_db.get_sample_dbl()
