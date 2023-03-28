@@ -14,16 +14,7 @@ import random
 
 ROBOT0_TOPIC2_PRIO0 = b'\x00\x00\x00u\x00\xde'
 ROBOT1_TOPIC1_PRIO4 = b'\x01\x00\x01O\x00\xdc'
-
-
-def generate_random_header():
-    # generate random robot_id and topic_id, between 0 and 255
-    robot_id = random.randint(0, 255)
-    topic_id = random.randint(0, 255)
-    # Generate a random rospy timestamp
-    time = rospy.Time.from_sec(random.random())
-    h = hc.TsHeader.from_data(robot_id, topic_id, time)
-    return h.bindigest()
+ROBOT1_TOPIC2_PRIO2 = b'\x01\x00\x01O\x00\xc7'
 
 
 class test(unittest.TestCase):
@@ -40,7 +31,7 @@ class test(unittest.TestCase):
         for _ in range(10):
             header_list = []
             for _ in range(20):
-                header_list.append(generate_random_header())
+                header_list.append(du.generate_random_header())
             serialized = du.serialize_headers(header_list)
             deserialized = du.deserialize_headers(serialized)
             self.assertEqual(len(header_list), len(deserialized))
@@ -49,7 +40,7 @@ class test(unittest.TestCase):
     def test_deserialize_wrong(self):
         header_list = []
         for _ in range(5):
-            header_list.append(generate_random_header())
+            header_list.append(du.generate_random_header())
         serialized = du.serialize_headers(header_list)
         with self.assertRaises(Exception):
             du.deserialize_headers(serialized[1:])
@@ -59,6 +50,10 @@ class test(unittest.TestCase):
         dbm = dbl.find_header(ROBOT1_TOPIC1_PRIO4)
         packed = du.pack_data(dbm)
         u_dbm = du.unpack_data(ROBOT1_TOPIC1_PRIO4, packed)
+        self.assertEqual(dbm, u_dbm)
+        dbm = dbl.find_header(ROBOT1_TOPIC2_PRIO2)
+        packed = du.pack_data(dbm)
+        u_dbm = du.unpack_data(ROBOT1_TOPIC2_PRIO2, packed)
         self.assertEqual(dbm, u_dbm)
 
     def test_topic_id(self):

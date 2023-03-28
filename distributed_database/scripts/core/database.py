@@ -120,11 +120,13 @@ class DBwLock():
         if filter_robot_id is not None:
             assert isinstance(filter_robot_id, int)
         if filter_ts is not None:
-            assert isinstance(filter_ts, rospy.Time)
+            assert isinstance(filter_ts, (rospy.Time, float, int))
             if filter_robot_id is None:
                 rospy.logerr("get_hash_list: ts without robot_id")
                 rospy.signal_shutdown("get_header_list")
                 rospy.spin()
+        if filter_ts is not None and isinstance(filter_ts, (float, int)):
+            filter_ts = rospy.Time.from_sec(filter_ts)
 
         # To avoid inconsistencies, the db is locked while searching
         self.lock.acquire()
@@ -135,7 +137,7 @@ class DBwLock():
                 for header in self.db[robot_id][topic]:
                     msg_content = self.db[robot_id][topic][header]
                     if filter_ts is not None \
-                            and msg_content['ts'] <= filter_ts:
+                            and msg_content.ts <= filter_ts:
                         continue
                     header_list[header] = {'prio': msg_content.priority,
                                            'ts': msg_content.ts}
