@@ -111,7 +111,7 @@ if __name__ == '__main__':
     with open(topic_configs, "r") as f:
         topic_configs = yaml.load(f, Loader=yaml.FullLoader)
 
-    msg_types = du.msg_types(topic_configs)
+    msg_types = du.msg_types(robot_configs, topic_configs)
 
     # Run test cases!
     unittest.main()
