@@ -162,11 +162,12 @@ class DBwLock():
             for topic in self.db[robot_id]:
                 if topic not in ts_dict[robot_id]:
                     ts_dict[robot_id][topic] = -np.inf
-                ts_dict[robot_id][topic] = max(ts_dict[robot_id][topic],
-                                               self.db[robot_id][topic]['ts'])
+                for header in self.db[robot_id][topic]:
+                    msg = self.db[robot_id][topic][header]
+                    ts_dict[robot_id][topic] = max(ts_dict[robot_id][topic],
+                                                   msg.ts.to_sec())
         self.lock.release()
         return ts_dict
-
 
     def headers_not_in_local(self, remote_header_list, newer=False):
         # Compares a remote header list with the local database.
@@ -186,12 +187,14 @@ class DBwLock():
             ts_dict = self.get_ts_dict()
             for h in remote_header_list:
                 h = hash_comm.TsHeader.from_header(h)
-                if h.robot_id not in ts_dict:
-                    missing_headers.append(h)
-                elif h.topic_id not in ts_dict[h.robot_id]:
-                    missing_headers.append(h)
-                elif h.ts > ts_dict[h.robot_id][h.topic_id]:
-                    missing_headers.append(h)
+                r_id, t_id, time = h.get_id_and_time()
+                if r_id not in ts_dict:
+                    missing_headers.append(h.bindigest())
+                elif t_id not in ts_dict[h.robot_id]:
+                    missing_headers.append(h.bindigest())
+                elif time.to_sec() > ts_dict[h.robot_id][h.topic_id]:
+                    missing_headers.append(h.bindigest())
+            return missing_headers
 
     def find_header(self, requested_header):
         assert isinstance(requested_header, bytes)
