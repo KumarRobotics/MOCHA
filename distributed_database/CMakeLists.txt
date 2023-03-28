@@ -55,7 +55,7 @@ find_package(catkin REQUIRED COMPONENTS
 add_message_files(
   FILES
   # Legacy, may be removed in the future
-  Heartbeat.msg
+  Header_pub.msg
 )
 
 ## Generate services in the 'srv' folder

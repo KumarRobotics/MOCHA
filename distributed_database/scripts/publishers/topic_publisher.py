@@ -7,30 +7,24 @@ import rospkg
 import rospy
 import yaml
 import re
-import std_msgs.msg
+import distributed_database.msg
 
 import distributed_database.srv
 
-
-#    def cb(self, data):
-#        # rospy.logwarn(f"cb: {self._topic_name}")
-#        if self._most_recent is None or data.header.stamp > self._most_recent:
-#            self._most_recent = data.header.stamp
-#            self._pub.publish(data)
-#            # rospy.logwarn(f"publishing: {self._topic_name} - {self._most_recent}")
 
 class TopicPublisher():
     def __init__(self, this_robot, target, msg_history="WHOLE_HISTORY"):
 
         self.this_robot = this_robot
 
+
         # Service configuration
         self.__select_service = "integrate_database/SelectDB"
-        self.__get_hash_service = "integrate_database/GetDataHashDB"
+        self.__get_header_service = "integrate_database/GetDataHeaderDB"
 
         try:
             rospy.wait_for_service(self.__select_service)
-            rospy.wait_for_service(self.__get_hash_service)
+            rospy.wait_for_service(self.__get_header_service)
         except rospy.ROSInterruptException as exc:
             rospy.logdebug("Service did not process request: " +
                            str(exc))
@@ -40,8 +34,8 @@ class TopicPublisher():
             self.__select_service, distributed_database.srv.SelectDB
         )
 
-        self.__get_hash_db = rospy.ServiceProxy(
-            self.__get_hash_service, distributed_database.srv.GetDataHashDB
+        self.__get_header_db = rospy.ServiceProxy(
+            self.__get_header_service, distributed_database.srv.GetDataHeaderDB
         )
 
         # List of robots to pull
@@ -49,55 +43,55 @@ class TopicPublisher():
 
         # Publisher creation
         self.publishers = {}
-        self.hash_pub = rospy.Publisher("ddb/topic_publisher/hashes",
-                                        std_msgs.msg.String, queue_size=10)
-        for t in target.keys():
-            robot, topic = re.split(",", t)
+        self.header_pub = rospy.Publisher("ddb/topic_publisher/headers",
+                                          distributed_database.msg.Header_pub,
+                                          queue_size=10)
+        for t in target:
+            robot, robot_id, topic, topic_id, obj = t
             if robot not in self.__robot_list:
-                self.__robot_list.append(robot)
-            self.publishers[t] = {"pub": rospy.Publisher(f"/{robot}{topic}",
-                                                         target[t],
+                self.__robot_list.append(robot_id)
+            self.publishers[(robot_id, topic_id)] = {"pub": rospy.Publisher(f"/{robot}{topic}",
+                                                         obj,
                                                          queue_size=10),
-                                  "ts": -1}
+                                                         "ts": rospy.Time(1, 0)}
+
 
     def run(self):
         rospy.loginfo(f"{self.this_robot} - Topic Publisher - Started")
         rate = rospy.Rate(1)
-        hashes = set()
+        headers = set()
         while not rospy.is_shutdown():
-            for robot in self.__robot_list:
-                hashes_to_get = []
+            for robot_id in self.__robot_list:
+                headers_to_get = []
 
                 try:
-                    answ = self.__select_db(robot, -1, -1)
+                    answ = self.__select_db(robot_id, None, None)
                 except rospy.ServiceException as exc:
                     rospy.logdebug(f"Service did not process request {exc}")
                     continue
-                returned_hashes = answ.hashes
-                if len(returned_hashes) == 0:
+                returned_headers = du.deserialize_headers(answ.headers)
+                if len(returned_headers) == 0:
                     rate.sleep()
                     continue
 
-                for hash_ in returned_hashes:
-                    if hash_ not in hashes:
-                        hashes_to_get.append(hash_)
+                for header_ in returned_headers:
+                    if header_ not in headers:
+                        headers_to_get.append(header_)
 
-                for get_hash in hashes_to_get:
-                    rospy.logdebug(f"Getting hash {get_hash}")
+                for get_header in headers_to_get:
+                    rospy.logdebug(f"Getting headers {get_header}")
                     try:
-                        answ = self.__get_hash_db(get_hash)
+                        answ = self.__get_header_db(get_header)
                     except rospy.ServiceException as exc:
                         rospy.logerr("Service did not process request: " +
                                      str(exc))
                         continue
-                    hashes.add(get_hash)
+                    headers.add(get_header)
 
-                    ans_feat_name, ans_ts, ans_data, _ = du.parse_answer(answ,
-                                                                         msg_types)
-                    robot, feat_id, number = re.split(',', ans_feat_name)
-
+                    ans_robot_id, ans_topic_id, ans_ts, ans_data = du.parse_answer(answ,
+                                                                                   msg_types)
                     for t in self.publishers.keys():
-                        if t == f"{robot},{feat_id}":
+                        if t == (ans_robot_id, ans_topic_id):
                             assert isinstance(ans_data,
                                               self.publishers[t]['pub'].data_class)
                             # FIXME: remove this line once we have proper time
@@ -105,10 +99,12 @@ class TopicPublisher():
                             if ans_ts > self.publishers[t]["ts"]:
                                 self.publishers[t]["ts"] = ans_ts
                                 self.publishers[t]["pub"].publish(ans_data)
-                                self.hash_pub.publish(get_hash)
-                                rospy.logdebug(f"Publishing {ans_feat_name}")
+                                self.header_pub.publish(get_header)
+                                rospy.logdebug(f"Publishing robot_id: {ans_robot_id}" +
+                                               f" - topic: {ans_topic_id}")
                             else:
-                                rospy.logdebug(f"Skipping {ans_feat_name} as there is an old ts")
+                                rospy.logdebug(f"Skipping robot_id: {ans_robot_id}" +
+                                               f" - topic: {ans_topic_id} as there is an old ts")
                 rate.sleep()
 
 
@@ -145,26 +141,25 @@ if __name__ == "__main__":
         topic_configs = yaml.load(f, Loader=yaml.FullLoader)
 
     # Get msg_types dict used to publish the topics
-    msg_types = du.msg_types(topic_configs)
+    msg_types = du.msg_types(robot_configs, topic_configs)
 
     # Flip the dict so that we have name: obj
     msg_objects = {}
-    for msg in msg_types:
-        msg_objects[msg_types[msg]["name"]] = msg_types[msg]["obj"]
+    # for msg in msg_types:
+    #     msg_objects[msg_types[msg]["name"]] = msg_types[msg]["obj"]
 
-    list_of_topics = {}
+    list_of_topics = set()
 
     # Iterate for each robot in robot_configs, and generate the topics
     for robot in robot_configs.keys():
+        robot_id = du.get_robot_id_from_name(robot_configs, robot)
         robot_type = robot_configs[robot]["node-type"]
         topic_list = topic_configs[robot_type]
-        for topic in topic_list:
+        for topic_id, topic in enumerate(topic_list):
             msg_topic = topic["msg_topic"]
-            # join all strings with a /, stripping the leading / from the topic
-            topic_to_publish = ",".join([robot, msg_topic])
-            msg_type = msg_objects[topic["msg_type"]]
-            # msg_obj = msg_objects[msg_type]
-            list_of_topics[topic_to_publish] = msg_type
+            obj = msg_types[robot_id][topic_id]["obj"]
+            robot_tuple = (robot, robot_id, topic["msg_topic"], topic_id, obj)
+            list_of_topics.add(robot_tuple)
 
     pub = TopicPublisher(this_robot, list_of_topics)
     pub.run()
