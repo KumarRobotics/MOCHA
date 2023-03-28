@@ -3,14 +3,16 @@ import hashlib
 import rospy
 import struct
 
+LENGTH = 6
+
+
 class Hash():
-    HASH_LENGTH_HEX = 12
+    HASH_LENGTH = LENGTH
     # Length of the hash in bits
     # We can expect a collision after approx
     # math.sqrt(2**HASH_LENGTH_BITS)
     # https://preshing.com/20110504/hash-collision-probabilities/
-    HASH_LENGTH_BITS = HASH_LENGTH_HEX*4
-    HASH_LENGTH = HASH_LENGTH_HEX
+    HASH_LENGTH_BITS = HASH_LENGTH*8
 
     def __init__(self, data):
         if type(data) != bytes:
@@ -19,17 +21,21 @@ class Hash():
 
     def digest(self):
         h = hashlib.sha256(self.data)
-        hexdigest = h.hexdigest()
-        trimmed_digest = hexdigest[:self.HASH_LENGTH_HEX]
+        hexdigest = h.digest()
+        trimmed_digest = hexdigest[:self.HASH_LENGTH]
         return trimmed_digest
 
     def bindigest(self):
-        return self.digest().encode()
+        return self.digest()
 
 
 class TsHeader():
-    # You cannot call init directly, you need to use a classmethod
+    # Get length in bytes
+    HEADER_LENGTH = LENGTH
+
     def __init__(self, *, robot_id=None, topic_id=None, secs=None, msecs=None):
+        # You should not use this constructor to create the class. Use
+        # from_data or from_header instead
         self.robot_id = robot_id
         self.topic_id = topic_id
         self.secs = secs
