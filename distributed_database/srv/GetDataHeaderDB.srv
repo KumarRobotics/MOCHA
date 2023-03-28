@@ -1,5 +1,6 @@
+uint8[] msg_header
+---
+uint8   robot_id
 uint8   topic_id
 time    timestamp
 uint8[] msg_content
----
-uint8[] new_header

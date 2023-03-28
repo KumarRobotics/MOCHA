@@ -1,7 +1,0 @@
-string msg_hash
----
-string msg_name
-string msg_type_hash
-float64 timestamp
-uint8 ack
-uint8[] msg_content

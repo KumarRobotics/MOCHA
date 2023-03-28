@@ -125,6 +125,7 @@ class DBwLock():
                 rospy.logerr("get_hash_list: ts without robot_id")
                 rospy.signal_shutdown("get_header_list")
                 rospy.spin()
+        # Convert an int or float time into rospy time
         if filter_ts is not None and isinstance(filter_ts, (float, int)):
             filter_ts = rospy.Time.from_sec(filter_ts)
 

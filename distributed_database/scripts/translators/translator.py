@@ -8,11 +8,6 @@ import distributed_database.srv
 import yaml
 import pdb
 
-PRIORITY_LUT = {"NO_PRIORITY": 0,
-                "LOW_PRIORITY": 1,
-                "MEDIUM_PRIORITY": 2,
-                "HIGH_PRIORITY": 3}
-
 class Translator:
     def __init__(self, this_robot, topic_name, prio, msg_type):
         self.__du = du

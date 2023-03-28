@@ -29,9 +29,8 @@ class Test(unittest.TestCase):
         self.dbs = ds.DatabaseServer(robot_configs, topic_configs)
 
         rospy.wait_for_service('~AddUpdateDB')
-        rospy.wait_for_service('~GetDataHashDB')
+        rospy.wait_for_service('~GetDataHeaderDB')
         rospy.wait_for_service('~SelectDB')
-        rospy.wait_for_service('~SetAckBitDB')
 
         # Generate the service calls for all the services
         service_name = '~AddUpdateDB'
@@ -39,50 +38,45 @@ class Test(unittest.TestCase):
                                                 distributed_database.srv.AddUpdateDB,
                                                 persistent=True)
 
-        service_name = '~GetDataHashDB'
-        self.get_data_hash_db = rospy.ServiceProxy(service_name,
-                                                   distributed_database.srv.GetDataHashDB,
-                                                   persistent=True)
+        service_name = '~GetDataHeaderDB'
+        self.get_data_header_db = rospy.ServiceProxy(service_name,
+                                                     distributed_database.srv.GetDataHeaderDB,
+                                                     persistent=True)
 
         service_name = '~SelectDB'
         self.select_db = rospy.ServiceProxy(service_name,
                                             distributed_database.srv.SelectDB,
                                             persistent=True)
 
-        service_name = '~SetAckBitDB'
-        self.toggle_ack_bit_db = rospy.ServiceProxy(service_name,
-                                                    distributed_database.srv.SetAckBitDB,
-                                                    persistent=True)
-
         super().setUp()
 
     def tearDown(self):
         self.add_update_db.close()
-        self.get_data_hash_db.close()
+        self.get_data_header_db.close()
         self.select_db.close()
-        self.toggle_ack_bit_db.close()
         self.dbs.shutdown()
         rospy.sleep(1)
         super().tearDown()
 
     def test_add_retrieve_single_msg(self):
-        # Create a dumb random PointStamped message
+        # Simulate sending a "/pose" message from Charon
         sample_msg = PointStamped()
         sample_msg.header.frame_id = "world"
         sample_msg.point.x = random.random()
         sample_msg.point.y = random.random()
         sample_msg.point.z = random.random()
         sample_msg.header.stamp = rospy.Time.now()
-        topic_name = 'TopicX'
 
+        tid = du.get_topic_id_from_name(robot_configs, topic_configs,
+                                        robot_name, "/pose")
         # Serialize and send through service
         serialized_msg = du.serialize_ros_msg(sample_msg)
+
         try:
-            answ = self.add_update_db(topic_name,
-                                      sample_msg._md5sum,
-                                      0,
+            answ = self.add_update_db(tid,
+                                      rospy.get_rostime(),
                                       serialized_msg)
-            answ_hash = answ.new_hash
+            answ_header = answ.new_header
         except rospy.ServiceException as exc:
             print("Service did not process request: " + str(exc))
             self.assertTrue(False)
@@ -91,25 +85,26 @@ class Test(unittest.TestCase):
 
         # Request the same hash through service
         try:
-            # Keep in mind that hashes need to be str!
-            answ = self.get_data_hash_db(answ_hash)
+            answ = self.get_data_header_db(answ_header)
         except rospy.ServiceException as exc:
             print("Service did not process request: " + str(exc))
             self.assertTrue(False)
 
         # Parse answer and compare results
-        ans_topic_name, ans_ts, ans_data, _ = du.parse_answer(answ,
-                                                              msg_types)
+        _, ans_topic_id, _, ans_data = du.parse_answer(answ,
+                                                       msg_types)
 
-        self.assertEqual(topic_name, ans_topic_name)
+        self.assertEqual(tid, ans_topic_id)
         self.assertEqual(ans_data, sample_msg)
         # print("Received topic:", ans_topic_name)
         # print("ROS msg:", ans_data)
         # print("Timestamp:", ans_ts)
 
     def test_add_select_robot(self):
-        stored_hashes = []
+        stored_headers = []
         for i in range(3):
+            # Sleep is very important to have distinct messages
+            rospy.sleep(0.1)
             # Create a dumb random PointStamped message
             sample_msg = PointStamped()
             sample_msg.header.frame_id = "world"
@@ -117,72 +112,69 @@ class Test(unittest.TestCase):
             sample_msg.point.y = random.random()
             sample_msg.point.z = random.random()
             sample_msg.header.stamp = rospy.Time.now()
-            topic_name = 'topic_name' + str(i)
+            tid = du.get_topic_id_from_name(robot_configs, topic_configs,
+                                            robot_name, "/pose")
 
             # Serialize and send through service
             serialized_msg = du.serialize_ros_msg(sample_msg)
             try:
-                answ = self.add_update_db(topic_name,
-                                          sample_msg._md5sum,
-                                          0,
+                answ = self.add_update_db(tid,
+                                          rospy.get_rostime(),
                                           serialized_msg)
-                answ_hash = answ.new_hash
+                answ_header = answ.new_header
             except rospy.ServiceException as exc:
                 print("Service did not process request: " + str(exc))
                 self.assertTrue(False)
-            stored_hashes.append(answ_hash)
+            stored_headers.append(answ_header)
 
-        # Request the list of hashes through the service
+        # Request the list of headers through the service
         try:
-            # Keep in mind that hashes need to be str!
-            answ = self.select_db("charon", -1, -1)
+            robot_id = du.get_robot_id_from_name(robot_configs, "charon")
+            answ = self.select_db(robot_id, None, None)
         except rospy.ServiceException as exc:
             print("Service did not process request: " + str(exc))
             self.assertTrue(False)
-        returned_hashes = answ.hashes
+        returned_headers = du.deserialize_headers(answ.headers)
 
         # Sort list before comparing
-        stored_hashes.sort()
-        returned_hashes.sort()
-
-        # Parse answer and compare results
-        # print("Stored hashes:", stored_hashes)
-        # print("Returned hashes:", returned_hashes)
-        self.assertEqual(stored_hashes, returned_hashes)
+        stored_headers.sort()
+        returned_headers.sort()
+        self.assertEqual(stored_headers, returned_headers)
 
     def test_insert_storm(self):
-        # Bomb the database with insert petitions, check the number of
-        # hashes afterwards
-        NUM_PROCESSES = 10
-        LOOPS_PER_PROCESS = 20
+        # Bomb the database with insert petitions from different robots,
+        # check the number of headers afterwards
+        NUM_PROCESSES = 100
+        LOOPS_PER_PROCESS = 10
 
         # Spin a number of processes to write into the database
-        def recorder_thread(topic_name):
-            for i in range(LOOPS_PER_PROCESS):
-                sample_msg = PointStamped()
-                sample_msg.header.frame_id = "world"
-                sample_msg.point.x = random.random()
-                sample_msg.point.y = random.random()
-                sample_msg.point.z = random.random()
-                sample_msg.header.stamp = rospy.Time.now()
-                topic_name = topic_name + str(i)
+        def recorder_thread():
+            # Get a random ros time
+            tid = du.get_topic_id_from_name(robot_configs, topic_configs,
+                                            robot_name, "/pose")
+            sample_msg = PointStamped()
+            sample_msg.header.frame_id = "world"
+            sample_msg.point.x = random.random()
+            sample_msg.point.y = random.random()
+            sample_msg.point.z = random.random()
+            sample_msg.header.stamp = rospy.Time.now()
+            # Serialize and send through service
+            serialized_msg = du.serialize_ros_msg(sample_msg)
 
-                # Serialize and send through service
-                serialized_msg = du.serialize_ros_msg(sample_msg)
+            for i in range(LOOPS_PER_PROCESS):
+                timestamp = rospy.Time(random.randint(1, 10000),
+                                       random.randint(0, 1000)*1000000)
                 try:
-                    answ = self.add_update_db(topic_name,
-                                              sample_msg._md5sum,
-                                              0,
-                                              serialized_msg)
+                    _ = self.add_update_db(tid,
+                                           timestamp,
+                                           serialized_msg)
                 except rospy.ServiceException as exc:
                     print("Service did not process request: " + str(exc))
                     self.assertTrue(False)
 
         process_list = []
         for i in range(NUM_PROCESSES):
-            topic_name = "topic" + str(i) + "-"
-            x = multiprocessing.Process(target=recorder_thread,
-                                        args=(topic_name,))
+            x = multiprocessing.Process(target=recorder_thread)
             process_list.append(x)
 
         for p in process_list:
@@ -193,68 +185,15 @@ class Test(unittest.TestCase):
 
         # Get the list of hashes from the DB and count them
         try:
-            answ = self.select_db("charon", -1, -1)
+            robot_id = du.get_robot_id_from_name(robot_configs, "charon")
+            answ = self.select_db(robot_id, None, None)
         except rospy.ServiceException as exc:
             print("Service did not process request: " + str(exc))
             self.assertTrue(False)
-        returned_hashes = answ.hashes
+        returned_headers = du.deserialize_headers(answ.headers)
 
-        self.assertEqual(len(returned_hashes),
+        self.assertEqual(len(returned_headers),
                          NUM_PROCESSES*LOOPS_PER_PROCESS)
-
-    def test_toggle_ack_bit(self):
-        sample_msg = PointStamped()
-        sample_msg.header.frame_id = "world"
-        sample_msg.point.x = random.random()
-        sample_msg.point.y = random.random()
-        sample_msg.point.z = random.random()
-        sample_msg.header.stamp = rospy.Time.now()
-        topic_name = 'topic_name'
-
-        # Serialize and send through service
-        serialized_msg = du.serialize_ros_msg(sample_msg)
-        try:
-            answ = self.add_update_db(topic_name,
-                                      sample_msg._md5sum,
-                                      0,
-                                      serialized_msg)
-            answ_hash = answ.new_hash
-        except rospy.ServiceException as exc:
-            print("Service did not process request: " + str(exc))
-            self.assertTrue(False)
-
-        # Request the same hash through service
-        try:
-            answ = self.get_data_hash_db(answ_hash)
-        except rospy.ServiceException as exc:
-            print("Service did not process request: " + str(exc))
-            self.assertTrue(False)
-
-        # Check that the Ack bit is effectively false
-        _, _, _, ans_ack = du.parse_answer(answ, msg_types)
-        self.assertFalse(ans_ack)
-
-        # Toggle the Ack Bit. This is what the basestation will do to
-        # confirm the reception of the msg
-        try:
-            answ = self.toggle_ack_bit_db(answ_hash)
-        except rospy.ServiceException as exc:
-            print("Service did not process request: " + str(exc))
-            self.assertTrue(False)
-
-        # Changing the Ack bit modifies the hash, and a new hash is
-        # provided
-        new_answ_hash = answ.new_hash
-
-        try:
-            answ = self.get_data_hash_db(new_answ_hash)
-        except rospy.ServiceException as exc:
-            print("Service did not process request: " + str(exc))
-            self.assertTrue(False)
-
-        # Check that the Ack bit is effectively True
-        _, _, _, ans_ack = du.parse_answer(answ, msg_types)
-        self.assertTrue(ans_ack)
 
 
 if __name__ == '__main__':
@@ -290,10 +229,11 @@ if __name__ == '__main__':
     with open(topic_configs, "r") as f:
         topic_configs = yaml.load(f, Loader=yaml.FullLoader)
 
-    msg_types = du.msg_types(topic_configs)
+    msg_types = du.msg_types(robot_configs, topic_configs)
 
     # Set the ~robot_name param to charon
-    rospy.set_param("~robot_name", "charon")
+    robot_name = "charon"
+    rospy.set_param("~robot_name", robot_name)
 
     # Run test cases
     unittest.main()
