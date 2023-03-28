@@ -192,7 +192,8 @@ def msg_types(robot_configs, topic_configs):
             package = importlib.import_module(package_name + '.msg')
             message_type = getattr(package, msg_name)
             msg_types[robot_id][i] = {"dtype": msg_id,
-                                      "obj": message_type}
+                                      "obj": message_type,
+                                      "name": msg}
     return msg_types
 
 def get_priority_number(priority_string):
