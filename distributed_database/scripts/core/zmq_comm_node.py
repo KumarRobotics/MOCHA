@@ -116,7 +116,7 @@ class Comm_node:
 
         # Get an uuid for the message to send
         rnd_uuid = str(uuid.uuid4().hex).encode()
-        msg_id = hash_comm.Hash(rnd_uuid).bindigest()
+        msg_id = hash_comm.Hash(rnd_uuid).digest()
         full_msg = msg_id + msg
         rospy.logdebug(f"{self.this_node} - Node - SENDMSG: Sending ({full_msg})")
         client.send(full_msg)
