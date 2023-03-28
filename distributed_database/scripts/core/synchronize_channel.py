@@ -103,7 +103,9 @@ class RequestHashReply(smach.State):
     def execute(self, userdata):
         deserialized = du.deserialize_headers(userdata.in_answer)
         # print("REQUESTHASH: All ->", deserialized)
-        hash_list = self.dbl.headers_not_in_local(deserialized)
+        # FIXME(fernando): select the synchronization method
+        # depending on the message type
+        hash_list = self.dbl.headers_not_in_local(deserialized, newer=True)
         rospy.logdebug(f"======== - REQUESTHASH: {hash_list}")
         if len(hash_list):
             # rospy.logdebug(f"{self.this_robot} - REQUESTHASH: Unique -> {hash_list}")
