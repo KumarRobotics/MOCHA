@@ -107,28 +107,21 @@ class DBwLock():
         self.lock.release()
         return dbm.header
 
-    def get_header_list(self, filter_robot_id=None, filter_ts=None):
+    def get_header_list(self, filter_robot_id=None, filter_latest=None):
         """ Returns a list with all the headers of the db. The results are
         filtered for a specific robot, or *after* a specific timestamp if
         these fields are available.  To filter by timestamp,
         you should specify a robot. Timestamps are recorded in the robot
         frame (i.e. each robot has different timestamps, so it does not make
         sense to filter by a global timestamp) """
+        if filter_robot_id is not None:
+            assert isinstance(filter_robot_id, int)
+        if filter_latest is not None:
+            assert isinstance(filter_latest, bool)
 
         # Header list is a dict with the headers as keys and the priorities as
         # values
         header_list = {}
-        if filter_robot_id is not None:
-            assert isinstance(filter_robot_id, int)
-        if filter_ts is not None:
-            assert isinstance(filter_ts, (rospy.Time, float, int))
-            if filter_robot_id is None:
-                rospy.logerr("get_hash_list: ts without robot_id")
-                rospy.signal_shutdown("get_header_list")
-                rospy.spin()
-        # Convert an int or float time into rospy time
-        if filter_ts is not None and isinstance(filter_ts, (float, int)):
-            filter_ts = rospy.Time.from_sec(filter_ts)
 
         # To avoid inconsistencies, the db is locked while searching
         self.lock.acquire()
@@ -136,13 +129,20 @@ class DBwLock():
             if filter_robot_id is not None and robot_id != filter_robot_id:
                 continue
             for topic in self.db[robot_id]:
+                if filter_latest:
+                    latest_msg_ts = rospy.Time(1, 0)
+                    latest_msg = None
                 for header in self.db[robot_id][topic]:
                     msg_content = self.db[robot_id][topic][header]
-                    if filter_ts is not None \
-                            and msg_content.ts <= filter_ts:
-                        continue
-                    header_list[header] = {'prio': msg_content.priority,
-                                           'ts': msg_content.ts}
+                    if filter_latest and msg_content.ts > latest_msg_ts:
+                        latest_msg_ts = msg_content.ts
+                        latest_msg = msg_content
+                    if not filter_latest:
+                        header_list[header] = {'prio': msg_content.priority,
+                                               'ts': msg_content.ts}
+                if filter_latest:
+                    header_list[latest_msg.header] = {'prio': latest_msg.priority,
+                                                      'ts': latest_msg.ts}
         self.lock.release()
 
         # Sort the dictionary by value, and get the keys
