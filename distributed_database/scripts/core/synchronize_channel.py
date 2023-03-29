@@ -92,7 +92,7 @@ class RequestHash(smach.State):
 class RequestHashReply(smach.State):
     def __init__(self, outer):
         self.outer = outer
-        smach.State.__init__(self, outcomes=['to_idle',
+        smach.State.__init__(self, outcomes=['to_transmission_end',
                                              'to_get_data'],
                              input_keys=['in_answer'],
                              output_keys=['out_hash_list'])
@@ -111,9 +111,7 @@ class RequestHashReply(smach.State):
             userdata.out_hash_list = hash_list
             return 'to_get_data'
         # We have no hashes. Sync is complete
-        self.outer.client_sync_complete_pub.publish(Time(rospy.get_rostime()))
-        self.outer.sync.reset()
-        return 'to_idle'
+        return 'to_transmission_end'
 
 
 class GetData(smach.State):
@@ -158,8 +156,7 @@ class GetData(smach.State):
 class GetDataReply(smach.State):
     def __init__(self, outer):
         self.outer = outer
-        smach.State.__init__(self, outcomes=['to_idle',
-                                             'to_transmission_end',
+        smach.State.__init__(self, outcomes=['to_transmission_end',
                                              'to_get_more_data'],
                              input_keys=['in_hash_list',
                                          'in_answer',
@@ -299,7 +296,7 @@ class Channel():
 
             smach.StateMachine.add('REQ_HASH_REPLY',
                                    RequestHashReply(self),
-                                   transitions={'to_idle': 'IDLE',
+                                   transitions={'to_transmission_end': 'TRANSMISSION_END',
                                                 'to_get_data': 'GET_DATA'},
                                    remapping={'in_answer': 'sm_answer',
                                               'out_hash_list': 'sm_hash_list'})
@@ -316,8 +313,7 @@ class Channel():
 
             smach.StateMachine.add('GET_DATA_REPLY',
                                    GetDataReply(self),
-                                   transitions={'to_idle': 'IDLE',
-                                                'to_transmission_end': 'TRANSMISSION_END',
+                                   transitions={'to_transmission_end': 'TRANSMISSION_END',
                                                 'to_get_more_data': 'GET_DATA'},
                                    remapping={'in_hash_list': 'sm_hash_list_2',
                                               'in_req_hash': 'sm_req_hash',
