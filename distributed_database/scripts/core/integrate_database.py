@@ -12,10 +12,22 @@ import rospkg
 import rospy
 import yaml
 import std_msgs.msg
+import subprocess
 
 import database_server as ds
 import database_utils as du
 import synchronize_channel as sync
+
+
+def ping(host):
+    command = ["ping", "-c", "1", host]
+    try:
+        result = subprocess.run(command, stdout=subprocess.DEVNULL,
+                                stderr=subprocess.DEVNULL)
+        return result.returncode == 0
+    except Exception as e:
+        print(f"Error pinging {host}: {e}")
+        return False
 
 
 class IntegrateDatabase:
@@ -49,8 +61,17 @@ class IntegrateDatabase:
         if self.node_type not in self.topic_configs.keys():
             self.shutdown("Node type not in config file")
 
+        # Check that we can ping the radios
+        ip = self.robot_configs[self.this_robot]["IP-address"]
+        if not ping(ip):
+            rospy.logerr(f"{self.this_robot} - Integrate - " +
+                         f"Cannot ping self {ip}. Is the radio on?")
+            rospy.signal_shutdown("Cannot ping self")
+            rospy.spin()
+
         # Create a database server object
-        self.DBServer = ds.DatabaseServer(self.robot_configs, self.topic_configs)
+        self.DBServer = ds.DatabaseServer(self.robot_configs,
+                                          self.topic_configs)
 
         self.num_robot_in_comm = 0
 
