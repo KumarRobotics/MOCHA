@@ -23,7 +23,7 @@ HEADER_LENGTH = hc.TsHeader.HEADER_LENGTH
 CHECK_POLL_TIME = 0.1
 CHECK_TRIGGER_TIME = 0.2
 # Timeout value before an answer is considered lost
-CHECK_MAX_TIME = 1
+CHECK_MAX_TIME = 2
 
 # Msg codes that are used during the operation of the communication
 # channel. Important: all codes should be CODE_LENGTH characters
@@ -33,9 +33,8 @@ CODE_LENGTH = 5
 class Comm_msgs(enum.Enum):
     GHEAD = 1
     GDATA = 2
-    SHASH = 3
-    GERRM = 4
-    SERRM = 5
+    DENDT = 3
+    SERRM = 4
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 """ SMACH states for the synchronization state machine"""
@@ -112,7 +111,7 @@ class RequestHashReply(smach.State):
             userdata.out_hash_list = hash_list
             return 'to_get_data'
         # We have no hashes. Sync is complete
-        self.outer.sync_complete_pub.publish(Time(rospy.get_rostime()))
+        self.outer.client_sync_complete_pub.publish(Time(rospy.get_rostime()))
         self.outer.sync.reset()
         return 'to_idle'
 
@@ -160,6 +159,7 @@ class GetDataReply(smach.State):
     def __init__(self, outer):
         self.outer = outer
         smach.State.__init__(self, outcomes=['to_idle',
+                                             'to_transmission_end',
                                              'to_get_more_data'],
                              input_keys=['in_hash_list',
                                          'in_answer',
@@ -178,9 +178,37 @@ class GetDataReply(smach.State):
             userdata.out_hash_list = hash_list
             return 'to_get_more_data'
         else:
-            self.outer.sync_complete_pub.publish(Time(rospy.get_rostime()))
-            self.outer.sync.reset()
-            return 'to_idle'
+            return 'to_transmission_end'
+
+
+class TransmissionEnd(smach.State):
+    def __init__(self, outer):
+        self.outer = outer
+        smach.State.__init__(self, outcomes=['to_idle',
+                                             'to_stopped'])
+
+    def execute(self, userdata):
+        # Request current comm node
+        comm = self.outer.get_comm_node()
+        rospy.logdebug(f"{comm.this_node} - Channel - DENDT")
+        # Ask for hash
+        msg = Comm_msgs.DENDT.name.encode() + self.outer.this_robot.encode()
+        comm.connect_send_message(msg)
+        # Wait for an answer in a polling fashion
+        i = 0
+        while (i < int(CHECK_MAX_TIME/CHECK_POLL_TIME)
+               and not self.outer.sm_shutdown.is_set()):
+            answer = self.outer.client_answer
+            if answer is not None:
+                # We received an ACK
+                self.outer.client_sync_complete_pub.publish(Time(rospy.get_rostime()))
+                break
+            rospy.sleep(CHECK_POLL_TIME)
+            i += 1
+        if self.outer.sm_shutdown.is_set():
+            return 'to_stopped'
+        self.outer.sync.reset()
+        return 'to_idle'
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -250,9 +278,12 @@ class Channel():
         self.sm = smach.StateMachine(outcomes=['failure', 'stopped'])
 
         # Create topic to notify that the transmission ended
-        self.sync_complete_pub = rospy.Publisher(f"ddb/client_sync_complete/{self.target_robot}",
-                                                 Time,
-                                                 queue_size=1)
+        self.client_sync_complete_pub = rospy.Publisher(f"ddb/client_sync_complete/{self.target_robot}",
+                                                        Time,
+                                                        queue_size=1)
+        self.server_sync_complete_pub = rospy.Publisher(f"ddb/server_sync_complete/{self.target_robot}",
+                                                        Time,
+                                                        queue_size=1)
 
         with self.sm:
             smach.StateMachine.add('IDLE',
@@ -286,11 +317,19 @@ class Channel():
             smach.StateMachine.add('GET_DATA_REPLY',
                                    GetDataReply(self),
                                    transitions={'to_idle': 'IDLE',
+                                                'to_transmission_end': 'TRANSMISSION_END',
                                                 'to_get_more_data': 'GET_DATA'},
                                    remapping={'in_hash_list': 'sm_hash_list_2',
                                               'in_req_hash': 'sm_req_hash',
                                               'in_answer': 'sm_answer_2',
                                               'out_hash_list': 'sm_hash_list'})
+
+            smach.StateMachine.add('TRANSMISSION_END',
+                                   TransmissionEnd(self),
+                                   transitions={'to_idle': 'IDLE',
+                                                'to_stopped': 'stopped'})
+
+
 
     def run(self):
         """ Configures the zmq_comm_node and also starts the state
@@ -374,8 +413,12 @@ class Channel():
             except Exception:
                 rospy.logerr(f"{self.this_robot} - Header not found: {r_header}")
                 return Comm_msgs.SERRM.name.encode()
-        if header == Comm_msgs.SHASH.name:
-            pass
-        if header == Comm_msgs.WERRM.name:
-            return Comm_msgs.SERRM.name.encode()
+        if header == Comm_msgs.DENDT.name:
+            target = data
+            if target.decode() != self.target_robot:
+                print(f"{self.this_robot} - Channel - Wrong DENDT -" +
+                             f" Target: {target.decode()} - " +
+                             f"My target: {self.target_robot}")
+            self.server_sync_complete_pub.publish(Time(rospy.get_rostime()))
+            return "Ack".encode()
         return Comm_msgs.SERRM.name.encode()
