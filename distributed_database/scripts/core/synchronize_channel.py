@@ -42,16 +42,15 @@ class Comm_msgs(enum.Enum):
 
 
 class Idle(smach.State):
-    def __init__(self, get_sm_shutdown,
-                 get_comm_node, sync):
-        self.get_sm_shutdown = get_sm_shutdown
-        self.sync = sync
+    def __init__(self, outer):
+        self.outer = outer
         smach.State.__init__(self, outcomes=['to_req_hash',
                                              'to_stopped'])
 
     def execute(self, userdata):
-        while not self.get_sm_shutdown():
-            if self.sync.get_state():
+        while (not self.outer.sm_shutdown.is_set() and
+               not rospy.is_shutdown()):
+            if self.outer.sync.get_state():
                 # trigger sync and reset bistable
                 return 'to_req_hash'
             rospy.sleep(CHECK_TRIGGER_TIME)
@@ -59,43 +58,41 @@ class Idle(smach.State):
 
 
 class RequestHash(smach.State):
-    def __init__(self, get_comm_node, dbl, get_answer,
-            sync):
-        self.get_comm_node = get_comm_node
-        self.dbl = dbl
-        self.get_answer = get_answer
-        self.sync = sync
+    def __init__(self, outer):
+        self.outer = outer
         smach.State.__init__(self,
                              output_keys=['out_answer'],
                              outcomes=['to_idle',
-                                       'to_req_hash_reply'])
+                                       'to_req_hash_reply',
+                                       'to_stopped'])
 
     def execute(self, userdata):
         # Request current comm node
-        comm = self.get_comm_node()
+        comm = self.outer.get_comm_node()
         # Ask server for hash
         msg = Comm_msgs.GHEAD.name.encode()
         comm.connect_send_message(msg)
         # Wait for an answer in a polling fashion
         i = 0
-        while i < int(CHECK_MAX_TIME/CHECK_POLL_TIME):
-            answer = self.get_answer()
+        while (i < int(CHECK_MAX_TIME/CHECK_POLL_TIME)
+               and not self.outer.sm_shutdown.is_set()):
+            answer = self.outer.client_answer
             if answer is not None:
-                rospy.logdebug(f"{comm.this_node} - Channel - REQUESTHASH: {answer}")
+                rospy.logdebug(f"{comm.this_node} - Channel" +
+                               f"- REQUESTHASH: {answer}")
                 userdata.out_answer = answer
                 return 'to_req_hash_reply'
             rospy.sleep(CHECK_POLL_TIME)
             i += 1
-        self.sync.reset()
+        if self.outer.sm_shutdown.is_set():
+            return 'to_stopped'
+        self.outer.sync.reset()
         return 'to_idle'
 
 
 class RequestHashReply(smach.State):
-    def __init__(self, dbl, get_answer, sync, sync_complete_pub):
-        self.dbl = dbl
-        self.get_answer = get_answer
-        self.sync = sync
-        self.sync_complete_pub = sync_complete_pub
+    def __init__(self, outer):
+        self.outer = outer
         smach.State.__init__(self, outcomes=['to_idle',
                                              'to_get_data'],
                              input_keys=['in_answer'],
@@ -106,7 +103,8 @@ class RequestHashReply(smach.State):
         # print("REQUESTHASH: All ->", deserialized)
         # FIXME(fernando): Configure this depending on the message type
         # depending on the message type
-        hash_list = self.dbl.headers_not_in_local(deserialized, newer=True)
+        hash_list = self.outer.dbl.headers_not_in_local(deserialized,
+                                                        newer=True)
         rospy.logdebug(f"======== - REQUESTHASH: {hash_list}")
         if len(hash_list):
             # We have hashes. Go get them
@@ -114,20 +112,17 @@ class RequestHashReply(smach.State):
             userdata.out_hash_list = hash_list
             return 'to_get_data'
         # We have no hashes. Sync is complete
-        self.sync_complete_pub.publish(Time(rospy.get_rostime()))
-        self.sync.reset()
+        self.outer.sync_complete_pub.publish(Time(rospy.get_rostime()))
+        self.outer.sync.reset()
         return 'to_idle'
 
 
 class GetData(smach.State):
-    def __init__(self, get_comm_node,
-                 dbl, get_answer, sync):
-        self.get_comm_node = get_comm_node
-        self.dbl = dbl
-        self.get_answer = get_answer
-        self.sync = sync
+    def __init__(self, outer):
+        self.outer = outer
         smach.State.__init__(self, outcomes=['to_idle',
-                                             'to_get_data_reply'],
+                                             'to_get_data_reply',
+                                             'to_stopped'],
                              input_keys=['in_hash_list'],
                              output_keys=['out_hash_list',
                                           'out_req_hash',
@@ -135,7 +130,7 @@ class GetData(smach.State):
 
     def execute(self, userdata):
         # Request current comm node
-        comm = self.get_comm_node()
+        comm = self.outer.get_comm_node()
         hash_list = userdata.in_hash_list.copy()
         # Get the first hash of the list, the one with the higher priority
         req_hash = hash_list.pop(0)
@@ -145,8 +140,9 @@ class GetData(smach.State):
         comm.connect_send_message(msg)
         # Wait for an answer in a polling fashion
         i = 0
-        while i < int(CHECK_MAX_TIME/CHECK_POLL_TIME):
-            answer = self.get_answer()
+        while (i < int(CHECK_MAX_TIME/CHECK_POLL_TIME)
+               and not self.outer.sm_shutdown.is_set()):
+            answer = self.outer.client_answer
             if answer is not None:
                 userdata.out_hash_list = userdata.in_hash_list
                 userdata.out_answer = answer
@@ -154,16 +150,15 @@ class GetData(smach.State):
                 return 'to_get_data_reply'
             rospy.sleep(CHECK_POLL_TIME)
             i += 1
-        self.sync.reset()
+        if self.outer.sm_shutdown.is_set():
+            return 'to_stopped'
+        self.outer.sync.reset()
         return 'to_idle'
 
 
 class GetDataReply(smach.State):
-    def __init__(self, dbl, get_answer, sync, sync_complete_pub):
-        self.dbl = dbl
-        self.get_answer = get_answer
-        self.sync = sync
-        self.sync_complete_pub = sync_complete_pub
+    def __init__(self, outer):
+        self.outer = outer
         smach.State.__init__(self, outcomes=['to_idle',
                                              'to_get_more_data'],
                              input_keys=['in_hash_list',
@@ -175,7 +170,7 @@ class GetDataReply(smach.State):
         # store result in db
         dbm = du.unpack_data(userdata.in_req_hash, userdata.in_answer)
         hash_list = userdata.in_hash_list.copy()
-        self.dbl.add_modify_data(dbm)
+        self.outer.dbl.add_modify_data(dbm)
         hash_list.remove(userdata.in_req_hash)
         # rospy.logdebug(f"HASH_LIST {hash_list} REQ_HASH {userdata.in_req_hash}")
         # Transition back
@@ -183,8 +178,8 @@ class GetDataReply(smach.State):
             userdata.out_hash_list = hash_list
             return 'to_get_more_data'
         else:
-            self.sync_complete_pub.publish(Time(rospy.get_rostime()))
-            self.sync.reset()
+            self.outer.sync_complete_pub.publish(Time(rospy.get_rostime()))
+            self.outer.sync.reset()
             return 'to_idle'
 
 
@@ -245,7 +240,8 @@ class Channel():
 
         # Change to false before running the state machine. Otherwise,
         # when the SM reaches the idle state it will stop
-        self.sm_shutdown = True
+        self.sm_shutdown = threading.Event()
+        self.sm_shutdown.set()
         # The answer of the client will be written here
         self.client_answer = None
         # The pointer of the comm node will be stored here
@@ -254,53 +250,41 @@ class Channel():
         self.sm = smach.StateMachine(outcomes=['failure', 'stopped'])
 
         # Create topic to notify that the transmission ended
-        self.sync_complete_pub = rospy.Publisher(f"ddb/sync_complete/{self.target_robot}",
+        self.sync_complete_pub = rospy.Publisher(f"ddb/client_sync_complete/{self.target_robot}",
                                                  Time,
                                                  queue_size=1)
 
         with self.sm:
             smach.StateMachine.add('IDLE',
-                                   Idle(self.get_sm_shutdown,
-                                        self.get_comm_node,
-                                        self.sync),
+                                   Idle(self),
                                    transitions={'to_req_hash': 'REQ_HASH',
                                                 'to_stopped': 'stopped'})
             smach.StateMachine.add('REQ_HASH',
-                                   RequestHash(self.get_comm_node,
-                                               self.dbl,
-                                               self.get_answer,
-                                               self.sync),
+                                   RequestHash(self),
                                    transitions={'to_idle': 'IDLE',
-                                                'to_req_hash_reply': 'REQ_HASH_REPLY'},
+                                                'to_req_hash_reply': 'REQ_HASH_REPLY',
+                                                'to_stopped': 'stopped'},
                                    remapping={'out_answer': 'sm_answer'})
 
             smach.StateMachine.add('REQ_HASH_REPLY',
-                                   RequestHashReply(self.dbl,
-                                                    self.get_answer,
-                                                    self.sync,
-                                                    self.sync_complete_pub),
+                                   RequestHashReply(self),
                                    transitions={'to_idle': 'IDLE',
                                                 'to_get_data': 'GET_DATA'},
                                    remapping={'in_answer': 'sm_answer',
                                               'out_hash_list': 'sm_hash_list'})
 
             smach.StateMachine.add('GET_DATA',
-                                   GetData(self.get_comm_node,
-                                           self.dbl,
-                                           self.get_answer,
-                                           self.sync),
+                                   GetData(self),
                                    transitions={'to_idle': 'IDLE',
-                                                'to_get_data_reply': 'GET_DATA_REPLY'},
+                                                'to_get_data_reply': 'GET_DATA_REPLY',
+                                                'to_stopped': 'stopped'},
                                    remapping={'in_hash_list': 'sm_hash_list',
                                               'out_hash_list': 'sm_hash_list_2',
                                               'out_req_hash': 'sm_req_hash',
                                               'out_answer': 'sm_answer_2' })
 
             smach.StateMachine.add('GET_DATA_REPLY',
-                                   GetDataReply(self.dbl,
-                                                self.get_answer,
-                                                self.sync,
-                                                self.sync_complete_pub),
+                                   GetDataReply(self),
                                    transitions={'to_idle': 'IDLE',
                                                 'to_get_more_data': 'GET_DATA'},
                                    remapping={'in_hash_list': 'sm_hash_list_2',
@@ -319,14 +303,16 @@ class Channel():
                                                  self.callback_client,
                                                  self.callback_server)
         # Unset this flag before starting the SM thread
-        self.sm_shutdown = False
-        th = threading.Thread(target=self.sm_thread, args=())
-        th.setDaemon(True)
-        th.start()
+        self.sm_shutdown.clear()
+        self.th = threading.Thread(target=self.sm_thread, args=())
+        self.th.setDaemon(True)
+        self.th.start()
 
     def stop(self):
         # Set the flag and wait until the state machine finishes
-        self.sm_shutdown = True
+        self.sm_shutdown.set()
+        self.th.join()
+
 
     def sm_thread(self):
         # Start the state machine and wait until it ends
@@ -338,13 +324,8 @@ class Channel():
             rospy.logerr(exit_msg)
         elif outcome == 'stopped':
             rospy.logwarn(exit_msg)
+        # Terminate the comm node once the state machine ends
         self.comm_node.terminate()
-
-    def get_answer(self):
-        return self.client_answer
-
-    def get_sm_shutdown(self):
-        return self.sm_shutdown
 
     def get_comm_node(self):
         if not self.comm_node:
@@ -360,7 +341,7 @@ class Channel():
             self.sync.set()
 
     def callback_client(self, msg):
-        if not msg is None:
+        if msg is not None:
             rospy.logdebug(f"{self.this_robot} - Channel - CALLBACK_CLIENT: len: {len(msg)}")
         else:
             rospy.logdebug(f"{self.this_robot} - Channel - CALLBACK_CLIENT - None")
@@ -383,19 +364,18 @@ class Channel():
             r_header = data
             # Returns a packed data for the requires header
             # One header at a time
-            pdb.set_trace
             if len(data) != HEADER_LENGTH:
                 rospy.logerr(f"{self.this_robot} - Wrong header length: {len(data)}")
-                return Comm_msgs.SERRM.name
+                return Comm_msgs.SERRM.name.encode()
             try:
                 dbm = self.dbl.find_header(r_header)
                 packed = du.pack_data(dbm)
                 return packed
             except Exception:
                 rospy.logerr(f"{self.this_robot} - Header not found: {r_header}")
-                return Comm_msgs.SERRM.name
+                return Comm_msgs.SERRM.name.encode()
         if header == Comm_msgs.SHASH.name:
             pass
         if header == Comm_msgs.WERRM.name:
-            return Comm_msgs.SERRM.name
-        return Comm_msgs.SERRM.name
+            return Comm_msgs.SERRM.name.encode()
+        return Comm_msgs.SERRM.name.encode()
