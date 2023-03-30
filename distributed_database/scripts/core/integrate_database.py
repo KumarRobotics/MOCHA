@@ -37,6 +37,8 @@ class IntegrateDatabase:
         self.this_robot = rospy.get_param("~robot_name")
         self.rssi_threshold = rospy.get_param("~rssi_threshold", 20)
         self.all_channels = []
+        rospy.loginfo(f"{self.this_robot} - Integrate - " +
+                      f"RSSI threshold: {self.rssi_threshold}")
 
         # Load and check robot configs
         self.robot_configs_file = rospy.get_param("~robot_configs")
