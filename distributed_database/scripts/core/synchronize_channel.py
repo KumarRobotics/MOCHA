@@ -23,10 +23,6 @@ HEADER_LENGTH = hc.TsHeader.HEADER_LENGTH
 # use this time
 CHECK_POLL_TIME = 0.2
 CHECK_TRIGGER_TIME = 0.05
-# Timeout value before an answer is considered lost.
-# Important, this is linked to SEND_TIMEOUT in the zmq comm node, and should not
-# be smaller than SEND_TIMEOUT*REQUEST_RETRIES
-CHECK_MAX_TIME = 6
 
 # Msg codes that are used during the operation of the communication
 # channel. Important: all codes should be CODE_LENGTH characters
@@ -80,7 +76,7 @@ class RequestHash(smach.State):
         comm.connect_send_message(msg)
         # Wait for an answer in a polling fashion
         i = 0
-        while (i < int(CHECK_MAX_TIME/CHECK_POLL_TIME)
+        while (i < int(self.outer.client_timeout/CHECK_POLL_TIME)
                and not self.outer.sm_shutdown.is_set()):
             answer = self.outer.client_answer
             if answer is not None:
@@ -151,7 +147,7 @@ class GetData(smach.State):
         comm.connect_send_message(msg)
         # Wait for an answer in a polling fashion
         i = 0
-        while (i < int(CHECK_MAX_TIME/CHECK_POLL_TIME)
+        while (i < int(self.outer.client_timeout/CHECK_POLL_TIME)
                and not self.outer.sm_shutdown.is_set()):
             answer = self.outer.client_answer
             if answer is not None:
@@ -214,7 +210,7 @@ class TransmissionEnd(smach.State):
         comm.connect_send_message(msg)
         # Wait for an answer in a polling fashion
         i = 0
-        while (i < int(CHECK_MAX_TIME/CHECK_POLL_TIME)
+        while (i < int(self.outer.client_timeout/CHECK_POLL_TIME)
                and not self.outer.sm_shutdown.is_set()):
             answer = self.outer.client_answer
             if answer is not None:
@@ -261,12 +257,15 @@ class Bistable():
 # Channel class
 
 class Channel():
-    def __init__(self, dbl, this_robot, target_robot, robot_configs):
+    def __init__(self, dbl, this_robot,
+                 target_robot, robot_configs,
+                 client_timeout):
         # Check input arguments
         assert type(dbl) is db.DBwLock
         assert type(this_robot) is str
         assert type(target_robot) is str
         assert type(robot_configs) is dict
+        assert type(client_timeout) is float or type(client_timeout) is int
 
         # Override smach logger to use rospy loggers
         # Use rospy.logdebug for smach info as it is too verbose
@@ -280,6 +279,9 @@ class Channel():
         self.dbl = dbl
         # Config file used to fetch configurations
         self.robot_configs = robot_configs
+
+        # Client timeout defines the time before an answer is considered lost
+        self.client_timeout = client_timeout
 
         # Bistable used to start the synchronization. It will be enabled
         # by self.start_sync(), and it will be disabled inside the state
@@ -371,7 +373,8 @@ class Channel():
                                                  self.target_robot,
                                                  self.robot_configs,
                                                  self.callback_client,
-                                                 self.callback_server)
+                                                 self.callback_server,
+                                                 self.client_timeout)
         # Unset this flag before starting the SM thread
         self.sm_shutdown.clear()
         self.th = threading.Thread(target=self.sm_thread, args=())
@@ -406,7 +409,7 @@ class Channel():
 
     def trigger_sync(self):
         if self.sync.get_state():
-            rospy.logerr(f"{self.this_robot} - Channel - Sync has been already requested")
+            rospy.logwarn(f"{self.this_robot} - Channel - Sync has been already requested")
         else:
             self.sync.set()
 

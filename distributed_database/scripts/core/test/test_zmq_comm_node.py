@@ -35,21 +35,24 @@ class Test(unittest.TestCase):
         self.answer = None
 
         def cb_groundstation(value):
-            rospy.logdebug(f"cb_basestation")
+            rospy.logdebug("cb_groundstation")
             self.answer = value
 
         def cb_charon(value):
-            # This function is called upon reception of a message by charon. The return
-            # value is transmitted as answer to the original message.
+            # This function is called upon reception of a message by charon.
+            # The return value is transmitted as answer to the original
+            # message.
             rospy.logdebug(f"cb_charon: {value}")
             return value
 
         # Create the two robots
         node_groundstation = zmq_comm_node.Comm_node(
-            "basestation", "charon", robot_configs, cb_groundstation, None
+            "basestation", "charon", robot_configs,
+            cb_groundstation, cb_groundstation, 2
         )
         node_charon = zmq_comm_node.Comm_node(
-            "charon", "basestation", robot_configs, None, cb_charon
+            "charon", "basestation", robot_configs,
+            cb_charon, cb_charon, 2
         )
 
         # Generate random message
@@ -78,7 +81,8 @@ if __name__ == "__main__":
     import zmq_comm_node
 
     # Create a ROS node using during the test
-    rospy.init_node("test_zmq_comm_node", log_level=rospy.DEBUG, anonymous=False)
+    rospy.init_node("test_zmq_comm_node",
+                    log_level=rospy.DEBUG, anonymous=False)
 
     # Get the default path from the ddb_path
     robot_configs_default = os.path.join(ddb_path,
