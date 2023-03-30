@@ -148,7 +148,7 @@ class IntegrateDatabase:
         if rssi > self.rssi_threshold:
             self.num_robot_in_comm += 1
             try:
-                rospy.loginfo(f"{self.this_robot}: Triggering communication with {comm_node.target_robot}")
+                rospy.loginfo(f"{self.this_robot} <- {comm_node.target_robot}: Triggering comms")
                 comm_node.trigger_sync()
             except:
                 traceback.print_exception(*sys.exc_info())
