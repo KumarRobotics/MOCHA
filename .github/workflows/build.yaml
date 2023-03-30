@@ -24,7 +24,7 @@ jobs:
         run: |
           apt-get update
           apt-get install -qy g++ libeigen3-dev git python3-catkin-tools
-          apt-get install -qy python3-colorama python3-zmq
+          apt-get install -qy python3-colorama python3-zmq python3-lz4
           rosdep update
           rosdep install --from-paths . --ignore-src -y -r --as-root apt:false
 
