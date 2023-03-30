@@ -57,6 +57,7 @@ add_message_files(
   # Legacy, may be removed in the future
   Header_pub.msg
   SM_state.msg
+  Client_stats.msg
 )
 
 ## Generate services in the 'srv' folder

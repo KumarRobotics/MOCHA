@@ -3,11 +3,10 @@ import enum
 import pdb
 import threading
 import uuid
-
 import rospy
 import zmq
-
 import hash_comm
+import distributed_database.msg
 
 HASH_LENGTH = hash_comm.Hash.HASH_LENGTH
 
@@ -62,6 +61,12 @@ class Comm_node:
         self.client_callback = client_callback
         self.server_callback = server_callback
         self.client_timeout = client_timeout
+
+        # Create a publisher for the client bandwidth
+        self.pub_client_stats = rospy.Publisher(f"ddb/client_stats/{self.client_node}",
+                                                distributed_database.msg.Client_stats,
+                                                queue_size=10)
+        self.pub_client_count = 0
 
         # Flag to trigger when an answer is received
         self.answer_received = False
@@ -141,11 +146,22 @@ class Comm_node:
                 stop_ts = rospy.Time.now()
                 time_d = stop_ts - start_ts
                 time_s = float(time_d.to_sec())
-                if (len(reply) > 10*1024 and SHOW_BANDWIDTH):
+                bw = len(reply)/time_s/1024/1024
+                stats = distributed_database.msg.Client_stats()
+                stats.header.stamp = rospy.Time.now()
+                stats.header.frame_id = self.this_node
+                stats.header.seq = self.pub_client_count
+                self.pub_client_count += 1
+                stats.msg = msg[:5].decode("utf-8")
+                stats.rtt = time_s
+                stats.bw = bw
+                stats.answ_len = len(reply)
+                self.pub_client_stats.publish(stats)
+                if len(reply) > 10*1024 and SHOW_BANDWIDTH:
                     rospy.loginfo(f"{self.this_node} - Node - " +
                                   f"SENDMSG: Data RTT: {time_s}")
                     rospy.loginfo(f"{self.this_node} - Node - SENDMSG: " +
-                                  f"BW: {len(reply)/time_s/1024/1024}" +
+                                  f"BW: {bw}" +
                                   "MBytes/s")
                 self.client_callback(data)
             else:
