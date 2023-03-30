@@ -84,7 +84,6 @@ class Comm_node:
         if not isinstance(msg, bytes):
             rospy.logdebug(f"{self.this_node} - Node - SENDMSG: " +
                            "msg has to be bytes")
-            self.client_callback(None)
             return
 
         # Check that we are in the right state
@@ -92,7 +91,6 @@ class Comm_node:
         if self.syncStatus != SyncStatus.IDLE:
             rospy.logdebug(f"{self.this_node} - Node - SENDMSG: " +
                            "Sync is running, abort")
-            self.client_callback(None)
             return
         self.client_thread = SyncStatus.SYNCHRONIZING
         self.syncStatus_lock.release()
