@@ -21,10 +21,12 @@ HEADER_LENGTH = hc.TsHeader.HEADER_LENGTH
 
 # When actively polling for an answer or for a changement in variable,
 # use this time
-CHECK_POLL_TIME = 0.05
-CHECK_TRIGGER_TIME = 0.2
-# Timeout value before an answer is considered lost
-CHECK_MAX_TIME = 1
+CHECK_POLL_TIME = 0.2
+CHECK_TRIGGER_TIME = 0.05
+# Timeout value before an answer is considered lost.
+# Important, this is linked to SEND_TIMEOUT in the zmq comm node, and should not
+# be smaller than SEND_TIMEOUT*REQUEST_RETRIES
+CHECK_MAX_TIME = 6
 
 # Msg codes that are used during the operation of the communication
 # channel. Important: all codes should be CODE_LENGTH characters
@@ -404,7 +406,7 @@ class Channel():
 
     def trigger_sync(self):
         if self.sync.get_state():
-            rospy.logdebug(f"{self.this_robot} - Channel - Sync has been already requested")
+            rospy.logerr(f"{self.this_robot} - Channel - Sync has been already requested")
         else:
             self.sync.set()
 
