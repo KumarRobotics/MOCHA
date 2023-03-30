@@ -76,7 +76,9 @@ class RequestHash(smach.State):
         comm.connect_send_message(msg)
         # Wait for an answer in a polling fashion
         i = 0
-        while (i < int(self.outer.client_timeout/CHECK_POLL_TIME)
+        # Important: the <= is not a typo. We want one iteration more of the
+        # loop to wait for the timeout
+        while (i <= int(self.outer.client_timeout/CHECK_POLL_TIME)
                and not self.outer.sm_shutdown.is_set()):
             answer = self.outer.client_answer
             if answer is not None:
@@ -147,7 +149,9 @@ class GetData(smach.State):
         comm.connect_send_message(msg)
         # Wait for an answer in a polling fashion
         i = 0
-        while (i < int(self.outer.client_timeout/CHECK_POLL_TIME)
+        # Important: the <= is not a typo. We want one iteration more of the
+        # loop to wait for the timeout
+        while (i <= int(self.outer.client_timeout/CHECK_POLL_TIME)
                and not self.outer.sm_shutdown.is_set()):
             answer = self.outer.client_answer
             if answer is not None:
@@ -210,7 +214,9 @@ class TransmissionEnd(smach.State):
         comm.connect_send_message(msg)
         # Wait for an answer in a polling fashion
         i = 0
-        while (i < int(self.outer.client_timeout/CHECK_POLL_TIME)
+        # Important: the <= is not a typo. We want one iteration more of the
+        # loop to wait for the timeout
+        while (i <= int(self.outer.client_timeout/CHECK_POLL_TIME)
                and not self.outer.sm_shutdown.is_set()):
             answer = self.outer.client_answer
             if answer is not None:
@@ -395,7 +401,7 @@ class Channel():
         # Start the state machine and wait until it ends
         rospy.logwarn(f"Channel {self.this_robot} -> {self.target_robot} started")
         outcome = self.sm.execute()
-        exit_msg = f"Channel {self.this_robot} - {self.target_robot}" + \
+        exit_msg = f"Channel {self.this_robot} -> {self.target_robot}" + \
             f" finished with outcome: {outcome}"
         if outcome == 'failure':
             rospy.logerr(exit_msg)
@@ -413,7 +419,7 @@ class Channel():
 
     def trigger_sync(self):
         if self.sync.get_state():
-            rospy.logwarn(f"{self.this_robot} - Channel - Sync has been already requested")
+            rospy.logwarn(f"{self.this_robot} <- {self.target_robot}: Channel Busy")
         else:
             self.sync.set()
 
