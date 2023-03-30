@@ -17,6 +17,8 @@ import hash_comm
 
 HASH_LENGTH = hash_comm.Hash.HASH_LENGTH
 
+SHOW_BANDWIDTH=False
+
 
 class SyncStatus(enum.Enum):
     IDLE = 0
@@ -79,7 +81,7 @@ class Comm_node:
 
     def connect_send_message(self, msg):
         # TODO keep connection open instead of opening in each call
-        SEND_TIMEOUT = 200
+        SEND_TIMEOUT = 2000
         REQUEST_RETRIES = 3
 
         # Msg check
@@ -141,7 +143,11 @@ class Comm_node:
                         f"{self.this_node} - Node - SENDMSG: Server replied ({len(reply)} bytes)"
                     )
                     stop_ts = rospy.Time.now()
-                    # rospy.loginfo(f"{self.this_node} - Node - SENDMSG: RTT: {(stop_ts - start_ts)/1000000}")
+                    time_d = stop_ts - start_ts
+                    time_s =  float(time_d.to_sec())
+                    if (len(reply) > 10*1024 and SHOW_BANDWIDTH):
+                        rospy.loginfo(f"{self.this_node} - Node - SENDMSG: Data RTT: {time_d.to_sec()}")
+                        rospy.loginfo(f"{self.this_node} - Node - SENDMSG: BW: {len(reply)/time_s/1024/1024} MBytes/s")
                     start_ts = None
                     self.client_callback(data)
                     break
@@ -182,7 +188,9 @@ class Comm_node:
         self.syncStatus_lock.release()
 
     def server_thread(self):
-        RECV_TIMEOUT = 200
+        # This timer does not have a big impact as it is only the timer until the recv times out
+        # Most calls from the client are very lightweight
+        RECV_TIMEOUT = 1000
         self.server = self.context.socket(zmq.REP)
         self.server.RCVTIMEO = RECV_TIMEOUT
 
@@ -195,9 +203,9 @@ class Comm_node:
                 request = self.server.recv()
             except zmq.ZMQError as e:
                 if e.errno == zmq.EAGAIN:
-                    rospy.logdebug(
-                        f"{self.this_node} - Node - SERVER_RUNNING: {self.server_running}"
-                    )
+                    # rospy.logdebug(
+                    #     f"{self.this_node} - Node - SERVER_RUNNING: {self.server_running}"
+                    # )
                     continue
                 else:
                     sys.exit("SERVER unknown error")

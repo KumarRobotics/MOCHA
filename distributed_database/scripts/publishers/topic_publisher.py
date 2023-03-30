@@ -58,7 +58,7 @@ class TopicPublisher():
 
     def run(self):
         rospy.loginfo(f"{self.this_robot} - Topic Publisher - Started")
-        rate = rospy.Rate(1)
+        rate = rospy.Rate(10)
         headers = set()
         while not rospy.is_shutdown():
             for robot_id in self.__robot_list:
