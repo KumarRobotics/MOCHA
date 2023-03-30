@@ -169,6 +169,7 @@ class Comm_node:
                 client.connect(server_endpoint)
                 poll.register(client, zmq.POLLIN)
                 client.send(full_msg)
+        client.close()
         self.syncStatus_lock.acquire()
         self.syncStatus = SyncStatus.IDLE
         self.syncStatus_lock.release()
