@@ -10,7 +10,8 @@ import zmq_comm_node
 import logging
 import rospy
 import pdb
-from std_msgs.msg import Time
+from std_msgs.msg import Time, String
+from distributed_database.msg import SM_state
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # General configuration variables
@@ -23,7 +24,7 @@ HEADER_LENGTH = hc.TsHeader.HEADER_LENGTH
 CHECK_POLL_TIME = 0.1
 CHECK_TRIGGER_TIME = 0.2
 # Timeout value before an answer is considered lost
-CHECK_MAX_TIME = 2
+CHECK_MAX_TIME = 1
 
 # Msg codes that are used during the operation of the communication
 # channel. Important: all codes should be CODE_LENGTH characters
@@ -47,12 +48,15 @@ class Idle(smach.State):
                                              'to_stopped'])
 
     def execute(self, userdata):
+        self.outer.publishState("Idle Start")
         while (not self.outer.sm_shutdown.is_set() and
                not rospy.is_shutdown()):
             if self.outer.sync.get_state():
                 # trigger sync and reset bistable
+                self.outer.publishState("Idle to RequestHash")
                 return 'to_req_hash'
             rospy.sleep(CHECK_TRIGGER_TIME)
+        self.outer.publishState("Idle to Stopped")
         return 'to_stopped'
 
 
@@ -66,6 +70,7 @@ class RequestHash(smach.State):
                                        'to_stopped'])
 
     def execute(self, userdata):
+        self.outer.publishState("RequestHash Start")
         # Request current comm node
         comm = self.outer.get_comm_node()
         # Ask server for hash
@@ -80,12 +85,15 @@ class RequestHash(smach.State):
                 rospy.logdebug(f"{comm.this_node} - Channel" +
                                f"- REQUESTHASH: {answer}")
                 userdata.out_answer = answer
+                self.outer.publishState("RequestHash to Reply")
                 return 'to_req_hash_reply'
             rospy.sleep(CHECK_POLL_TIME)
             i += 1
         if self.outer.sm_shutdown.is_set():
+            self.outer.publishState("RequestHash to Stopped")
             return 'to_stopped'
         self.outer.sync.reset()
+        self.outer.publishState("RequestHash to Idle")
         return 'to_idle'
 
 
@@ -98,6 +106,7 @@ class RequestHashReply(smach.State):
                              output_keys=['out_hash_list'])
 
     def execute(self, userdata):
+        self.outer.publishState("GetHashReply Start")
         deserialized = du.deserialize_headers(userdata.in_answer)
         # print("REQUESTHASH: All ->", deserialized)
         # FIXME(fernando): Configure this depending on the message type
@@ -109,8 +118,10 @@ class RequestHashReply(smach.State):
             # We have hashes. Go get them
             # rospy.logdebug(f"{self.this_robot} - REQUESTHASH: Unique -> {hash_list}")
             userdata.out_hash_list = hash_list
+            self.outer.publishState("GetHashReply to GetData")
             return 'to_get_data'
         # We have no hashes. Sync is complete
+        self.outer.publishState("GetHashReply to TransmissionEnd")
         return 'to_transmission_end'
 
 
@@ -126,6 +137,7 @@ class GetData(smach.State):
                                           'out_answer'])
 
     def execute(self, userdata):
+        self.outer.publishState("GetData Start")
         # Request current comm node
         comm = self.outer.get_comm_node()
         hash_list = userdata.in_hash_list.copy()
@@ -144,12 +156,15 @@ class GetData(smach.State):
                 userdata.out_hash_list = userdata.in_hash_list
                 userdata.out_answer = answer
                 userdata.out_req_hash = req_hash
+                self.outer.publishState("GetData to GetDataReply")
                 return 'to_get_data_reply'
             rospy.sleep(CHECK_POLL_TIME)
             i += 1
         if self.outer.sm_shutdown.is_set():
+            self.outer.publishState("GetData to Stopped")
             return 'to_stopped'
         self.outer.sync.reset()
+        self.outer.publishState("GetData to Idle")
         return 'to_idle'
 
 
@@ -164,6 +179,7 @@ class GetDataReply(smach.State):
                              output_keys=['out_hash_list'])
 
     def execute(self, userdata):
+        self.outer.publishState("GetDataReply Start")
         # store result in db
         dbm = du.unpack_data(userdata.in_req_hash, userdata.in_answer)
         hash_list = userdata.in_hash_list.copy()
@@ -173,8 +189,10 @@ class GetDataReply(smach.State):
         # Transition back
         if hash_list:
             userdata.out_hash_list = hash_list
+            self.outer.publishState("GetDataReply to GetMoreData")
             return 'to_get_more_data'
         else:
+            self.outer.publishState("GetDataReply to TransmissionEnd")
             return 'to_transmission_end'
 
 
@@ -185,6 +203,7 @@ class TransmissionEnd(smach.State):
                                              'to_stopped'])
 
     def execute(self, userdata):
+        self.outer.publishState("TransmissionEnd Start")
         # Request current comm node
         comm = self.outer.get_comm_node()
         rospy.logdebug(f"{comm.this_node} - Channel - DENDT")
@@ -203,8 +222,10 @@ class TransmissionEnd(smach.State):
             rospy.sleep(CHECK_POLL_TIME)
             i += 1
         if self.outer.sm_shutdown.is_set():
+            self.outer.publishState("TransmissionEnd to Stopped")
             return 'to_stopped'
         self.outer.sync.reset()
+        self.outer.publishState("TransmissionEnd to Idle")
         return 'to_idle'
 
 
@@ -282,6 +303,11 @@ class Channel():
                                                         Time,
                                                         queue_size=1)
 
+        # Create a topic that prints the current state of the state machine
+        self.sm_state_pub = rospy.Publisher(f"ddb/sm_state/{self.target_robot}",
+                                            SM_state,
+                                            queue_size=1)
+
         with self.sm:
             smach.StateMachine.add('IDLE',
                                    Idle(self),
@@ -325,7 +351,14 @@ class Channel():
                                    transitions={'to_idle': 'IDLE',
                                                 'to_stopped': 'stopped'})
 
-
+    def publishState(self, msg):
+        """ Publish the string msg (where the state message will be stored)
+        with a timestamp"""
+        assert type(msg) is str
+        state_msg = SM_state()
+        state_msg.state = msg
+        state_msg.ts = rospy.Time.now()
+        self.sm_state_pub.publish(state_msg)
 
     def run(self):
         """ Configures the zmq_comm_node and also starts the state
