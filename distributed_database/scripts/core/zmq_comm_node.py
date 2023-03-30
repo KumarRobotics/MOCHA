@@ -68,9 +68,6 @@ class Comm_node:
                                                 queue_size=10)
         self.pub_client_count = 0
 
-        # Flag to trigger when an answer is received
-        self.answer_received = False
-
         self.syncStatus = SyncStatus.IDLE
         self.syncStatus_lock = threading.Lock()
 
@@ -87,6 +84,7 @@ class Comm_node:
         if not isinstance(msg, bytes):
             rospy.logdebug(f"{self.this_node} - Node - SENDMSG: " +
                            "msg has to be bytes")
+            self.client_callback(None)
             return
 
         # Check that we are in the right state
@@ -94,6 +92,7 @@ class Comm_node:
         if self.syncStatus != SyncStatus.IDLE:
             rospy.logdebug(f"{self.this_node} - Node - SENDMSG: " +
                            "Sync is running, abort")
+            self.client_callback(None)
             return
         self.client_thread = SyncStatus.SYNCHRONIZING
         self.syncStatus_lock.release()
@@ -108,10 +107,8 @@ class Comm_node:
             + str(int(target_robot["base-port"]) + port_offset)
         )
 
-        rospy.logdebug(
-            f"{self.this_node} - Node - SENDMSG: " +
-            f"Connecting to server {server_endpoint}"
-        )
+        rospy.logdebug(f"{self.this_node} - Node - SENDMSG: " +
+                       f"Connecting to server {server_endpoint}")
         client = self.context.socket(zmq.REQ)
         client.connect(server_endpoint)
 
@@ -135,45 +132,45 @@ class Comm_node:
                     f"{self.this_node} - Node - SENDMSG: " +
                     "No response from the server"
                 )
-                start_ts = None
-            header = reply[0:HASH_LENGTH]
-            data = reply[HASH_LENGTH:]
-            if header == msg_id:
-                rospy.logdebug(
-                    f"{self.this_node} - Node - SENDMSG: Server replied " +
-                    f"({len(reply)} bytes)"
-                )
-                stop_ts = rospy.Time.now()
-                time_d = stop_ts - start_ts
-                time_s = float(time_d.to_sec())
-                bw = len(reply)/time_s/1024/1024
-                stats = distributed_database.msg.Client_stats()
-                stats.header.stamp = rospy.Time.now()
-                stats.header.frame_id = self.this_node
-                stats.header.seq = self.pub_client_count
-                self.pub_client_count += 1
-                stats.msg = msg[:5].decode("utf-8")
-                stats.rtt = time_s
-                stats.bw = bw
-                stats.answ_len = len(reply)
-                self.pub_client_stats.publish(stats)
-                if len(reply) > 10*1024 and SHOW_BANDWIDTH:
-                    rospy.loginfo(f"{self.this_node} - Node - " +
-                                  f"SENDMSG: Data RTT: {time_s}")
-                    rospy.loginfo(f"{self.this_node} - Node - SENDMSG: " +
-                                  f"BW: {bw}" +
-                                  "MBytes/s")
-                self.client_callback(data)
+                self.client_callback(None)
             else:
-                rospy.logerr(f"{self.this_node} - Node - " +
-                             f"SENDMSG: Malformed reply from server: {reply}")
-                rospy.signal_shutdown("Malformed reply from server")
-                rospy.spin
+                header = reply[0:HASH_LENGTH]
+                data = reply[HASH_LENGTH:]
+                if header == msg_id:
+                    rospy.logdebug(
+                        f"{self.this_node} - Node - SENDMSG: Server replied " +
+                        f"({len(reply)} bytes)"
+                    )
+                    stop_ts = rospy.Time.now()
+                    time_d = stop_ts - start_ts
+                    time_s = float(time_d.to_sec())
+                    bw = len(reply)/time_s/1024/1024
+                    stats = distributed_database.msg.Client_stats()
+                    stats.header.stamp = rospy.Time.now()
+                    stats.header.frame_id = self.this_node
+                    stats.header.seq = self.pub_client_count
+                    self.pub_client_count += 1
+                    stats.msg = msg[:5].decode("utf-8")
+                    stats.rtt = time_s
+                    stats.bw = bw
+                    stats.answ_len = len(reply)
+                    self.pub_client_stats.publish(stats)
+                    if len(reply) > 10*1024 and SHOW_BANDWIDTH:
+                        rospy.loginfo(f"{self.this_node} - Node - " +
+                                      f"SENDMSG: Data RTT: {time_s}")
+                        rospy.loginfo(f"{self.this_node} - Node - SENDMSG: " +
+                                      f"BW: {bw}" +
+                                      "MBytes/s")
+                    self.client_callback(data)
+                else:
+                    rospy.logerr(f"{self.this_node} - Node -  SENDMSG: " +
+                                 f"Malformed reply from server: {reply}")
+                    self.client_callback(None)
         else:
-            rospy.logdebug(
-                f"{self.this_node} - Node - SENDMSG: " +
-                "No response from server, retrying..."
-            )
+            rospy.logdebug(f"{self.this_node} - Node - SENDMSG: " +
+                           "No response from server")
+            self.client_callback(None)
+        client.setsockopt(zmq.LINGER, 0)
         client.close()
         poll.unregister(client)
         self.syncStatus_lock.acquire()
