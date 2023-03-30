@@ -13,6 +13,7 @@
     <param name='robot_configs' value='$(arg robot_configs)'/>
     <param name='radio_configs' value='$(arg radio_configs)'/>
     <param name='topic_configs' value='$(arg topic_configs)'/>
+    <param name='rssi_threshold' value="30" />
 	</node>
 
   <node pkg="distributed_database" type="translator.py"
