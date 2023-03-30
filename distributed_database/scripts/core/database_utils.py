@@ -6,6 +6,7 @@ import io
 import pdb
 import importlib
 import random
+import lz4.frame
 
 HEADER_LENGTH = hash_comm.TsHeader.HEADER_LENGTH
 
@@ -133,19 +134,17 @@ def serialize_ros_msg(msg):
     # TODO check that we are not entering garbage
     sio_h = io.BytesIO()
     msg.serialize(sio_h)
-    return sio_h.getvalue()
-
-
-def deserialize_ros_msg(s_msg, msg_type):
-    msgd = msg_type()
-    msgd.deserialize(s_msg)
-    return msgd
+    serialized = sio_h.getvalue()
+    compressed = lz4.frame.compress(serialized)
+    return compressed
 
 
 def parse_answer(api_answer, msg_types):
     constructor = msg_types[api_answer.robot_id][api_answer.topic_id]['obj']
     msg = constructor()
-    msg.deserialize(api_answer.msg_content)
+    # api_answer.msg_content has the compressed message
+    decompressed = lz4.frame.decompress(api_answer.msg_content)
+    msg.deserialize(decompressed)
     robot_id = api_answer.robot_id
     topic_id = api_answer.topic_id
     ts = api_answer.timestamp
