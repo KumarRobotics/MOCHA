@@ -39,6 +39,9 @@ class IntegrateDatabase:
         self.all_channels = []
         rospy.loginfo(f"{self.this_robot} - Integrate - " +
                       f"RSSI threshold: {self.rssi_threshold}")
+        self.client_timeout = rospy.get_param("~client_timeout", 6.)
+        rospy.loginfo(f"{self.this_robot} - Integrate - " +
+                      f"Client timeout: {self.client_timeout}")
 
         # Load and check robot configs
         self.robot_configs_file = rospy.get_param("~robot_configs")
@@ -104,7 +107,8 @@ class IntegrateDatabase:
             # Start communication channel
             channel = sync.Channel(self.DBServer.dbl,
                                    self.this_robot,
-                                   other_robot, self.robot_configs)
+                                   other_robot, self.robot_configs,
+                                   self.client_timeout)
             self.all_channels.append(channel)
             channel.run()
 

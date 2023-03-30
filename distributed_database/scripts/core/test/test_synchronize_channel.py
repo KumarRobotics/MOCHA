@@ -31,9 +31,9 @@ class Test(unittest.TestCase):
                            rospy.Time(123.456), bytes('New data', 'utf-8'))
         dbl2.add_modify_data(dbm)
         node_1 = sync.Channel(dbl1, 'basestation',
-                              'charon', robot_configs)
+                              'charon', robot_configs, 2)
         node_2 = sync.Channel(dbl2, 'charon',
-                              'basestation', robot_configs)
+                              'basestation', robot_configs, 2)
         node_1.run()
         node_2.run()
         node_1.trigger_sync()
@@ -56,13 +56,13 @@ class Test(unittest.TestCase):
                            rospy.Time(123.456), bytes('New data', 'utf-8'))
         dbl2.add_modify_data(dbm)
         node_1 = sync.Channel(dbl1, 'basestation',
-                              'charon', robot_configs)
+                              'charon', robot_configs, 2)
         node_1.run()
         node_1.trigger_sync()
         time.sleep(8)
 
         node_2 = sync.Channel(dbl2, 'charon', 'basestation',
-                              robot_configs)
+                              robot_configs, 2)
         # Start the comm channel
         node_2.run()
 
@@ -94,13 +94,13 @@ class Test(unittest.TestCase):
                            rospy.Time(123.456), bytes('New data', 'utf-8'))
         dbl2.add_modify_data(dbm)
         node_1 = sync.Channel(dbl1, 'basestation',
-                              'charon', robot_configs)
+                              'charon', robot_configs, 2)
         node_1.run()
         node_1.trigger_sync()
         time.sleep(8)
 
         node_2 = sync.Channel(dbl2, 'charon', 'basestation',
-                              robot_configs)
+                              robot_configs, 2)
         # Start the comm channel
         node_2.run()
 
@@ -129,16 +129,16 @@ class Test(unittest.TestCase):
                            rospy.Time(123.456), bytes('New data', 'utf-8'))
         dbl_robot1.add_modify_data(dbm)
         node_1 = sync.Channel(dbl_robot1, 'charon',
-                              'basestation', robot_configs)
+                              'basestation', robot_configs, 2)
         node_2 = sync.Channel(dbl_groundstation,
                               'basestation',
-                              'charon', robot_configs)
+                              'charon', robot_configs, 2)
         node_3 = sync.Channel(dbl_groundstation,
                               'basestation',
-                              'styx', robot_configs)
+                              'styx', robot_configs, 2)
         node_4 = sync.Channel(dbl_robot2,
                               'styx', 'basestation',
-                              robot_configs)
+                              robot_configs, 2)
 
         node_1.run()
         node_2.run()
