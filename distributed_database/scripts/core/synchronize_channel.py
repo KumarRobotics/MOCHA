@@ -308,9 +308,10 @@ class Channel():
                                                         queue_size=20)
 
         # Create a topic that prints the current state of the state machine
-        self.sm_state_pub = rospy.Publisher(f"ddb/sm_state/{self.target_robot}",
+        self.sm_state_pub = rospy.Publisher(f"ddb/client_sm_state/{self.target_robot}",
                                             SM_state,
                                             queue_size=20)
+        self.sm_state_count = 0
 
         with self.sm:
             smach.StateMachine.add('IDLE',
@@ -360,8 +361,11 @@ class Channel():
         with a timestamp"""
         assert type(msg) is str
         state_msg = SM_state()
+        state_msg.header.stamp = rospy.Time.now()
+        state_msg.header.frame_id = self.this_robot
+        state_msg.header.seq = self.sm_state_count
+        self.sm_state_count += 1
         state_msg.state = msg
-        state_msg.ts = rospy.Time.now()
         self.sm_state_pub.publish(state_msg)
 
     def run(self):
