@@ -21,7 +21,7 @@ HEADER_LENGTH = hc.TsHeader.HEADER_LENGTH
 
 # When actively polling for an answer or for a changement in variable,
 # use this time
-CHECK_POLL_TIME = 0.1
+CHECK_POLL_TIME = 0.05
 CHECK_TRIGGER_TIME = 0.2
 # Timeout value before an answer is considered lost
 CHECK_MAX_TIME = 1
@@ -298,15 +298,15 @@ class Channel():
         # Create topic to notify that the transmission ended
         self.client_sync_complete_pub = rospy.Publisher(f"ddb/client_sync_complete/{self.target_robot}",
                                                         Time,
-                                                        queue_size=1)
+                                                        queue_size=20)
         self.server_sync_complete_pub = rospy.Publisher(f"ddb/server_sync_complete/{self.target_robot}",
                                                         Time,
-                                                        queue_size=1)
+                                                        queue_size=20)
 
         # Create a topic that prints the current state of the state machine
         self.sm_state_pub = rospy.Publisher(f"ddb/sm_state/{self.target_robot}",
                                             SM_state,
-                                            queue_size=1)
+                                            queue_size=20)
 
         with self.sm:
             smach.StateMachine.add('IDLE',

@@ -79,7 +79,7 @@ class Comm_node:
 
     def connect_send_message(self, msg):
         # TODO keep connection open instead of opening in each call
-        SEND_TIMEOUT = 1500
+        SEND_TIMEOUT = 200
         REQUEST_RETRIES = 3
 
         # Msg check
@@ -120,6 +120,7 @@ class Comm_node:
         full_msg = msg_id + msg
         rospy.logdebug(f"{self.this_node} - Node - SENDMSG: Sending ({full_msg})")
         client.send(full_msg)
+        start_ts = rospy.Time.now()
 
         retries_left = REQUEST_RETRIES
 
@@ -131,6 +132,7 @@ class Comm_node:
                     rospy.logdebug(
                         f"{self.this_node} - Node - SENDMSG: No response from the server"
                     )
+                    start_ts = None
                     break
                 header = reply[0:HASH_LENGTH]
                 data = reply[HASH_LENGTH:]
@@ -138,12 +140,16 @@ class Comm_node:
                     rospy.logdebug(
                         f"{self.this_node} - Node - SENDMSG: Server replied ({len(reply)} bytes)"
                     )
+                    stop_ts = rospy.Time.now()
+                    # rospy.loginfo(f"{self.this_node} - Node - SENDMSG: RTT: {(stop_ts - start_ts)/1000000}")
+                    start_ts = None
                     self.client_callback(data)
                     break
                 else:
                     sys.exit(
                         f"{self.this_node} - Node - SENDMSG: Malformed reply from server: {reply}"
                     )
+                    start_ts = None
                     self.client_callback(None)
                     break
             else:
@@ -169,13 +175,14 @@ class Comm_node:
                 client.connect(server_endpoint)
                 poll.register(client, zmq.POLLIN)
                 client.send(full_msg)
+                start_ts = rospy.Time.now()
         client.close()
         self.syncStatus_lock.acquire()
         self.syncStatus = SyncStatus.IDLE
         self.syncStatus_lock.release()
 
     def server_thread(self):
-        RECV_TIMEOUT = 1000
+        RECV_TIMEOUT = 200
         self.server = self.context.socket(zmq.REP)
         self.server.RCVTIMEO = RECV_TIMEOUT
 
