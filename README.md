@@ -35,4 +35,5 @@ If you find MOCHA useful, please cite:
 ```
 @misc{cladera2023mocha,
       title={Enabling Large-scale Heterogeneous Collaboration with Opportunistic Communications}, 
-      author={Fernando Cladera, Zachary Ravichandran, Ian D. Miller, M. Ani Hsieh, C. J. Taylor, and Vijay Kumar
+      author={Fernando Cladera, Zachary Ravichandran, Ian D. Miller, M. Ani Hsieh, C. J. Taylor, and Vijay Kumar}
+}
