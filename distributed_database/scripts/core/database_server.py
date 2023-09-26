@@ -7,7 +7,7 @@ import distributed_database.srv
 import database
 import pdb
 import database_utils as du
-import importlib
+
 
 class DatabaseServer:
     """ Starts a clean database and offers an API-like service
@@ -26,12 +26,19 @@ class DatabaseServer:
         # Get current robot name from params
         self.robot_name = rospy.get_param('~robot_name')
 
+        if self.robot_name not in self.robot_configs.keys():
+            rospy.logerr(f"{self.robot_name} does not exist in robot_configs")
+            rospy.signal_shutdown("robot_name does not exist in robot_configs")
+            rospy.spin()
+
+        self.topic_list = self.topic_configs[self.robot_configs[self.robot_name]["node-type"]]
+
         # Create the empty database with lock
         self.dbl = database.DBwLock()
 
         # Get current robot number
-        self.robot_number = du.get_robot_number(self.robot_configs,
-                                                robot_name=self.robot_name)
+        self.robot_number = du.get_robot_id_from_name(self.robot_configs,
+                                                      robot_name=self.robot_name)
 
         # create services for all the possible calls to the DB
         self.service_list = []
@@ -39,76 +46,63 @@ class DatabaseServer:
                           distributed_database.srv.AddUpdateDB,
                           self.add_update_db_service_cb)
         self.service_list.append(s)
-        s = rospy.Service('~GetDataHashDB',
-                          distributed_database.srv.GetDataHashDB,
+        s = rospy.Service('~GetDataHeaderDB',
+                          distributed_database.srv.GetDataHeaderDB,
                           self.get_data_hash_db_service_cb)
         self.service_list.append(s)
         s = rospy.Service('~SelectDB',
                           distributed_database.srv.SelectDB,
                           self.select_db_service_cb)
         self.service_list.append(s)
-        s = rospy.Service('~SetAckBitDB',
-                          distributed_database.srv.SetAckBitDB,
-                          self.set_ack_bit_cb)
-        self.service_list.append(s)
 
-        self.msg_types = du.msg_types(self.topic_configs)
+        self.msg_types = du.msg_types(self.robot_configs, self.topic_configs)
 
     def add_update_db_service_cb(self, req):
-        curr_time = rospy.get_time()
-        if not len(req.msg_name):
-            rospy.logerr("Error: msg_name empty")
+        if not isinstance(req.topic_id, int) or req.topic_id is None:
+            rospy.logerr("Error: topic_id empty")
             return
+        if len(req.msg_content) == 0:
+            rospy.logerr("Error: msg_content empty")
+            return
+        if req.topic_id > len(self.topic_list):
+            rospy.logerr("Error: topic_id not in topic_list")
+            return
+        topic = self.topic_list[req.topic_id]
+        priority = du.get_priority_number(topic["msg_priority"])
+        ts = req.timestamp
+        ts = rospy.Time(ts.secs, ts.nsecs)
         dbm = database.DBMessage(self.robot_number,
-                                 topic_name=req.msg_name,
-                                 dtype=self.msg_types[req.msg_type_hash]['dtype'],
-                                 priority=req.priority,
-                                 ts=curr_time,
-                                 data=req.msg_content,
-                                 ack=False)
+                                 req.topic_id,
+                                 dtype=self.msg_types[self.robot_number][req.topic_id]["dtype"],
+                                 priority=priority,
+                                 ts=ts,
+                                 data=req.msg_content)
 
-        checksum = self.dbl.add_modify_data(dbm)
-        return distributed_database.srv.AddUpdateDBResponse(checksum)
+        header = self.dbl.add_modify_data(dbm)
+        return distributed_database.srv.AddUpdateDBResponse(header)
 
     def get_data_hash_db_service_cb(self, req):
-        if not len(req.msg_hash):
-            rospy.logerr("Error: msg_hash empty")
-            self.shutdown()
-            rospy.signal_shutdown("Error: msg_hash empty")
-            rospy.spin()
-        dbm = self.dbl.find_hash(req.msg_hash)
-        # Find key for required msg type
-
-        for msgt in self.msg_types:
-            if self.msg_types[msgt]['dtype'] == dbm.dtype:
-                class_hash = msgt
-                break
-        answ = distributed_database.srv.GetDataHashDBResponse(dbm.topic_name,
-                                                              class_hash,
-                                                              dbm.ts, dbm.ack,
-                                                              dbm.data)
+        if req.msg_header is None or len(req.msg_header) == 0:
+            rospy.logerr("Error: msg_header empty")
+            return
+        dbm = self.dbl.find_header(req.msg_header)
+        answ = distributed_database.srv.GetDataHeaderDBResponse(dbm.robot_id,
+                                                                dbm.topic_id,
+                                                                dbm.ts,
+                                                                dbm.data)
         return answ
 
     def select_db_service_cb(self, req):
-        # TODO improve for filtering
-        if not len(req.robot_name):
-            rospy.logerr("Error: robot_name empty")
+        # TODO Implement filtering
+        if req.robot_id is None:
+            rospy.logerr("Error: robot_id none")
             return
-        robot_number = du.get_robot_number(self.robot_configs, req.robot_name)
-        list_hashes = self.dbl.get_hash_list(robot_number)
-        answ = distributed_database.srv.SelectDBResponse(list_hashes)
+        if req.topic_id is None:
+            rospy.logerr("Error: topic_id none")
+            return
+        list_headers = self.dbl.get_header_list(req.robot_id)
+        answ = distributed_database.srv.SelectDBResponse(du.serialize_headers(list_headers))
         return answ
-
-    def set_ack_bit_cb(self, req):
-        if not len(req.msg_hash):
-            rospy.logerr("Error: msg_hash empty")
-            self.shutdown()
-            rospy.signal_shutdown("Error: msg_hash empty")
-            rospy.spin()
-        dbm = self.dbl.find_hash(req.msg_hash)
-        dbm.ack = True
-        checksum = self.dbl.add_modify_data(dbm=dbm)
-        return distributed_database.srv.SetAckBitDBResponse(checksum)
 
     def shutdown(self):
         for s in self.service_list:

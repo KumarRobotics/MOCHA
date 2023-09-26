@@ -1,7 +1,7 @@
 ground_robot:
   - msg_topic: "/top_down_render/pose_est"
     msg_type: "geometry_msgs/PoseWithCovarianceStamped"
-    msg_priority: "NO_PRIORITY"
+    msg_priority: "HIGH_PRIORITY"
     msg_history: "LAST_MESSAGE"
 
   - msg_topic: "/object_mapper/map"

@@ -12,10 +12,22 @@ import rospkg
 import rospy
 import yaml
 import std_msgs.msg
+import subprocess
 
 import database_server as ds
 import database_utils as du
 import synchronize_channel as sync
+
+
+def ping(host):
+    command = ["ping", "-c", "1", host]
+    try:
+        result = subprocess.run(command, stdout=subprocess.DEVNULL,
+                                stderr=subprocess.DEVNULL)
+        return result.returncode == 0
+    except Exception as e:
+        print(f"Error pinging {host}: {e}")
+        return False
 
 
 class IntegrateDatabase:
@@ -25,6 +37,11 @@ class IntegrateDatabase:
         self.this_robot = rospy.get_param("~robot_name")
         self.rssi_threshold = rospy.get_param("~rssi_threshold", 20)
         self.all_channels = []
+        rospy.loginfo(f"{self.this_robot} - Integrate - " +
+                      f"RSSI threshold: {self.rssi_threshold}")
+        self.client_timeout = rospy.get_param("~client_timeout", 6.)
+        rospy.loginfo(f"{self.this_robot} - Integrate - " +
+                      f"Client timeout: {self.client_timeout}")
 
         # Load and check robot configs
         self.robot_configs_file = rospy.get_param("~robot_configs")
@@ -49,8 +66,17 @@ class IntegrateDatabase:
         if self.node_type not in self.topic_configs.keys():
             self.shutdown("Node type not in config file")
 
+        # Check that we can ping the radios
+        ip = self.robot_configs[self.this_robot]["IP-address"]
+        if not ping(ip):
+            rospy.logerr(f"{self.this_robot} - Integrate - " +
+                         f"Cannot ping self {ip}. Is the radio on?")
+            rospy.signal_shutdown("Cannot ping self")
+            rospy.spin()
+
         # Create a database server object
-        self.DBServer = ds.DatabaseServer(self.robot_configs, self.topic_configs)
+        self.DBServer = ds.DatabaseServer(self.robot_configs,
+                                          self.topic_configs)
 
         self.num_robot_in_comm = 0
 
@@ -81,14 +107,15 @@ class IntegrateDatabase:
             # Start communication channel
             channel = sync.Channel(self.DBServer.dbl,
                                    self.this_robot,
-                                   other_robot, self.robot_configs)
+                                   other_robot, self.robot_configs,
+                                   self.client_timeout)
             self.all_channels.append(channel)
             channel.run()
 
             # Attach a radio trigger to each channel. This will be triggered
             # when the RSSI is high enough. You can use another approach here
             # such as using a timer to periodically trigger the sync
-            rospy.Subscriber('rajant/rssi/' + other_robot,
+            rospy.Subscriber('ddb/rajant/rssi/' + other_robot,
                              std_msgs.msg.Int32,
                              self.rssi_cb,
                              channel)
@@ -121,7 +148,7 @@ class IntegrateDatabase:
         if rssi > self.rssi_threshold:
             self.num_robot_in_comm += 1
             try:
-                rospy.loginfo(f"{self.this_robot}: Triggering communication with {comm_node.target_robot}")
+                rospy.loginfo(f"{self.this_robot} <- {comm_node.target_robot}: Triggering comms")
                 comm_node.trigger_sync()
             except:
                 traceback.print_exception(*sys.exc_info())

@@ -11,15 +11,11 @@ from colorama import Fore, Back, Style
 import yaml
 import pprint
 
-ROBOT0_TOPIC2_PRIO0 = '42c9f16fe4c0'
-ROBOT0_TOPIC3_PRIO1 = '9df5d73948fe'
-ROBOT0_TOPIC4_PRIO1 = '7b5e724ed9cd'
-ROBOT1_TOPIC1_PRIO4 = 'd9efcff693b5'
-
-
-def generate_random_hash():
-    rand = str(uuid.uuid4().hex).encode()
-    return hc.Hash(rand).digest()
+ROBOT0_TOPIC0_PRIO0 = b'\x00\x00\x00u\x00\xde'
+ROBOT0_TOPIC1_PRIO1_OLD = b'\x00\x01\x00v\x00\xde'
+ROBOT0_TOPIC1_PRIO1_NEW = b'\x00\x01\x00w\x00\xde'
+ROBOT1_TOPIC0_PRIO4_NEW = b'\x01\x00\x01O\x00\xdc'
+ROBOT1_TOPIC0_PRIO4_OLD = b'\x01\x00\x01O\x00\xc7'
 
 
 class test(unittest.TestCase):
@@ -32,68 +28,76 @@ class test(unittest.TestCase):
         rospy.sleep(1)
         super().tearDown()
 
-    def test_get_hash_list(self):
+    def test_get_header_list(self):
         dbl = sample_db.get_sample_dbl()
         for i in range(5):
             # Check for locked mutex with loop
-            # Test get all hashes
-            hashes = dbl.get_hash_list()
-            self.assertTrue(ROBOT0_TOPIC2_PRIO0 in hashes)
-            self.assertTrue(ROBOT1_TOPIC1_PRIO4 in hashes)
-            # The order of hashes should also be respected by the
-            # priority. ROBOT0_TOPIC2_PRIO0 has the lowest priority
-            # among the hashes so it should be the last of the list.
-            # Conversely, ROBOT1_TOPIC1_PRIO4 has the highest priority
+            # Test get all headers
+            headers = dbl.get_header_list()
+            self.assertTrue(ROBOT0_TOPIC0_PRIO0 in headers)
+            self.assertTrue(ROBOT1_TOPIC0_PRIO4_OLD in headers)
+            # The order of headers should also be respected by the
+            # priority. ROBOT0_TOPIC0_PRIO0 has the lowest priority
+            # among the headers so it should be the last of the list.
+            # Conversely, ROBOT1_TOPIC0_PRIO4_NEW has the highest priority
             # and it should be first
-            self.assertEqual(hashes[-1], ROBOT0_TOPIC2_PRIO0)
-            self.assertEqual(hashes[0], ROBOT1_TOPIC1_PRIO4)
-            # Test get hashes filtering by robot
-            hashes_rfilt = dbl.get_hash_list(filter_robot=0)
-            self.assertTrue(ROBOT0_TOPIC2_PRIO0 in hashes_rfilt)
-            self.assertFalse(ROBOT1_TOPIC1_PRIO4 in hashes_rfilt)
-            # TOPIC2 should also be the last hash after filtering
-            self.assertEqual(hashes_rfilt[-1], ROBOT0_TOPIC2_PRIO0)
-            # TOPIC 4 and 3 should be the second and third hashes. Their
+            self.assertEqual(headers[-1], ROBOT0_TOPIC0_PRIO0)
+            self.assertEqual(headers[0], ROBOT1_TOPIC0_PRIO4_NEW)
+            # Test get headers filtering by robot
+            headers_rfilt = dbl.get_header_list(filter_robot_id=0)
+            self.assertTrue(ROBOT0_TOPIC0_PRIO0 in headers_rfilt)
+            self.assertFalse(ROBOT1_TOPIC0_PRIO4_NEW in headers_rfilt)
+            # TOPIC2 should also be the last header after filtering
+            self.assertEqual(headers_rfilt[-1], ROBOT0_TOPIC0_PRIO0)
+            # TOPIC 4 and 3 should be the second and third headers. Their
             # priority is 1, so they should be ordered by timestamp
             # latest timestamp
-            self.assertEqual(hashes_rfilt[1], ROBOT0_TOPIC4_PRIO1)
-            self.assertEqual(hashes_rfilt[2], ROBOT0_TOPIC3_PRIO1)
-            # Test for assertion when giving a robot without a ts
-            with self.assertRaises(Exception):
-                _ = dbl.get_hash_list(filter_ts=0.0)
+            self.assertEqual(headers_rfilt[1], ROBOT0_TOPIC1_PRIO1_NEW)
+            self.assertEqual(headers_rfilt[2], ROBOT0_TOPIC1_PRIO1_OLD)
             # Test timestamp filtering. Only one timestamp should be
-            # remaining (and it is not ROBOT0_TOPIC2_PRIO0).
-            hashes_tfilt = dbl.get_hash_list(filter_robot=0,
-                                             filter_ts=118)
-            self.assertFalse(ROBOT0_TOPIC2_PRIO0 in hashes_tfilt)
-            self.assertTrue(len(hashes_tfilt) == 2)
+            # remaining (and it is not ROBOT0_TOPIC0_PRIO0).
+            headers_tfilt = dbl.get_header_list(filter_robot_id=0,
+                                                filter_latest=True)
+            self.assertTrue(ROBOT0_TOPIC0_PRIO0 in headers_tfilt)
+            self.assertTrue(ROBOT0_TOPIC1_PRIO1_NEW in headers_tfilt)
+            self.assertFalse(ROBOT0_TOPIC1_PRIO1_OLD in headers_tfilt)
+            self.assertFalse(ROBOT1_TOPIC0_PRIO4_OLD in headers_tfilt)
+            self.assertFalse(ROBOT1_TOPIC0_PRIO4_NEW in headers_tfilt)
+            self.assertTrue(len(headers_tfilt) == 2)
+            headers_tfilt = dbl.get_header_list(filter_latest=True)
+            self.assertTrue(ROBOT0_TOPIC0_PRIO0 in headers_tfilt)
+            self.assertTrue(ROBOT0_TOPIC1_PRIO1_NEW in headers_tfilt)
+            self.assertTrue(ROBOT1_TOPIC0_PRIO4_NEW in headers_tfilt)
+            self.assertFalse(ROBOT0_TOPIC1_PRIO1_OLD in headers_tfilt)
+            self.assertFalse(ROBOT1_TOPIC0_PRIO4_OLD in headers_tfilt)
+            self.assertTrue(len(headers_tfilt) == 3)
 
-    def test_hashes_not_in_local(self):
+    def test_headers_not_in_local(self):
         dbl = sample_db.get_sample_dbl()
-        hash_list = dbl.get_hash_list()
-        extra_hash_1 = generate_random_hash()
-        extra_hash_2 = generate_random_hash()
-        hash_list.append(extra_hash_2)
-        hash_list.append(extra_hash_1)
-        new_hashes = [extra_hash_1, extra_hash_2]
-        new_hashes.sort()
-        discover_extra_hash = dbl.hashes_not_in_local(hash_list)
-        discover_extra_hash.sort()
-        self.assertListEqual(discover_extra_hash,
-                             new_hashes)
+        header_list = dbl.get_header_list()
+        extra_header_1 = du.generate_random_header()
+        extra_header_2 = du.generate_random_header()
+        header_list.append(extra_header_2)
+        header_list.append(extra_header_1)
+        new_headers = [extra_header_1, extra_header_2]
+        new_headers.sort()
+        discover_extra_header = dbl.headers_not_in_local(header_list)
+        discover_extra_header.sort()
+        self.assertListEqual(discover_extra_header,
+                             new_headers)
 
-    def test_find_hash(self):
+    def test_find_header(self):
         dbl = sample_db.get_sample_dbl()
-        robot = 1
-        topic = 'topic1'
-        dtype = dbl.db[robot][topic]['dtype']
-        prio = dbl.db[robot][topic]['priority']
-        ts = dbl.db[robot][topic]['ts']
-        data = dbl.db[robot][topic]['data']
-        h = dbl.db[robot][topic]['hash']
-        dbm = dbl.find_hash(h)
-        self.assertEqual(dbm.robot, robot)
-        self.assertEqual(dbm.topic_name, topic)
+        header = b'\x01\x00\x01O\x00\xc7'
+        robot_id = 1
+        topic_id = 0
+        dtype = dbl.db[robot_id][topic_id][header].dtype
+        prio = dbl.db[robot_id][topic_id][header].priority
+        ts = dbl.db[robot_id][topic_id][header].ts
+        data = dbl.db[robot_id][topic_id][header].data
+        dbm = dbl.find_header(header)
+        self.assertEqual(dbm.robot_id, robot_id)
+        self.assertEqual(dbm.topic_id, topic_id)
         self.assertEqual(dbm.dtype, dtype)
         self.assertEqual(dbm.priority, prio)
         self.assertAlmostEqual(dbm.ts, ts)
@@ -109,6 +113,7 @@ if __name__ == '__main__':
     import database
     import sample_db
     import hash_comm as hc
+    import database_utils as du
 
     dbl = sample_db.get_sample_dbl()
 

@@ -89,7 +89,7 @@ if __name__ == "__main__":
         rospy.spin()
 
     # Create ros publisher
-    pub = rospy.Publisher('rajant/log', std_msgs.msg.String, queue_size=10)
+    pub = rospy.Publisher('ddb/rajant/log', std_msgs.msg.String, queue_size=10)
 
     rospack = rospkg.RosPack()
     ros_path = rospack.get_path('interface_rajant')
@@ -111,11 +111,11 @@ if __name__ == "__main__":
     rospy.loginfo(f"{robot_name}: Starting Rajant API Query")
     while not rospy.is_shutdown():
         if not t.is_alive():
-            rospy.logerr('Java process died! Restarting...')
+            rospy.logerr(f'{robot_name}: Rajant Java process died! Restarting...')
             p = Popen(['java',
                        '-jar',
                        java_bin,
-                       TARGET_IP], stdout=PIPE, close_fds=ON_POSIX)
+                       target_ip], stdout=PIPE, close_fds=ON_POSIX)
             q = Queue()
             t = Thread(target=enqueue_output, args=(p.stdout, q))
             t.daemon = True  # thread dies with the program
@@ -144,6 +144,6 @@ if __name__ == "__main__":
                     # rospy.logdebug(str(yaml_res) + "\n")
                     pub.publish(str(yaml_res))
                 else:
-                    rospy.logerr("YAML from Rajant did not look like an object!")
+                    rospy.logerr(f"{robot_name}: YAML from Rajant did not look like an object!")
             except yaml.scanner.ScannerError:
-                rospy.logerr("Could not parse YAML from Rajant!")
+                rospy.logerr(f"{robot_name}: Could not parse YAML from Rajant!")

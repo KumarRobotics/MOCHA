@@ -55,16 +55,17 @@ find_package(catkin REQUIRED COMPONENTS
 add_message_files(
   FILES
   # Legacy, may be removed in the future
-  Heartbeat.msg
+  Header_pub.msg
+  SM_state.msg
+  Client_stats.msg
 )
 
 ## Generate services in the 'srv' folder
 add_service_files(
   FILES
   AddUpdateDB.srv
-  GetDataHashDB.srv
+  GetDataHeaderDB.srv
   SelectDB.srv
-  SetAckBitDB.srv
 )
 
 ## Generate actions in the 'action' folder
@@ -168,13 +169,7 @@ include_directories(
 ## Mark executable scripts (Python etc.) for installation
 ## in contrast to setup.py, you can choose the destination
 install(PROGRAMS
-  scripts/database_server.py
-  scripts/database_server_utils.py
-  scripts/hash_comm.py
   scripts/integrate_database.py
-  scripts/synchronize_channel.py
-  scripts/synchronize_utils.py
-  scripts/zmq_comm_node.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
