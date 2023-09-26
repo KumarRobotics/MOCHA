@@ -3,7 +3,7 @@
 import os
 import threading
 import rospy
-import distributed_database.srv
+import mocha_core.srv
 import database
 import pdb
 import database_utils as du
@@ -43,15 +43,15 @@ class DatabaseServer:
         # create services for all the possible calls to the DB
         self.service_list = []
         s = rospy.Service('~AddUpdateDB',
-                          distributed_database.srv.AddUpdateDB,
+                          mocha_core.srv.AddUpdateDB,
                           self.add_update_db_service_cb)
         self.service_list.append(s)
         s = rospy.Service('~GetDataHeaderDB',
-                          distributed_database.srv.GetDataHeaderDB,
+                          mocha_core.srv.GetDataHeaderDB,
                           self.get_data_hash_db_service_cb)
         self.service_list.append(s)
         s = rospy.Service('~SelectDB',
-                          distributed_database.srv.SelectDB,
+                          mocha_core.srv.SelectDB,
                           self.select_db_service_cb)
         self.service_list.append(s)
 
@@ -79,14 +79,14 @@ class DatabaseServer:
                                  data=req.msg_content)
 
         header = self.dbl.add_modify_data(dbm)
-        return distributed_database.srv.AddUpdateDBResponse(header)
+        return mocha_core.srv.AddUpdateDBResponse(header)
 
     def get_data_hash_db_service_cb(self, req):
         if req.msg_header is None or len(req.msg_header) == 0:
             rospy.logerr("Error: msg_header empty")
             return
         dbm = self.dbl.find_header(req.msg_header)
-        answ = distributed_database.srv.GetDataHeaderDBResponse(dbm.robot_id,
+        answ = mocha_core.srv.GetDataHeaderDBResponse(dbm.robot_id,
                                                                 dbm.topic_id,
                                                                 dbm.ts,
                                                                 dbm.data)
@@ -101,7 +101,7 @@ class DatabaseServer:
             rospy.logerr("Error: topic_id none")
             return
         list_headers = self.dbl.get_header_list(req.robot_id)
-        answ = distributed_database.srv.SelectDBResponse(du.serialize_headers(list_headers))
+        answ = mocha_core.srv.SelectDBResponse(du.serialize_headers(list_headers))
         return answ
 
     def shutdown(self):

@@ -78,7 +78,7 @@ class test(unittest.TestCase):
 if __name__ == '__main__':
     # Get the directory path and import all the required modules to test
     rospack = rospkg.RosPack()
-    ddb_path = rospack.get_path('distributed_database')
+    ddb_path = rospack.get_path('mocha_core')
     scripts_path = os.path.join(ddb_path, "scripts/core")
     sys.path.append(scripts_path)
     import database_utils as du

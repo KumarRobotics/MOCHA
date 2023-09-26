@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>distributed_database</name>
+  <name>mocha_core</name>
   <version>0.0.1</version>
   <description>DCIST Distributed Database package</description>
 

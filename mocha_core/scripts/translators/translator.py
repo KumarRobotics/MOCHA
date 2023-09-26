@@ -4,7 +4,7 @@ import os
 import sys
 import rospy
 import rospkg
-import distributed_database.srv
+import mocha_core.srv
 import yaml
 import pdb
 
@@ -20,7 +20,7 @@ class Translator:
         self.__this_robot_id = this_robot_id
         self.__service_name = "integrate_database/AddUpdateDB"
         self.__add_update_db = rospy.ServiceProxy(
-                self.__service_name, distributed_database.srv.AddUpdateDB
+                self.__service_name, mocha_core.srv.AddUpdateDB
         )
 
         rospy.Subscriber(
@@ -48,9 +48,9 @@ class Translator:
 if __name__ == "__main__":
     rospy.init_node("topic_translator", anonymous=False)
 
-    # Get the distributed_database path
+    # Get the mocha_core path
     rospack = rospkg.RosPack()
-    ddb_path = rospack.get_path('distributed_database')
+    ddb_path = rospack.get_path('mocha_core')
     scripts_path = os.path.join(ddb_path, "scripts/core")
     sys.path.append(scripts_path)
     import database_utils as du

@@ -42,7 +42,7 @@ for test in "${TESTS_TO_RUN[@]}"; do
   # Print yellow separator
   echo -e "${YELLOW}===================================== $test - START${NC}"
 
-    rosrun distributed_database "$test"
+    rosrun mocha_core "$test"
     retVal=$?
     sleep 5 # To wait for some spawned processes
     if [ $retVal -ne 0 ]; then

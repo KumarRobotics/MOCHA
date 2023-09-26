@@ -9,7 +9,7 @@ import rospy
 import rospkg
 import pdb
 from pprint import pprint
-import distributed_database.srv
+import mocha_core.srv
 from geometry_msgs.msg import PointStamped
 import yaml
 from colorama import Fore, Style
@@ -35,17 +35,17 @@ class Test(unittest.TestCase):
         # Generate the service calls for all the services
         service_name = '~AddUpdateDB'
         self.add_update_db = rospy.ServiceProxy(service_name,
-                                                distributed_database.srv.AddUpdateDB,
+                                                mocha_core.srv.AddUpdateDB,
                                                 persistent=True)
 
         service_name = '~GetDataHeaderDB'
         self.get_data_header_db = rospy.ServiceProxy(service_name,
-                                                     distributed_database.srv.GetDataHeaderDB,
+                                                     mocha_core.srv.GetDataHeaderDB,
                                                      persistent=True)
 
         service_name = '~SelectDB'
         self.select_db = rospy.ServiceProxy(service_name,
-                                            distributed_database.srv.SelectDB,
+                                            mocha_core.srv.SelectDB,
                                             persistent=True)
 
         super().setUp()
@@ -201,7 +201,7 @@ if __name__ == '__main__':
 
     # Get the directory path and import all the required modules to test
     rospack = rospkg.RosPack()
-    ddb_path = rospack.get_path('distributed_database')
+    ddb_path = rospack.get_path('mocha_core')
     scripts_path = os.path.join(ddb_path, "scripts/core")
     sys.path.append(scripts_path)
     import database_utils as du

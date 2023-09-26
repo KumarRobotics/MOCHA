@@ -11,7 +11,7 @@ import logging
 import rospy
 import pdb
 from std_msgs.msg import Time, String
-from distributed_database.msg import SM_state
+from mocha_core.msg import SM_state
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # General configuration variables

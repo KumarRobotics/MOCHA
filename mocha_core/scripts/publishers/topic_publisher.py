@@ -7,9 +7,9 @@ import rospkg
 import rospy
 import yaml
 import re
-import distributed_database.msg
+import mocha_core.msg
 
-import distributed_database.srv
+import mocha_core.srv
 
 
 class TopicPublisher():
@@ -31,11 +31,11 @@ class TopicPublisher():
             rospy.signal_shutdown("Service did not process request")
             rospy.spin()
         self.__select_db = rospy.ServiceProxy(
-            self.__select_service, distributed_database.srv.SelectDB
+            self.__select_service, mocha_core.srv.SelectDB
         )
 
         self.__get_header_db = rospy.ServiceProxy(
-            self.__get_header_service, distributed_database.srv.GetDataHeaderDB
+            self.__get_header_service, mocha_core.srv.GetDataHeaderDB
         )
 
         # List of robots to pull
@@ -44,7 +44,7 @@ class TopicPublisher():
         # Publisher creation
         self.publishers = {}
         self.header_pub = rospy.Publisher("ddb/topic_publisher/headers",
-                                          distributed_database.msg.Header_pub,
+                                          mocha_core.msg.Header_pub,
                                           queue_size=10)
         for t in target:
             robot, robot_id, topic, topic_id, obj = t
@@ -109,11 +109,11 @@ class TopicPublisher():
 
 
 if __name__ == "__main__":
-    rospy.init_node("distributed_database_publisher", anonymous=False)
+    rospy.init_node("mocha_core_publisher", anonymous=False)
 
-    # Get the distributed_database path
+    # Get the mocha_core path
     rospack = rospkg.RosPack()
-    ddb_path = rospack.get_path('distributed_database')
+    ddb_path = rospack.get_path('mocha_core')
     scripts_path = os.path.join(ddb_path, "scripts/core")
     sys.path.append(scripts_path)
     import database_utils as du

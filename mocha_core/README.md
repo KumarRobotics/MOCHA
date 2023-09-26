@@ -1,4 +1,4 @@
-distributed_database
+mocha_core
 ====================
 
 The distributed database allows sending messages asynchronously between the
