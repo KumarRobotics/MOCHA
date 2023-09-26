@@ -1,22 +1,21 @@
-DCIST Distributed DB Communications
------------------------------------
+☕ MOCHA: Multi-robot Opportunistic Communication for Heterogeneous Collaboration
+---------------------------------------------------------------------------------
+![MOCHA gif](MOCHA.gif)
 
-This repository contains the distributed communication stack developed by the
-GRASP Lab at UPenn.
+This repository contains the distributed and opportunistic communication stack used for multi-robot experiments at KumarRobotics.
 
-Directories
-===========
- - `comm_stack_launch/`: launch files for the communication stack. These will
- - `distributed_database/`: the distributed database itsel.
- - `hal_rajant/`: Rajant specific modules.
-   into the distributed database.
-   launch all the required nodes in the other directories.
-   The current method uses a polling mechanism.
- - `topic_publisher`: node to publish messages from the distributed database.
- - `translators/`: the translators listen for specific messages and insert them
 
-Dependencies:
-=============
+## Directories
+
+ - `MOCHA_launch/`: launch files the different robots in MOCHA. The launch file
+   sets up the `robot_name` argument,
+ - `MOCHA_core/`: MOCHA source code.
+ - `interface_rajant/`: interface for Rajant breadrumb radios
+
+## Dependencies:
+
+MOCHA requires `rospkg`, `defusedxml`, and `python3-zmq`. You may install these
+packages with:
 
 ```
 sudo apt update
@@ -25,9 +24,20 @@ pip3 install defusedxml
 sudo apt install python3-zmq
 ```
 
-Questions?
-==========
+## Contribution - Questions
 
-Please do not hesitate to contact:
+Please [fill-out an issue](https://github.com/KumarRobotics/MOCHA/issues) if you have any questions.
+Do not hesitate to [send your pull request](https://github.com/KumarRobotics/MOCHA/pulls).
 
-Fernando Cladera [fclad@seas.upenn.edu](fclad@seas.upenn.edu)
+## Citation
+
+If you find MOCHA useful, please cite:
+
+```
+@misc{cladera2023mocha,
+      title={Enabling Large-scale Heterogeneous Collaboration with Opportunistic Communications}, 
+      author={Fernando Cladera, Zachary Ravichandran, Ian D. Miller, M. Ani Hsieh, C. J. Taylor, and Vijay Kumar},
+      year={2023},
+}
+```
+
