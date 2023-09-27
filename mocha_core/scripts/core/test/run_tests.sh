@@ -1,6 +1,12 @@
 #!/bin/bash
 set -eo pipefail
 
+# Check that the first argument is not null
+if [ -z "$1" ]; then
+  echo "No catkin workspace provided. Usage: ./run_tests.sh <path_to_catkin_ws>"
+  exit 1
+fi
+
 # Echo some variables for debug
 echo "$PYTHONPATH"
 
@@ -21,12 +27,12 @@ TESTS_TO_RUN=(
 )
 
 # The first argument is the path to the catkin workspace + catkin_ws
-CATKIN_WS="$1/catkin_ws"
+CATKIN_WS="$1"
 # Display path
 echo "Using catkin workspace: $CATKIN_WS"
 
 # Source the ROS environment
-source "/$CATKIN_WS/devel/setup.bash"
+source "$CATKIN_WS/devel/setup.bash"
 
 # Run roscore in the background and save its PID to kill it later
 roscore > /dev/null 2>&1 &

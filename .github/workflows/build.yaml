@@ -4,7 +4,7 @@ name: build
 
 on:
   push:
-    branches: [main, WP_2_exp, tsHeader]
+    branches: [main]
   workflow_dispatch:
   schedule:
     - cron: '0 0 * * 0'
@@ -45,5 +45,5 @@ jobs:
 
       - name: Run Tests
         run: |
-          cd ${RUNNER_WORKSPACE}/catkin_ws/src/distributed-database/distributed_database/scripts/core/test
-          ./run_tests.sh ${RUNNER_WORKSPACE}
+          cd ${RUNNER_WORKSPACE}/catkin_ws/src/MOCHA/mocha_core/scripts/core/test
+          ./run_tests.sh ${RUNNER_WORKSPACE}/catkin_ws
