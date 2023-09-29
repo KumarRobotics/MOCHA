@@ -33,7 +33,12 @@ Do not hesitate to [send your pull request](https://github.com/KumarRobotics/MOC
 If you find MOCHA useful, please cite:
 
 ```
-@misc{cladera2023mocha,
+@misc{cladera2023enabling,
       title={Enabling Large-scale Heterogeneous Collaboration with Opportunistic Communications}, 
-      author={Fernando Cladera, Zachary Ravichandran, Ian D. Miller, M. Ani Hsieh, C. J. Taylor, and Vijay Kumar}
+      author={Fernando Cladera and Zachary Ravichandran and Ian D. Miller and M. Ani Hsieh and C. J. Taylor and Vijay Kumar},
+      year={2023},
+      eprint={2309.15975},
+      archivePrefix={arXiv},
+      primaryClass={cs.RO}
 }
+```
