@@ -57,3 +57,53 @@ black-4:
         SN: "ME4-2450R-46130"
         MAC-address: ["04:f0:21:13:13:e4", "04:f0:21:02:e1:4a"]
         computed-IP-address: "10.180.50.1"
+
+deep-blue-1:
+        SN: "DX2-50-81745"
+        MAC-address: ["c4:ad:34:79:e4:da"]
+        computed-IP-address: "10.63.81.1"
+
+deep-blue-2:
+        SN: "DX2-50-100071"
+        MAC-address: ["dc:2c:6e:bc:e2:8e"]
+        computed-IP-address: "10.134.231.1"
+
+super-brick:
+        SN: "PE1-2255B-103860"
+        MAC-address: ["84:8d:84:41:4f:fb", "84:8d:84:41:4f:f7", "84:8d:84:41:4f:f8", "84:8d:84:41:4f:f9"]
+        computed-IP-address: "10.149.180.1"
+
+dx4-1:
+        SN: "DX4-5252E-106727"
+        MAC-address: ["00:0e:8e:bd:d9:24", "00:0e:8e:bd:d9:23"]
+        computed-IP-address: "10.160.231.1"
+
+dx4-2:
+        SN: "DX4-5252E-106742"
+        MAC-address: ["00:0e:8e:bd:d9:31", "00:0e:8e:bd:29:2a"]
+        computed-IP-address: "10.160.246.1"
+
+dx4-3:
+        SN: "DX4-5252E-106741"
+        MAC-address: ["00:0e:8e:bd:d8:e9", "00:0e:8e:bd:d0:03"]
+        computed-IP-address: "10.160.245.1"
+
+dx4-4:
+        SN: "DX4-5252E-106737"
+        MAC-address: ["00:0e:8e:bd:d9:35", "00:0e:8e:bd:d9:30"]
+        computed-IP-address: "10.160.241.1"
+
+dx4-5:
+        SN: "DX4-5252E-106739"
+        MAC-address: ["00:0e:8e:bd:d9:37", "00:0e:8e:bd:d9:29"]
+        computed-IP-address: "10.160.243.1"
+
+dx4-6:
+        SN: "DX4-5252E-106740"
+        MAC-address: ["00:0e:8e:bd:d6:e5", "00:0e:8e:bd:d9:32"]
+        computed-IP-address: "10.160.244.1"
+
+dx4-7:
+        SN: "DX4-5252E-106744"
+        MAC-address: ["00:0e:8e:a0:ae:5e", "00:0e:8e:a0:ae:57"]
+        computed-IP-address: "10.160.248.1"
