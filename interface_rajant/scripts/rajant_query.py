@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import sys
-from subprocess import PIPE, Popen
+import subprocess
 from threading  import Thread
 from queue import Queue, Empty
 from pprint import pprint
@@ -29,6 +29,17 @@ def enqueue_output(out, queue):
     for line in iter(out.readline, b''):
         queue.put(line)
     out.close()
+
+
+def ping_ip(ip_address):
+    try:
+        # Run the ping command with a single ping packet (-c 1) and a timeout of 1 second (-W 1)
+        result = subprocess.run(["ping", "-c", "1", "-W", "1", ip_address],
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
+        return result.returncode == 0
+    except subprocess.CalledProcessError:
+        # An error occurred (ping failed)
+        return False
 
 
 def line_parser(line_bytes):
@@ -88,6 +99,7 @@ if __name__ == "__main__":
         rospy.signal_shutdown("Radio not in configs")
         rospy.spin()
 
+
     # Create ros publisher
     pub = rospy.Publisher('ddb/rajant/log', std_msgs.msg.String, queue_size=10)
 
@@ -98,24 +110,33 @@ if __name__ == "__main__":
     java_bin = os.path.join(ros_path, 'scripts',
                             'thirdParty/watchstate/bcapi-watchstate-11.19.0-SNAPSHOT-jar-with-dependencies.jar')
 
-    p = Popen(['java',
+    p = subprocess.Popen(['java',
                '-jar',
                java_bin,
-               target_ip], stdout=PIPE, close_fds=ON_POSIX)
+               target_ip], stdout=subprocess.PIPE, close_fds=ON_POSIX)
     q = Queue()
     t = Thread(target=enqueue_output, args=(p.stdout, q))
     t.daemon = True  # thread dies with the program
     t.start()
 
     # Go
-    rospy.loginfo(f"{robot_name}: Starting Rajant API Query")
+    rospy.loginfo(f"{robot_name} - Rajant API Query - Starting on {rajant_name}")
+
+    # ping the assigned radio
+    if ping_ip(target_ip):
+        rospy.loginfo(f"{robot_name} - Rajant API Query - ping success")
+    else:
+        rospy.logerr(f"{robot_name} - Rajant API Query - Rajant ping failed")
+        rospy.signal_shutdown("Rajant IP")
+        rospy.spin()
+
     while not rospy.is_shutdown():
         if not t.is_alive():
             rospy.logerr(f'{robot_name}: Rajant Java process died! Restarting...')
-            p = Popen(['java',
+            p = subprocess.Popen(['java',
                        '-jar',
                        java_bin,
-                       target_ip], stdout=PIPE, close_fds=ON_POSIX)
+                       target_ip], stdout=subprocess.PIPE, close_fds=ON_POSIX)
             q = Queue()
             t = Thread(target=enqueue_output, args=(p.stdout, q))
             t.daemon = True  # thread dies with the program
