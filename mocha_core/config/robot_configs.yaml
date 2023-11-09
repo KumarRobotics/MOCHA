@@ -1,7 +1,7 @@
 basestation:
   node-type: "base_station"
   IP-address: "10.10.10.100"
-  using-radio: "brick-1"
+  using-radio: "super-brick"
   base-port: "1234"
   clients:
     - "callisto"
