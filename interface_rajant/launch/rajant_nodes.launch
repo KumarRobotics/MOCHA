@@ -5,13 +5,15 @@
   <arg name="radio_configs" default="$(find mocha_core)/config/radio_configs.yaml"/>
   <arg name="output" default="screen" />
 
-  <node pkg="interface_rajant" type="rajant_query.py" name="rajant_query" output="$(arg output)">
+  <node pkg="interface_rajant" type="rajant_query.py" name="rajant_query" output="$(arg output)"
+    required="true">
     <param name="robot_name" value="$(arg robot_name)" />
     <param name="robot_configs" value="$(arg robot_configs)" />
     <param name="radio_configs" value="$(arg radio_configs)" />
   </node>
 
-  <node pkg="interface_rajant" type="rajant_parser.py" name="rajant_parser" output="$(arg output)">
+  <node pkg="interface_rajant" type="rajant_parser.py" name="rajant_parser" output="$(arg output)"
+    required="true">
     <param name="robot_name" value="$(arg robot_name)" />
     <param name="robot_configs" value="$(arg robot_configs)" />
     <param name="radio_configs" value="$(arg radio_configs)" />
