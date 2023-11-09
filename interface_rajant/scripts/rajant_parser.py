@@ -28,7 +28,7 @@ class RajantParser():
         self.radio_cfg = radio_configs
         self.rate = rospy.Rate(.5)
 
-        rospy.loginfo(f"{self.this_robot}: Starting Rajant API Parser")
+        rospy.loginfo(f"{self.this_robot} - Rajant API Parser - Starting")
 
         # Generate a standard configuration with a RSSI of -1
         for radio in self.radio_cfg.keys():
@@ -37,6 +37,7 @@ class RajantParser():
                 self.MAC_DICT[address]['rssi'] = -20
                 self.MAC_DICT[address]['timestamp'] = rospy.Time.now()
                 self.MAC_DICT[address]['radio'] = radio
+                self.MAC_DICT[address]['publisher'] = None
 
         # Generate publishers for each item in the dict
         for mac in self.MAC_DICT.keys():
@@ -70,13 +71,25 @@ class RajantParser():
                         rssi =  state[wireless_channel][peer]['rssi']
                         self.MAC_DICT[mac]['rssi'] = rssi
                         self.MAC_DICT[mac]['timestamp'] = rospy.Time.now()
-                        self.MAC_DICT[mac]['publisher'].publish(rssi)
+                        # Only publish if the publisher is not None
+                        # This avoids an error for a radio that is connected but that is not
+                        # actively used by any robot
+                        if self.MAC_DICT[mac]['publisher'] is not None:
+                            self.MAC_DICT[mac]['publisher'].publish(rssi)
+                        else:
+                            rospy.logwarn(f"{self.this_robot} - Rajant API Parser - " +
+                                          f"active radio {self.MAC_DICT[mac]['radio']} not assigned to any robot")
                     elif 'mac' in state[wireless_channel][peer].keys() and 'rssi' not in state[wireless_channel][peer].keys():
                         mac = state[wireless_channel][peer]['mac']
                         if rospy.Time.now()-self.MAC_DICT[mac]['timestamp'] > dt:
                             self.MAC_DICT[mac]['rssi'] = no_rssi
-                            self.MAC_DICT[mac]['publisher'].publish(no_rssi)
-
+                            # Only publish if the publisher is not None
+                            # See comment above
+                            if self.MAC_DICT[mac]['publisher'] is not None:
+                                self.MAC_DICT[mac]['publisher'].publish(no_rssi)
+                            else:
+                                rospy.logwarn(f"{self.this_robot} - Rajant API Parser - " +
+                                              f"active radio {self.MAC_DICT[mac]['radio']} not assigned to any robot")
 
 
 if __name__ == '__main__':
