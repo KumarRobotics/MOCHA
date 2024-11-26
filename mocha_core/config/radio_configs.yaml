@@ -58,6 +58,21 @@ black-4:
         MAC-address: ["04:f0:21:13:13:e4", "04:f0:21:02:e1:4a"]
         computed-IP-address: "10.180.50.1"
 
+cardinal-1:
+        SN: "AG1-5250M-117082"
+        MAC-address: ["84:8d:84:ef:13:7e","84:8d:84:ef:13:7f"]
+        computed-IP-address: "10.201.90.1"
+
+cardinal-2:
+        SN: "AG1-5250M-117113"
+        MAC-address: ["84:8d:84:ef:13:8d","84:8d:84:ef:13:8e"]
+        computed-IP-address: "10.201.121.1"
+
+cardinal-3:
+        SN: "AG1-5250M-117098"
+        MAC-address: ["84:8d:84:ef:0d:7b","84:8d:84:ef:0d:7c"]
+        computed-IP-address: "10.201.106.1"
+
 deep-blue-1:
         SN: "DX2-50-81745"
         MAC-address: ["c4:ad:34:79:e4:da"]
@@ -68,10 +83,10 @@ deep-blue-2:
         MAC-address: ["dc:2c:6e:bc:e2:8e"]
         computed-IP-address: "10.134.231.1"
 
-super-brick:
-        SN: "PE1-2255B-103860"
-        MAC-address: ["84:8d:84:41:4f:fb", "84:8d:84:41:4f:f7", "84:8d:84:41:4f:f8", "84:8d:84:41:4f:f9"]
-        computed-IP-address: "10.149.180.1"
+deep-blue-3:
+        SN: "DX2-24-119294"
+        MAC-address: ["48:a9:8a:a0:75:69"]
+        computed-IP-address: 10.209.254.1
 
 dx4-1:
         SN: "DX4-5252E-106727"
@@ -107,3 +122,9 @@ dx4-7:
         SN: "DX4-5252E-106744"
         MAC-address: ["00:0e:8e:a0:ae:5e", "00:0e:8e:a0:ae:57"]
         computed-IP-address: "10.160.248.1"
+
+super-brick:
+        SN: "PE1-2255B-103860"
+        MAC-address: ["84:8d:84:41:4f:fb", "84:8d:84:41:4f:f7", "84:8d:84:41:4f:f8", "84:8d:84:41:4f:f9"]
+        computed-IP-address: "10.149.180.1"
+
