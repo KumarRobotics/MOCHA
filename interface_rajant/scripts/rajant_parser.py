@@ -68,6 +68,9 @@ class RajantParser():
                     peer = wireless_keys
                     if 'rssi' in state[wireless_channel][peer].keys():
                         mac = state[wireless_channel][peer]['mac']
+                        if mac not in self.MAC_DICT.keys():
+                            rospy.logerr(f"MAC: {mac} is not in the list of knowns MACs. Is your radio_configs.yaml file correct?")
+                            continue
                         rssi =  state[wireless_channel][peer]['rssi']
                         self.MAC_DICT[mac]['rssi'] = rssi
                         self.MAC_DICT[mac]['timestamp'] = rospy.Time.now()
@@ -81,6 +84,9 @@ class RajantParser():
                                           f"active radio {self.MAC_DICT[mac]['radio']} not assigned to any robot")
                     elif 'mac' in state[wireless_channel][peer].keys() and 'rssi' not in state[wireless_channel][peer].keys():
                         mac = state[wireless_channel][peer]['mac']
+                        if mac not in self.MAC_DICT.keys():
+                            rospy.logerr(f"MAC: {mac} is not in the list of knowns MACs. Is your radio_configs.yaml file correct?")
+                            continue
                         if rospy.Time.now()-self.MAC_DICT[mac]['timestamp'] > dt:
                             self.MAC_DICT[mac]['rssi'] = no_rssi
                             # Only publish if the publisher is not None
