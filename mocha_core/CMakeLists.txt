@@ -8,6 +8,7 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_python REQUIRED)
+find_package(rclpy REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(builtin_interfaces REQUIRED)
@@ -27,14 +28,14 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   DEPENDENCIES std_msgs geometry_msgs vision_msgs builtin_interfaces
 )
 
-# Install Python scripts and modules
+# Install Python executables
 install(PROGRAMS
-  scripts/core/integrate_database.py
-  DESTINATION lib/${PROJECT_NAME}
-)
-
-install(DIRECTORY
-  scripts/core
+  mocha_core/integrate_database.py
+  mocha_core/database_server.py
+  mocha_core/synchronize_channel.py
+  mocha_core/zmq_comm_node.py
+  mocha_core/topic_publisher.py
+  mocha_core/translator.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
