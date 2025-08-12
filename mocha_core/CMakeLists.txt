@@ -60,6 +60,7 @@ if(BUILD_TESTING)
   # Add Python tests
   ament_add_pytest_test(test_database test/test_database.py)
   ament_add_pytest_test(test_database_utils test/test_database_utils.py)
+  ament_add_pytest_test(test_zmq_comm_node test/test_zmq_comm_node.py)
 endif()
 
 ament_package()
