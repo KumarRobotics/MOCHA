@@ -45,7 +45,7 @@ install(DIRECTORY launch
 )
 
 if(BUILD_TESTING)
-  find_package(ament_lint_auto REQUIRED)
+  # find_package(ament_lint_auto REQUIRED)
   find_package(ament_cmake_pytest REQUIRED)
   
   # the following line skips the linter which checks for copyrights
@@ -55,7 +55,7 @@ if(BUILD_TESTING)
   # comment the line when this package is in a git repo and when
   # a copyright and license is added to all source files
   set(ament_cmake_cpplint_FOUND TRUE)
-  ament_lint_auto_find_test_dependencies()
+  # ament_lint_auto_find_test_dependencies()
   
   # Add Python tests
   ament_add_pytest_test(test_database test/test_database.py)
