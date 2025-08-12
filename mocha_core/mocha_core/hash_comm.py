@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import hashlib
-import rospy
+import rclpy.time
 import struct
 
 LENGTH = 6
@@ -47,17 +47,17 @@ class TsHeader():
         assert type(robot_id) == int and robot_id >= 0 and robot_id < 256
         # Same for topic ID
         assert type(topic_id) == int and topic_id >= 0 and topic_id < 256
-        # time is a rospy time object
-        assert type(time) == rospy.Time
+        # time is a rclpy time object
+        assert type(time) == rclpy.time.Time
 
         # The header will be comprised of 1 byte for the robot number, 1 byte
         # for the topic id, and 4 bytes for the time. The first 2 bytes of the
         # time are the secs, and the 2 last bytes are the ms of the message.
         # This means that we have ms resolution. We only handle positive times
-        assert type(time.secs) == int and time.secs >= 0
-        assert type(time.nsecs) == int and time.nsecs >= 0
-        secs = time.secs % 65536
-        msecs = time.nsecs // 1000000
+        assert type(time.seconds_nanoseconds()[0]) == int and time.seconds_nanoseconds()[0] >= 0
+        assert type(time.seconds_nanoseconds()[1]) == int and time.seconds_nanoseconds()[1] >= 0
+        secs = time.seconds_nanoseconds()[0] % 65536
+        msecs = time.seconds_nanoseconds()[1] // 1000000
         robot_id = robot_id
         topic_id = topic_id
         return cls(robot_id=robot_id, topic_id=topic_id,
@@ -85,7 +85,7 @@ class TsHeader():
         assert self.topic_id is not None
         assert self.secs is not None
         assert self.msecs is not None
-        time = rospy.Time(self.secs, self.msecs*1000000)
+        time = rclpy.time.Time(seconds=self.secs, nanoseconds=self.msecs*1000000)
         return self.robot_id, self.topic_id, time
 
 if __name__ == "__main__":
@@ -123,16 +123,16 @@ if __name__ == "__main__":
         for i in range(100):
             random_robot = random.randint(0, 255)
             random_topic = random.randint(0, 255)
-            random_time = rospy.Time(random.randint(0, 65536),
-                                     random.randint(0, 1000000000))
+            random_time = rclpy.time.Time(seconds=random.randint(0, 65536),
+                                          nanoseconds=random.randint(0, 1000000000))
             ts = TsHeader.from_data(random_robot, random_topic, random_time)
             bindigest = ts.bindigest()
             ts2 = TsHeader.from_header(bindigest)
             robot_id, topic_id, time = ts2.get_id_and_time()
             assert robot_id == random_robot
             assert topic_id == random_topic
-            assert time.secs == random_time.secs
-            assert np.abs(time.nsecs-random_time.nsecs) < 1000000
+            assert time.seconds_nanoseconds()[0] == random_time.seconds_nanoseconds()[0]
+            assert np.abs(time.seconds_nanoseconds()[1]-random_time.seconds_nanoseconds()[1]) < 1000000
     else:
         sys.exit("Invalid test")
 
