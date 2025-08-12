@@ -5,7 +5,7 @@
   <version>0.0.1</version>
   <description>DCIST Distributed Database package</description>
   <maintainer email="fclad@seas.upenn.edu">developer</maintainer>
-  <license>GPLv3</license>
+  <license>BSD 3-Clause License</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
   <buildtool_depend>ament_cmake_python</buildtool_depend>
