@@ -2,16 +2,19 @@
 
 import enum
 import threading
+import time
 import smach
 import database as db
 import database_utils as du
 import hash_comm as hc
 import zmq_comm_node
 import logging
-import rospy
+import rclpy
+import rclpy.logging
+import rclpy.time
 import pdb
-from std_msgs.msg import Time, String
-from mocha_core.msg import SM_state
+from builtin_interfaces.msg import Time
+from mocha_core.msg import SMState
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # General configuration variables
@@ -48,12 +51,12 @@ class Idle(smach.State):
     def execute(self, userdata):
         self.outer.publishState("Idle Start")
         while (not self.outer.sm_shutdown.is_set() and
-               not rospy.is_shutdown()):
+               not self.outer.shutdown_requested):
             if self.outer.sync.get_state():
                 # trigger sync and reset bistable
                 self.outer.publishState("Idle to RequestHash")
                 return 'to_req_hash'
-            rospy.sleep(CHECK_TRIGGER_TIME)
+            time.sleep(CHECK_TRIGGER_TIME)
         self.outer.publishState("Idle to Stopped")
         return 'to_stopped'
 
@@ -82,12 +85,12 @@ class RequestHash(smach.State):
                and not self.outer.sm_shutdown.is_set()):
             answer = self.outer.client_answer
             if answer is not None:
-                rospy.logdebug(f"{comm.this_node} - Channel" +
+                self.outer.logger.debug(f"{comm.this_node} - Channel" +
                                f"- REQUESTHASH: {answer}")
                 userdata.out_answer = answer
                 self.outer.publishState("RequestHash to Reply")
                 return 'to_req_hash_reply'
-            rospy.sleep(CHECK_POLL_TIME)
+            time.sleep(CHECK_POLL_TIME)
             i += 1
         if self.outer.sm_shutdown.is_set():
             self.outer.publishState("RequestHash to Stopped")
@@ -113,7 +116,7 @@ class RequestHashReply(smach.State):
         # depending on the message type
         hash_list = self.outer.dbl.headers_not_in_local(deserialized,
                                                         newer=True)
-        rospy.logdebug(f"======== - REQUESTHASH: {hash_list}")
+        self.outer.logger.debug(f"======== - REQUESTHASH: {hash_list}")
         if len(hash_list):
             # We have hashes. Go get them
             # rospy.logdebug(f"{self.this_robot} - REQUESTHASH: Unique -> {hash_list}")
@@ -143,7 +146,7 @@ class GetData(smach.State):
         hash_list = userdata.in_hash_list.copy()
         # Get the first hash of the list, the one with the higher priority
         req_hash = hash_list.pop(0)
-        rospy.logdebug(f"{comm.this_node} - Channel - GETDATA: {req_hash}")
+        self.outer.logger.debug(f"{comm.this_node} - Channel - GETDATA: {req_hash}")
         # Ask for hash
         msg = Comm_msgs.GDATA.name.encode() + req_hash
         comm.connect_send_message(msg)
@@ -160,7 +163,7 @@ class GetData(smach.State):
                 userdata.out_req_hash = req_hash
                 self.outer.publishState("GetData to GetDataReply")
                 return 'to_get_data_reply'
-            rospy.sleep(CHECK_POLL_TIME)
+            time.sleep(CHECK_POLL_TIME)
             i += 1
         if self.outer.sm_shutdown.is_set():
             self.outer.publishState("GetData to Stopped")
@@ -208,7 +211,7 @@ class TransmissionEnd(smach.State):
         self.outer.publishState("TransmissionEnd Start")
         # Request current comm node
         comm = self.outer.get_comm_node()
-        rospy.logdebug(f"{comm.this_node} - Channel - DENDT")
+        self.outer.logger.debug(f"{comm.this_node} - Channel - DENDT")
         # Ask for hash
         msg = Comm_msgs.DENDT.name.encode() + self.outer.this_robot.encode()
         comm.connect_send_message(msg)
@@ -221,9 +224,14 @@ class TransmissionEnd(smach.State):
             answer = self.outer.client_answer
             if answer is not None:
                 # We received an ACK
-                self.outer.client_sync_complete_pub.publish(Time(rospy.get_rostime()))
+                if self.outer.client_sync_complete_pub is not None:
+                    time_msg = Time()
+                    if self.outer.node is not None:
+                        current_time = self.outer.node.get_clock().now()
+                        time_msg.sec, time_msg.nanosec = current_time.seconds_nanoseconds()
+                    self.outer.client_sync_complete_pub.publish(time_msg)
                 break
-            rospy.sleep(CHECK_POLL_TIME)
+            time.sleep(CHECK_POLL_TIME)
             i += 1
         if self.outer.sm_shutdown.is_set():
             self.outer.publishState("TransmissionEnd to Stopped")
@@ -265,7 +273,7 @@ class Bistable():
 class Channel():
     def __init__(self, dbl, this_robot,
                  target_robot, robot_configs,
-                 client_timeout):
+                 client_timeout, node=None):
         # Check input arguments
         assert type(dbl) is db.DBwLock
         assert type(this_robot) is str
@@ -273,11 +281,19 @@ class Channel():
         assert type(robot_configs) is dict
         assert type(client_timeout) is float or type(client_timeout) is int
 
-        # Override smach logger to use rospy loggers
-        # Use rospy.logdebug for smach info as it is too verbose
-        # def set_loggers(info,warn,debug,error):
-        smach.set_loggers(rospy.logdebug, rospy.logwarn,
-                          rospy.logdebug, rospy.logerr)
+        # Store or create the ROS2 node
+        self.node = node
+        if self.node is None:
+            self.logger = rclpy.logging.get_logger('synchronize_channel')
+        else:
+            self.logger = self.node.get_logger()
+        
+        # Add shutdown_requested attribute for ROS2 compatibility
+        self.shutdown_requested = False
+        
+        # Override smach logger to use ROS2 loggers
+        smach.set_loggers(self.logger.debug, self.logger.warn,
+                          self.logger.debug, self.logger.error)
 
         # Basic parameters of the communication channel
         self.this_robot = this_robot
@@ -306,17 +322,30 @@ class Channel():
         self.sm = smach.StateMachine(outcomes=['failure', 'stopped'])
 
         # Create topic to notify that the transmission ended
-        self.client_sync_complete_pub = rospy.Publisher(f"ddb/client_sync_complete/{self.target_robot}",
-                                                        Time,
-                                                        queue_size=20)
-        self.server_sync_complete_pub = rospy.Publisher(f"ddb/server_sync_complete/{self.target_robot}",
-                                                        Time,
-                                                        queue_size=20)
+        if self.node is not None:
+            self.client_sync_complete_pub = self.node.create_publisher(
+                Time,
+                f"ddb/client_sync_complete/{self.target_robot}",
+                20
+            )
+            self.server_sync_complete_pub = self.node.create_publisher(
+                Time,
+                f"ddb/server_sync_complete/{self.target_robot}",
+                20
+            )
+        else:
+            self.client_sync_complete_pub = None
+            self.server_sync_complete_pub = None
 
         # Create a topic that prints the current state of the state machine
-        self.sm_state_pub = rospy.Publisher(f"ddb/client_sm_state/{self.target_robot}",
-                                            SM_state,
-                                            queue_size=20)
+        if self.node is not None:
+            self.sm_state_pub = self.node.create_publisher(
+                SMState,
+                f"ddb/client_sm_state/{self.target_robot}",
+                20
+            )
+        else:
+            self.sm_state_pub = None
         self.sm_state_count = 0
 
         with self.sm:
@@ -366,13 +395,15 @@ class Channel():
         """ Publish the string msg (where the state message will be stored)
         with a timestamp"""
         assert type(msg) is str
-        state_msg = SM_state()
-        state_msg.header.stamp = rospy.Time.now()
-        state_msg.header.frame_id = self.this_robot
-        state_msg.header.seq = self.sm_state_count
-        self.sm_state_count += 1
-        state_msg.state = msg
-        self.sm_state_pub.publish(state_msg)
+        if self.sm_state_pub is not None:
+            state_msg = SMState()
+            if self.node is not None:
+                state_msg.header.stamp = self.node.get_clock().now().to_msg()
+            state_msg.header.frame_id = self.this_robot
+            # Note: ROS2 doesn't have seq field in header
+            self.sm_state_count += 1
+            state_msg.state = msg
+            self.sm_state_pub.publish(state_msg)
 
     def run(self):
         """ Configures the zmq_comm_node and also starts the state
@@ -384,7 +415,8 @@ class Channel():
                                                  self.robot_configs,
                                                  self.callback_client,
                                                  self.callback_server,
-                                                 self.client_timeout)
+                                                 self.client_timeout,
+                                                 self.node)
         # Unset this flag before starting the SM thread
         self.sm_shutdown.clear()
         self.th = threading.Thread(target=self.sm_thread, args=())
@@ -399,39 +431,38 @@ class Channel():
 
     def sm_thread(self):
         # Start the state machine and wait until it ends
-        rospy.logwarn(f"Channel {self.this_robot} -> {self.target_robot} started")
+        self.logger.warn(f"Channel {self.this_robot} -> {self.target_robot} started")
         outcome = self.sm.execute()
         exit_msg = f"Channel {self.this_robot} -> {self.target_robot}" + \
             f" finished with outcome: {outcome}"
         if outcome == 'failure':
-            rospy.logerr(exit_msg)
+            self.logger.error(exit_msg)
         elif outcome == 'stopped':
-            rospy.logwarn(exit_msg)
+            self.logger.warn(exit_msg)
         # Terminate the comm node once the state machine ends
         self.comm_node.terminate()
 
     def get_comm_node(self):
         if not self.comm_node:
-            rospy.logerr("Requesting for an empty comm node")
-            rospy.signal_shutdown("Requesting for an empty comm node")
-            rospy.spin()
+            self.logger.error("Requesting for an empty comm node")
+            raise RuntimeError("Requesting for an empty comm node")
         return self.comm_node
 
     def trigger_sync(self):
         if self.sync.get_state():
-            rospy.logwarn(f"{self.this_robot} <- {self.target_robot}: Channel Busy")
+            self.logger.warn(f"{self.this_robot} <- {self.target_robot}: Channel Busy")
         else:
             self.sync.set()
 
     def callback_client(self, msg):
         if msg is not None:
-            rospy.logdebug(f"{self.this_robot} - Channel - CALLBACK_CLIENT: len: {len(msg)}")
+            self.logger.debug(f"{self.this_robot} - Channel - CALLBACK_CLIENT: len: {len(msg)}")
         else:
-            rospy.logdebug(f"{self.this_robot} - Channel - CALLBACK_CLIENT - None")
+            self.logger.debug(f"{self.this_robot} - Channel - CALLBACK_CLIENT - None")
         self.client_answer = msg
 
     def callback_server(self, msg):
-        rospy.logdebug(f"{self.this_robot} - Channel - CALLBACK_SERVER: {msg}")
+        self.logger.debug(f"{self.this_robot} - Channel - CALLBACK_SERVER: {msg}")
         header = msg[:CODE_LENGTH].decode()
         data = msg[CODE_LENGTH:]
 
@@ -439,8 +470,8 @@ class Channel():
             # Returns all the headers that this node has
             # FIXME(Fernando): Configure this depending on the message type
             headers = self.dbl.get_header_list(filter_latest=True)
-            rospy.logdebug(f"{self.this_robot} - Channel - Sending {len(headers)} headers")
-            rospy.logdebug(f"{self.this_robot} - Channel - {headers}")
+            self.logger.debug(f"{self.this_robot} - Channel - Sending {len(headers)} headers")
+            self.logger.debug(f"{self.this_robot} - Channel - {headers}")
             serialized = du.serialize_headers(headers)
             return serialized
         if header == Comm_msgs.GDATA.name:
@@ -448,14 +479,14 @@ class Channel():
             # Returns a packed data for the requires header
             # One header at a time
             if len(data) != HEADER_LENGTH:
-                rospy.logerr(f"{self.this_robot} - Wrong header length: {len(data)}")
+                self.logger.error(f"{self.this_robot} - Wrong header length: {len(data)}")
                 return Comm_msgs.SERRM.name.encode()
             try:
                 dbm = self.dbl.find_header(r_header)
                 packed = du.pack_data(dbm)
                 return packed
             except Exception:
-                rospy.logerr(f"{self.this_robot} - Header not found: {r_header}")
+                self.logger.error(f"{self.this_robot} - Header not found: {r_header}")
                 return Comm_msgs.SERRM.name.encode()
         if header == Comm_msgs.DENDT.name:
             target = data
@@ -463,6 +494,11 @@ class Channel():
                 print(f"{self.this_robot} - Channel - Wrong DENDT -" +
                              f" Target: {target.decode()} - " +
                              f"My target: {self.target_robot}")
-            self.server_sync_complete_pub.publish(Time(rospy.get_rostime()))
+            if self.server_sync_complete_pub is not None:
+                time_msg = Time()
+                if self.node is not None:
+                    current_time = self.node.get_clock().now()
+                    time_msg.sec, time_msg.nanosec = current_time.seconds_nanoseconds()
+                self.server_sync_complete_pub.publish(time_msg)
             return "Ack".encode()
         return Comm_msgs.SERRM.name.encode()
