@@ -4,10 +4,8 @@ import sys
 import os
 from pprint import pprint
 import uuid
-import geometry_msgs.msg
-import rospkg
 import pdb
-import rospy
+import time
 from colorama import Fore, Back, Style
 import yaml
 import random
@@ -18,13 +16,31 @@ ROBOT1_TOPIC2_PRIO2 = b'\x01\x00\x01O\x00\xc7'
 
 
 class test(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        # Load configurations at the class level
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        ddb_path = os.path.join(current_dir, "..")
+        
+        # Load robot configs
+        robot_configs_path = os.path.join(ddb_path, "config/testConfigs/robot_configs.yaml")
+        with open(robot_configs_path, "r") as f:
+            cls.robot_configs = yaml.load(f, Loader=yaml.FullLoader)
+
+        # Load topic configs
+        topic_configs_path = os.path.join(ddb_path, "config/testConfigs/topic_configs.yaml")
+        with open(topic_configs_path, "r") as f:
+            cls.topic_configs = yaml.load(f, Loader=yaml.FullLoader)
+
+        cls.msg_types = du.msg_types(cls.robot_configs, cls.topic_configs)
+
     def setUp(self):
         test_name = self._testMethodName
         print("\n", Fore.RED, 20*"=", test_name, 20*"=", Style.RESET_ALL)
         super().setUp()
 
     def tearDown(self):
-        rospy.sleep(1)
+        time.sleep(1)
         super().tearDown()
 
     def test_serialize_deserialize(self):
@@ -59,41 +75,40 @@ class test(unittest.TestCase):
     def test_topic_id(self):
         for i in range(50):
             # Pick a random robot
-            robot = random.choice(list(robot_configs.keys()))
+            robot = random.choice(list(self.robot_configs.keys()))
             # Pick a random topic
-            topic_list = topic_configs[robot_configs[robot]["node-type"]]
+            topic_list = self.topic_configs[self.robot_configs[robot]["node-type"]]
             topic = random.choice(topic_list)
-            id = du.get_topic_id_from_name(robot_configs, topic_configs,
+            id = du.get_topic_id_from_name(self.robot_configs, self.topic_configs,
                                            robot, topic["msg_topic"])
-            topic_find = du.get_topic_name_from_id(robot_configs,
-                                                   topic_configs, robot, id)
+            topic_find = du.get_topic_name_from_id(self.robot_configs,
+                                                   self.topic_configs, robot, id)
             self.assertEqual(topic["msg_topic"], topic_find)
 
     def test_robot_id(self):
-        for robot in robot_configs:
-            number = du.get_robot_id_from_name(robot_configs, robot)
-            robot_name = du.get_robot_name_from_id(robot_configs, number)
+        for robot in self.robot_configs:
+            number = du.get_robot_id_from_name(self.robot_configs, robot)
+            robot_name = du.get_robot_name_from_id(self.robot_configs, number)
             self.assertEqual(robot, robot_name)
+
+# Add the mocha_core module path for imports
+current_dir = os.path.dirname(os.path.abspath(__file__))
+mocha_core_path = os.path.join(current_dir, "..", "mocha_core")
+sys.path.append(mocha_core_path)
+
+import database_utils as du
+import sample_db
+import hash_comm as hc
 
 if __name__ == '__main__':
     # Get the directory path and import all the required modules to test
-    rospack = rospkg.RosPack()
-    ddb_path = rospack.get_path('mocha_core')
-    scripts_path = os.path.join(ddb_path, "scripts/core")
-    sys.path.append(scripts_path)
-    import database_utils as du
-    import sample_db
-    import hash_comm as hc
-
-    # Set the node name
-    rospy.init_node('test_synchronize_utils', anonymous=False)
-
+    ddb_path = os.path.join(current_dir, "..")
+    
     # Get the default path from the ddb_path
     robot_configs_default = os.path.join(ddb_path,
                                          "config/testConfigs/robot_configs.yaml")
-    # Get the path to the robot config file from the ros parameter robot_configs
-    robot_configs = rospy.get_param("robot_configs",
-                                    robot_configs_default)
+    # Use the default path for robot configs
+    robot_configs = robot_configs_default
 
     # Get the yaml dictionary objects
     with open(robot_configs, "r") as f:
@@ -102,10 +117,8 @@ if __name__ == '__main__':
     # Get the default path from the ddb_path
     topic_configs_default = os.path.join(ddb_path,
                                          "config/testConfigs/topic_configs.yaml")
-    # Get the path to the robot config file from the ros
-    # parameter topic_configs
-    topic_configs = rospy.get_param("topic_configs",
-                                    topic_configs_default)
+    # Use the default path for topic configs
+    topic_configs = topic_configs_default
 
     # Get the yaml dictionary objects
     with open(topic_configs, "r") as f:
