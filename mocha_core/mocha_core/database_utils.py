@@ -1,5 +1,6 @@
 import struct
-import rospy
+import rclpy.time
+import rclpy.logging
 import database as db
 import hash_comm
 import io
@@ -51,9 +52,9 @@ def get_topic_id_from_name(robot_configs, topic_configs,
             id = i
             break
     if id is None:
-        rospy.logerr(f"{topic_name} does not exist in topic_configs")
-        rospy.signal_shutdown("topic_name does not exist in topic_configs")
-        rospy.spin()
+        logger = rclpy.logging.get_logger('database_utils')
+        logger.error(f"{topic_name} does not exist in topic_configs")
+        return None
     return id
 
 
@@ -65,9 +66,9 @@ def get_topic_name_from_id(robot_configs, topic_configs, robot_name, topic_id):
     assert topic_id is not None and isinstance(topic_id, int)
     list_topics = topic_configs[robot_configs[robot_name]["node-type"]]
     if topic_id >= len(list_topics):
-        rospy.logerr(f"{topic_id} does not exist in topic_configs")
-        rospy.signal_shutdown("topic_id does not exist in topic_configs")
-        rospy.spin()
+        logger = rclpy.logging.get_logger('database_utils')
+        logger.error(f"{topic_id} does not exist in topic_configs")
+        return None
     return list_topics[topic_id]["msg_topic"]
 
 
@@ -172,9 +173,9 @@ def msg_types(robot_configs, topic_configs):
             if not (len(parts) == 2 and
                     all(part.replace("_", "").isalnum()
                         for part in parts)):
-                rospy.logerr(f"Error: msg_type {msg} not valid")
-                rospy.signal_shutdown("Error: msg_type {msg} not valid")
-                rospy.spin()
+                logger = rclpy.logging.get_logger('database_utils')
+                logger.error(f"Error: msg_type {msg} not valid")
+                return None
             msg_list.append(topic['msg_type'])
     # Important: sort the msg_list so we have a deterministic order
     msg_list.sort()
@@ -209,7 +210,7 @@ def generate_random_header():
     # generate random robot_id and topic_id, between 0 and 255
     robot_id = random.randint(0, 255)
     topic_id = random.randint(0, 255)
-    # Generate a random rospy timestamp
-    time = rospy.Time.from_sec(random.random())
+    # Generate a random rclpy timestamp
+    time = rclpy.time.Time(seconds=int(random.random() * 1000), nanoseconds=int(random.random() * 1e9))
     h = hash_comm.TsHeader.from_data(robot_id, topic_id, time)
     return h.bindigest()

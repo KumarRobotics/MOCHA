@@ -3,10 +3,9 @@ import unittest
 import sys
 import os
 import uuid
-import geometry_msgs.msg
-import rospkg
 import pdb
-import rospy
+import rclpy
+import rclpy.time
 from colorama import Fore, Back, Style
 import yaml
 import pprint
@@ -25,7 +24,8 @@ class test(unittest.TestCase):
         super().setUp()
 
     def tearDown(self):
-        rospy.sleep(1)
+        import time
+        time.sleep(1)
         super().tearDown()
 
     def test_get_header_list(self):
@@ -104,32 +104,16 @@ class test(unittest.TestCase):
         self.assertEqual(dbm.data, data)
 
 
+# Add the mocha_core module path for imports
+current_dir = os.path.dirname(os.path.abspath(__file__))
+mocha_core_path = os.path.join(current_dir, "..", "mocha_core")
+sys.path.append(mocha_core_path)
+
+import database
+import sample_db
+import hash_comm as hc
+import database_utils as du
+
 if __name__ == '__main__':
-    # Get the directory path and import all the required modules to test
-    rospack = rospkg.RosPack()
-    ddb_path = rospack.get_path('mocha_core')
-    scripts_path = os.path.join(ddb_path, "scripts/core")
-    sys.path.append(scripts_path)
-    import database
-    import sample_db
-    import hash_comm as hc
-    import database_utils as du
-
-    dbl = sample_db.get_sample_dbl()
-
-    # Set the node name
-    rospy.init_node('test_synchronize_utils', anonymous=False)
-
-    # Get the default path from the ddb_path
-    robot_configs_default = os.path.join(ddb_path,
-                                         "config/testConfigs/robot_configs.yaml")
-    # Get the path to the robot config file from the ros parameter robot_configs
-    robot_configs = rospy.get_param("robot_configs",
-                                    robot_configs_default)
-
-    # Get the yaml dictionary objects
-    with open(robot_configs, "r") as f:
-        robot_configs = yaml.load(f, Loader=yaml.FullLoader)
-
     # Run test cases!
     unittest.main()

@@ -7,7 +7,7 @@ import hash_comm
 import database as db
 import database_utils as du
 import pdb
-import rospy
+import rclpy.time
 
 DB_TEMPLATE = {
         0: {
@@ -69,7 +69,7 @@ def get_sample_dbl():
                 DB[robot_id][topic_id] = {}
             for msg in DB_TEMPLATE[robot_id][topic_id]:
                 ts = DB_TEMPLATE[robot_id][topic_id][msg]['ts']
-                ts = rospy.Time.from_sec(ts)
+                ts = rclpy.time.Time(seconds=int(ts), nanoseconds=int((ts % 1) * 1e9))
                 data = DB_TEMPLATE[robot_id][topic_id][msg]['data']
                 dtype = DB_TEMPLATE[robot_id][topic_id][msg]['dtype']
                 prio = DB_TEMPLATE[robot_id][topic_id][msg]['priority']
