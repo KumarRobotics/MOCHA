@@ -133,19 +133,41 @@ def unpack_data(header, packed_data):
 
 def serialize_ros_msg(msg):
     # TODO check that we are not entering garbage
-    sio_h = io.BytesIO()
-    msg.serialize(sio_h)
-    serialized = sio_h.getvalue()
+    # In ROS2, we use CDR serialization
+    from rclpy.serialization import serialize_message
+    serialized = serialize_message(msg)
     compressed = lz4.frame.compress(serialized)
+    
+    # Debug: Test round-trip compression
+    try:
+        test_decompress = lz4.frame.decompress(compressed)
+        if test_decompress != serialized:
+            raise Exception("LZ4 round-trip test failed")
+    except Exception as e:
+        raise Exception(f"LZ4 compression test failed: {e}")
+    
     return compressed
 
 
 def parse_answer(api_answer, msg_types):
     constructor = msg_types[api_answer.robot_id][api_answer.topic_id]['obj']
-    msg = constructor()
     # api_answer.msg_content has the compressed message
-    decompressed = lz4.frame.decompress(api_answer.msg_content)
-    msg.deserialize(decompressed)
+    
+    # Debug: Check what we're trying to decompress
+    print(f"DEBUG: Trying to decompress {len(api_answer.msg_content)} bytes")
+    print(f"DEBUG: First 20 bytes: {api_answer.msg_content[:20]}")
+    
+    try:
+        decompressed = lz4.frame.decompress(api_answer.msg_content)
+    except Exception as e:
+        print(f"DEBUG: LZ4 decompression failed: {e}")
+        print(f"DEBUG: msg_content type: {type(api_answer.msg_content)}")
+        print(f"DEBUG: msg_content length: {len(api_answer.msg_content)}")
+        raise
+    
+    # In ROS2, we use CDR deserialization
+    from rclpy.serialization import deserialize_message
+    msg = deserialize_message(decompressed, constructor)
     robot_id = api_answer.robot_id
     topic_id = api_answer.topic_id
     ts = api_answer.timestamp

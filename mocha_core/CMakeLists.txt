@@ -62,6 +62,7 @@ if(BUILD_TESTING)
   ament_add_pytest_test(test_database_utils test/test_database_utils.py)
   ament_add_pytest_test(test_zmq_comm_node test/test_zmq_comm_node.py)
   ament_add_pytest_test(test_synchronize_channel test/test_synchronize_channel.py)
+  ament_add_pytest_test(test_database_server test/test_database_server.py)
 endif()
 
 ament_package()
