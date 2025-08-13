@@ -63,6 +63,8 @@ if(BUILD_TESTING)
   ament_add_pytest_test(test_zmq_comm_node test/test_zmq_comm_node.py)
   ament_add_pytest_test(test_synchronize_channel test/test_synchronize_channel.py)
   ament_add_pytest_test(test_database_server test/test_database_server.py)
+  ament_add_pytest_test(test_delay_2robots test/test_delay_2robots.py)
+  ament_add_pytest_test(test_multiple_robots_sync test/test_multiple_robots_sync.py)
 endif()
 
 ament_package()

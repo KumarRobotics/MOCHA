@@ -2,7 +2,13 @@
 import copy
 from pprint import pprint
 import sys
-sys.path.append('..')
+import os
+
+# Add the mocha_core module path for imports
+current_dir = os.path.dirname(os.path.abspath(__file__))
+mocha_core_path = os.path.join(current_dir, "..", "mocha_core")
+sys.path.append(mocha_core_path)
+
 import hash_comm
 import database as db
 import database_utils as du
