@@ -9,13 +9,15 @@ import pprint
 import sys
 import pdb
 
-import rospy
+import rclpy
+from rclpy.node import Node
 from std_msgs.msg import String
 from std_msgs.msg import Int32
-import rospkg
+from ament_index_python.packages import get_package_share_directory
 
-class RajantParser():
+class RajantParser(Node):
     def __init__(self, this_robot, robot_configs, radio_configs):
+        super().__init__('rajant_parser')
 
         # Check input args
         assert isinstance(this_robot, str)
@@ -26,16 +28,15 @@ class RajantParser():
         self.this_robot = this_robot
         self.robot_cfg = robot_configs
         self.radio_cfg = radio_configs
-        self.rate = rospy.Rate(.5)
 
-        rospy.loginfo(f"{self.this_robot} - Rajant API Parser - Starting")
+        self.get_logger().info(f"{self.this_robot} - Rajant API Parser - Starting")
 
         # Generate a standard configuration with a RSSI of -1
         for radio in self.radio_cfg.keys():
             for address in self.radio_cfg[radio]['MAC-address']:
                 self.MAC_DICT[address] = {}
                 self.MAC_DICT[address]['rssi'] = -20
-                self.MAC_DICT[address]['timestamp'] = rospy.Time.now()
+                self.MAC_DICT[address]['timestamp'] = self.get_clock().now()
                 self.MAC_DICT[address]['radio'] = radio
                 self.MAC_DICT[address]['publisher'] = None
 
@@ -43,16 +44,21 @@ class RajantParser():
         for mac in self.MAC_DICT.keys():
             for robot in self.robot_cfg.keys():
                 if self.MAC_DICT[mac]['radio'] == self.robot_cfg[robot]['using-radio'] and robot != self.this_robot:
-                    self.MAC_DICT[mac]['publisher'] = rospy.Publisher('ddb/rajant/rssi/' + robot, Int32, queue_size = 10)
+                    self.MAC_DICT[mac]['publisher'] = self.create_publisher(Int32, 'ddb/rajant/rssi/' + robot, 10)
 
-        rospy.Subscriber('ddb/rajant/log', String, self.update_dict)
-        rospy.spin()
+        # Create subscriber
+        self.subscription = self.create_subscription(
+            String,
+            'ddb/rajant/log',
+            self.update_dict,
+            10
+        )
 
 
     def update_dict(self, data):
         # If we did not receive an update after dt, drop the RSSI to -1
         no_rssi = -1
-        dt = rospy.Duration(20.)
+        dt = rclpy.duration.Duration(seconds=20.0)
 
         # Evaluate the input data as a dictionary
         alldata = data.data
@@ -60,7 +66,6 @@ class RajantParser():
 
         state = data_dict['watchResponse']['state']
 
-        # Still need to figure out the rospy time issue
         # Update the RSSI
         for wireless_channel in state.keys():
             for wireless_keys in state[wireless_channel].keys():
@@ -69,56 +74,88 @@ class RajantParser():
                     if 'rssi' in state[wireless_channel][peer].keys():
                         mac = state[wireless_channel][peer]['mac']
                         if mac not in self.MAC_DICT.keys():
-                            rospy.logerr(f"MAC: {mac} is not in the list of knowns MACs. Is your radio_configs.yaml file correct?")
+                            self.get_logger().error(f"MAC: {mac} is not in the list of knowns MACs. Is your radio_configs.yaml file correct?")
                             continue
-                        rssi =  state[wireless_channel][peer]['rssi']
+                        rssi = state[wireless_channel][peer]['rssi']
                         self.MAC_DICT[mac]['rssi'] = rssi
-                        self.MAC_DICT[mac]['timestamp'] = rospy.Time.now()
+                        self.MAC_DICT[mac]['timestamp'] = self.get_clock().now()
                         # Only publish if the publisher is not None
                         # This avoids an error for a radio that is connected but that is not
                         # actively used by any robot
                         if self.MAC_DICT[mac]['publisher'] is not None:
-                            self.MAC_DICT[mac]['publisher'].publish(rssi)
+                            msg = Int32()
+                            msg.data = rssi
+                            self.MAC_DICT[mac]['publisher'].publish(msg)
                         else:
-                            rospy.logwarn(f"{self.this_robot} - Rajant API Parser - " +
+                            self.get_logger().warn(f"{self.this_robot} - Rajant API Parser - " +
                                           f"active radio {self.MAC_DICT[mac]['radio']} not assigned to any robot")
                     elif 'mac' in state[wireless_channel][peer].keys() and 'rssi' not in state[wireless_channel][peer].keys():
                         mac = state[wireless_channel][peer]['mac']
                         if mac not in self.MAC_DICT.keys():
-                            rospy.logerr(f"MAC: {mac} is not in the list of knowns MACs. Is your radio_configs.yaml file correct?")
+                            self.get_logger().error(f"MAC: {mac} is not in the list of knowns MACs. Is your radio_configs.yaml file correct?")
                             continue
-                        if rospy.Time.now()-self.MAC_DICT[mac]['timestamp'] > dt:
+                        if self.get_clock().now() - self.MAC_DICT[mac]['timestamp'] > dt:
                             self.MAC_DICT[mac]['rssi'] = no_rssi
                             # Only publish if the publisher is not None
                             # See comment above
                             if self.MAC_DICT[mac]['publisher'] is not None:
-                                self.MAC_DICT[mac]['publisher'].publish(no_rssi)
+                                msg = Int32()
+                                msg.data = no_rssi
+                                self.MAC_DICT[mac]['publisher'].publish(msg)
                             else:
-                                rospy.logwarn(f"{self.this_robot} - Rajant API Parser - " +
+                                self.get_logger().warn(f"{self.this_robot} - Rajant API Parser - " +
                                               f"active radio {self.MAC_DICT[mac]['radio']} not assigned to any robot")
 
 
-if __name__ == '__main__':
-
-    rospy.init_node('rajant_listener', anonymous=False)
-    # Get robot name from the ~robot_name param
-    robot_name = rospy.get_param('~robot_name', 'charon')
-
-    # Get robot configs
-    robot_configs_file = rospy.get_param("~robot_configs")
+def main(args=None):
+    rclpy.init(args=args)
+    
+    # Create a temporary node to get parameters
+    temp_node = Node('temp_rajant_parser')
+    
+    # Declare parameters
+    temp_node.declare_parameter('robot_name', 'charon')
+    temp_node.declare_parameter('robot_configs', '')
+    temp_node.declare_parameter('radio_configs', '')
+    
+    # Get parameters
+    robot_name = temp_node.get_parameter('robot_name').get_parameter_value().string_value
+    robot_configs_file = temp_node.get_parameter('robot_configs').get_parameter_value().string_value
+    radio_configs_file = temp_node.get_parameter('radio_configs').get_parameter_value().string_value
+    
+    # Load robot configs
     with open(robot_configs_file, "r") as f:
-       robot_configs = yaml.load(f, Loader=yaml.FullLoader)
+        robot_configs = yaml.load(f, Loader=yaml.FullLoader)
     if robot_name not in robot_configs.keys():
-        rospy.signal_shutdown("Robot not in config file")
-        rospy.spin()
+        temp_node.get_logger().error("Robot not in config file")
+        temp_node.destroy_node()
+        rclpy.shutdown()
+        return
 
-    # Get radio configs
-    radio_configs_file = rospy.get_param("~radio_configs")
+    # Load radio configs
     with open(radio_configs_file, "r") as f:
         radio_configs = yaml.load(f, Loader=yaml.FullLoader)
     radio = robot_configs[robot_name]["using-radio"]
     if radio not in radio_configs.keys():
-        rospy.shutdown("Radio not in config file")
-        rospy.spin()
+        temp_node.get_logger().error("Radio not in config file")
+        temp_node.destroy_node()
+        rclpy.shutdown()
+        return
+    
+    # Clean up temp node
+    temp_node.destroy_node()
+    
+    # Create the actual parser node
+    rajant_parser = RajantParser(robot_name, robot_configs, radio_configs)
+    
+    try:
+        rclpy.spin(rajant_parser)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        rajant_parser.destroy_node()
+        rclpy.shutdown()
 
-    RajantParser(robot_name, robot_configs, radio_configs)
+
+if __name__ == '__main__':
+    main()

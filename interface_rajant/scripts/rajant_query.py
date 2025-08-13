@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import sys
 import subprocess
-from threading  import Thread
+from threading import Thread
 from queue import Queue, Empty
 from pprint import pprint
 import sys
@@ -13,9 +13,11 @@ import pdb
 import string
 import hashlib
 import random
-import rospy
-import std_msgs.msg
-import rospkg
+
+import rclpy
+from rclpy.node import Node
+from std_msgs.msg import String
+from ament_index_python.packages import get_package_share_directory
 
 def randomNumber(stringLength=4):
     """Generate a random string of fixed length """
@@ -67,94 +69,106 @@ def line_parser(line_bytes):
 
 ON_POSIX = 'posix' in sys.builtin_module_names
 
-if __name__ == "__main__":
-    rospy.init_node("rajant_query", anonymous=False)
 
-    # Get robot name from the ~robot_name param
-    robot_name = rospy.get_param('~robot_name', 'charon')
+class RajantQueryNode(Node):
+    def __init__(self):
+        super().__init__('rajant_query')
+        
+        # Declare parameters
+        self.declare_parameter('robot_name', 'charon')
+        self.declare_parameter('robot_configs', '')
+        self.declare_parameter('radio_configs', '')
+        
+        # Get parameters
+        self.robot_name = self.get_parameter('robot_name').get_parameter_value().string_value
+        robot_configs_file = self.get_parameter('robot_configs').get_parameter_value().string_value
+        radio_configs_file = self.get_parameter('radio_configs').get_parameter_value().string_value
+        
+        # Load robot configs
+        with open(robot_configs_file, "r") as f:
+            robot_configs = yaml.load(f, Loader=yaml.FullLoader)
+        if self.robot_name not in robot_configs.keys():
+            self.get_logger().error("Robot not in config file")
+            return
 
-    # Get robot configs
-    robot_configs_file = rospy.get_param("~robot_configs")
-    with open(robot_configs_file, "r") as f:
-       robot_configs = yaml.load(f, Loader=yaml.FullLoader)
-    if robot_name not in robot_configs.keys():
-        rospy.signal_shutdown("Robot not in config file")
-        rospy.spin()
+        # Load radio configs
+        with open(radio_configs_file, "r") as f:
+            radio_configs = yaml.load(f, Loader=yaml.FullLoader)
+        radio = robot_configs[self.robot_name]["using-radio"]
+        if radio not in radio_configs.keys():
+            self.get_logger().error("Radio not in config file")
+            return
 
-    # Get radio configs
-    radio_configs_file = rospy.get_param("~radio_configs")
-    with open(radio_configs_file, "r") as f:
-        radio_configs = yaml.load(f, Loader=yaml.FullLoader)
-    radio = robot_configs[robot_name]["using-radio"]
-    if radio not in radio_configs.keys():
-        rospy.shutdown("Radio not in config file")
-        rospy.spin()
+        # Get target IP
+        rajant_name = robot_configs[self.robot_name]['using-radio']
+        if rajant_name in radio_configs.keys():
+            self.target_ip = radio_configs[rajant_name]['computed-IP-address']
+        else:
+            self.get_logger().error(f"Radio {rajant_name} for robot {self.robot_name} not found in configs")
+            return
 
-    # Get path of the package
-    rajant_name = robot_configs[robot_name]['using-radio']
-    if rajant_name in radio_configs.keys():
-        target_ip = radio_configs[rajant_name]['computed-IP-address']
-    else:
-        rospy.logerr(f"Radio {rajant_name} for robot {robot_name} not found in configs")
-        rospy.signal_shutdown("Radio not in configs")
-        rospy.spin()
+        # Create ROS publisher
+        self.pub = self.create_publisher(String, 'ddb/rajant/log', 10)
 
+        # Get package path
+        try:
+            ros_path = get_package_share_directory('interface_rajant')
+        except:
+            self.get_logger().error("Could not find interface_rajant package")
+            return
 
-    # Create ros publisher
-    pub = rospy.Publisher('ddb/rajant/log', std_msgs.msg.String, queue_size=10)
+        # Java binary path
+        self.java_bin = os.path.join(ros_path, 'scripts',
+                                'thirdParty/watchstate/bcapi-watchstate-11.19.0-SNAPSHOT-jar-with-dependencies.jar')
 
-    rospack = rospkg.RosPack()
-    ros_path = rospack.get_path('interface_rajant')
+        # Initialize subprocess variables
+        self.p = None
+        self.q = None
+        self.t = None
+        
+        # Start the Java process
+        self.start_java_process()
+        
+        # Go
+        self.get_logger().info(f"{self.robot_name} - Rajant API Query - Starting on {rajant_name}")
 
-    # Create subprocess for the java app
-    java_bin = os.path.join(ros_path, 'scripts',
-                            'thirdParty/watchstate/bcapi-watchstate-11.19.0-SNAPSHOT-jar-with-dependencies.jar')
+        # Ping the assigned radio
+        if ping_ip(self.target_ip):
+            self.get_logger().info(f"{self.robot_name} - Rajant API Query - ping success")
+        else:
+            self.get_logger().error(f"{self.robot_name} - Rajant API Query - Rajant ping failed")
+            return
 
-    p = subprocess.Popen(['java',
-               '-jar',
-               java_bin,
-               target_ip], stdout=subprocess.PIPE, close_fds=ON_POSIX)
-    q = Queue()
-    t = Thread(target=enqueue_output, args=(p.stdout, q))
-    t.daemon = True  # thread dies with the program
-    t.start()
+        # Create timer for main processing loop
+        self.timer = self.create_timer(1.0, self.process_rajant_data)
 
-    # Go
-    rospy.loginfo(f"{robot_name} - Rajant API Query - Starting on {rajant_name}")
+    def start_java_process(self):
+        """Start or restart the Java process"""
+        self.p = subprocess.Popen(['java',
+                   '-jar',
+                   self.java_bin,
+                   self.target_ip], stdout=subprocess.PIPE, close_fds=ON_POSIX)
+        self.q = Queue()
+        self.t = Thread(target=enqueue_output, args=(self.p.stdout, self.q))
+        self.t.daemon = True  # thread dies with the program
+        self.t.start()
 
-    # ping the assigned radio
-    if ping_ip(target_ip):
-        rospy.loginfo(f"{robot_name} - Rajant API Query - ping success")
-    else:
-        rospy.logerr(f"{robot_name} - Rajant API Query - Rajant ping failed")
-        rospy.signal_shutdown("Rajant IP")
-        rospy.spin()
-
-    while not rospy.is_shutdown():
-        if not t.is_alive():
-            rospy.logerr(f'{robot_name}: Rajant Java process died! Restarting...')
-            p = subprocess.Popen(['java',
-                       '-jar',
-                       java_bin,
-                       target_ip], stdout=subprocess.PIPE, close_fds=ON_POSIX)
-            q = Queue()
-            t = Thread(target=enqueue_output, args=(p.stdout, q))
-            t.daemon = True  # thread dies with the program
-            t.start()
-
-        # This sleep avoids problem with the java process. DO NOT REMOVE IT
-        rospy.sleep(1)
+    def process_rajant_data(self):
+        """Main processing loop - called by timer"""
+        if self.t is not None and not self.t.is_alive():
+            self.get_logger().error(f'{self.robot_name}: Rajant Java process died! Restarting...')
+            self.start_java_process()
 
         try:
-            line = q.get_nowait()
+            line = self.q.get_nowait()
         except Empty:
             # No output yet
-            pass
+            return
         else:  # got line
             answ_array = line_parser(line)
-            while not rospy.is_shutdown():
+            while True:
                 try:
-                    newline = q.get_nowait()
+                    newline = self.q.get_nowait()
                 except Empty:
                     break
                 else:
@@ -162,9 +176,28 @@ if __name__ == "__main__":
             try:
                 yaml_res = yaml.load(answ_array, Loader=yaml.Loader)
                 if type(yaml_res) == type({}):
-                    # rospy.logdebug(str(yaml_res) + "\n")
-                    pub.publish(str(yaml_res))
+                    msg = String()
+                    msg.data = str(yaml_res)
+                    self.pub.publish(msg)
                 else:
-                    rospy.logerr(f"{robot_name}: YAML from Rajant did not look like an object!")
+                    self.get_logger().error(f"{self.robot_name}: YAML from Rajant did not look like an object!")
             except yaml.scanner.ScannerError:
-                rospy.logerr(f"{robot_name}: Could not parse YAML from Rajant!")
+                self.get_logger().error(f"{self.robot_name}: Could not parse YAML from Rajant!")
+
+
+def main(args=None):
+    rclpy.init(args=args)
+    
+    rajant_query_node = RajantQueryNode()
+    
+    try:
+        rclpy.spin(rajant_query_node)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        rajant_query_node.destroy_node()
+        rclpy.shutdown()
+
+
+if __name__ == "__main__":
+    main()
