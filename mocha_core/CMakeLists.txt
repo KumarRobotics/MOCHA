@@ -44,6 +44,11 @@ install(DIRECTORY launch
   DESTINATION share/${PROJECT_NAME}
 )
 
+# Install config files
+install(DIRECTORY config
+  DESTINATION share/${PROJECT_NAME}
+)
+
 if(BUILD_TESTING)
   # find_package(ament_lint_auto REQUIRED)
   find_package(ament_cmake_pytest REQUIRED)
@@ -65,6 +70,7 @@ if(BUILD_TESTING)
   ament_add_pytest_test(test_database_server test/test_database_server.py)
   ament_add_pytest_test(test_delay_2robots test/test_delay_2robots.py)
   ament_add_pytest_test(test_multiple_robots_sync test/test_multiple_robots_sync.py)
+  ament_add_pytest_test(test_translator test/test_translator.py)
 endif()
 
 ament_package()
