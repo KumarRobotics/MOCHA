@@ -71,6 +71,7 @@ if(BUILD_TESTING)
   ament_add_pytest_test(test_delay_2robots test/test_delay_2robots.py)
   ament_add_pytest_test(test_multiple_robots_sync test/test_multiple_robots_sync.py)
   ament_add_pytest_test(test_translator test/test_translator.py)
+  ament_add_pytest_test(test_topic_publisher test/test_topic_publisher.py)
 endif()
 
 ament_package()
