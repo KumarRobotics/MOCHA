@@ -36,7 +36,7 @@ class test_translator(unittest.TestCase):
         
         # Create database server to handle service requests
         self.db_node = rclpy.create_node('test_database_server_node')
-        self.dbs = ds.DatabaseServer(robot_configs, topic_configs, node=self.db_node)
+        self.dbs = ds.DatabaseServer(robot_configs, topic_configs, "charon", node=self.db_node)
 
         super().setUp()
 

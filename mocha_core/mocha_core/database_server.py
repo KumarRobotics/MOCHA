@@ -17,10 +17,11 @@ class DatabaseServer:
 
     Please see the list of services in the srv folder
     """
-    def __init__(self, robot_configs, topic_configs, node=None):
+    def __init__(self, robot_configs, topic_configs, robot_name, node=None):
         # Check input topics
         assert isinstance(robot_configs, dict)
         assert isinstance(topic_configs, dict)
+        assert isinstance(robot_name, str)
 
         self.robot_configs = robot_configs
         self.topic_configs = topic_configs
@@ -32,9 +33,8 @@ class DatabaseServer:
         else:
             self.logger = self.node.get_logger()
 
-        # Get current robot name from params (passed as parameter since ROS2 doesn't use global params)
-        # For now, we'll default to 'charon' - this should be passed as a parameter
-        self.robot_name = 'charon'  # TODO: Make this configurable
+        # Get robot name from parameter
+        self.robot_name = robot_name
 
         if self.robot_name not in self.robot_configs.keys():
             self.logger.error(f"{self.robot_name} does not exist in robot_configs")

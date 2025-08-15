@@ -94,7 +94,7 @@ class IntegrateDatabase:
 
         # Create a database server object with ROS2 node
         self.DBServer = ds.DatabaseServer(self.robot_configs,
-                                          self.topic_configs, node=self.node)
+                                          self.topic_configs, self.this_robot, node=self.node)
 
         self.num_robot_in_comm = 0
 

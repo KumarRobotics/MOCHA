@@ -23,7 +23,7 @@ def generate_launch_description():
         'robot_configs',
         default_value=PathJoinSubstitution([
             FindPackageShare('mocha_core'),
-            'config', 'testConfigs', 'robot_configs.yaml'
+            'config', 'robot_configs.yaml'
         ]),
         description='Path to robot configuration file'
     )
@@ -32,7 +32,7 @@ def generate_launch_description():
         'topic_configs', 
         default_value=PathJoinSubstitution([
             FindPackageShare('mocha_core'),
-            'config', 'testConfigs', 'topic_configs.yaml'
+            'config', 'topic_configs.yaml'
         ]),
         description='Path to topic configuration file'
     )

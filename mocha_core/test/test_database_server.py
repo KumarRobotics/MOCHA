@@ -38,7 +38,7 @@ class test(unittest.TestCase):
         self.node = rclpy.create_node('test_database_server_node')
         
         # Create a database server object with the node (this will create the services)
-        self.dbs = ds.DatabaseServer(robot_configs, topic_configs, node=self.node)
+        self.dbs = ds.DatabaseServer(robot_configs, topic_configs, "charon", node=self.node)
 
         super().setUp()
 
