@@ -13,7 +13,7 @@ class Translator:
     def __init__(self, this_robot, this_robot_id,
                  topic_name, topic_id, msg_type, node=None):
         # Get the database utils module
-        import database_utils as du
+        import mocha_core.database_utils as du
         self.__du = du
 
         # Store or create the ROS2 node
@@ -115,9 +115,8 @@ def create_translator_node(robot_name, robot_configs_path=None, topic_configs_pa
         current_dir = os.path.dirname(os.path.abspath(__file__))
         ddb_path = os.path.join(current_dir, "..")
     
-    # Add path for database_utils
-    sys.path.append(os.path.join(ddb_path, "."))
-    import database_utils as du
+    # Import database_utils from installed package
+    import mocha_core.database_utils as du
 
     # Get the robot_config path and generate the robot_configs object
     if robot_configs_path is None:

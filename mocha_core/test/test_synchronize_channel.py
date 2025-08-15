@@ -174,9 +174,9 @@ mocha_core_path = os.path.join(current_dir, "..", "mocha_core")
 sys.path.append(mocha_core_path)
 
 import sample_db
-import synchronize_channel as sync
-import database_utils as du
-import database as db
+import mocha_core.synchronize_channel as sync
+import mocha_core.database_utils as du
+import mocha_core.database as db
 
 # Load robot configs
 robot_configs_path = os.path.join(current_dir, "..", "config", "testConfigs", "robot_configs.yaml")

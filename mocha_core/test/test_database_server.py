@@ -223,8 +223,8 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 mocha_core_path = os.path.join(current_dir, "..", "mocha_core")
 sys.path.append(mocha_core_path)
 
-import database_server as ds
-import database_utils as du
+import mocha_core.database_server as ds
+import mocha_core.database_utils as du
 
 # Load robot configs
 robot_configs_path = os.path.join(

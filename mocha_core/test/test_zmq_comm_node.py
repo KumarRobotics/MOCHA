@@ -90,7 +90,7 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 mocha_core_path = os.path.join(current_dir, "..", "mocha_core")
 sys.path.append(mocha_core_path)
 
-import zmq_comm_node
+import mocha_core.zmq_comm_node as zmq_comm_node
 
 if __name__ == "__main__":
     # Run test cases!

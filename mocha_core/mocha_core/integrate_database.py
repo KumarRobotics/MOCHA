@@ -14,9 +14,9 @@ import yaml
 import std_msgs.msg
 import subprocess
 
-import database_server as ds
-import database_utils as du
-import synchronize_channel as sync
+import mocha_core.database_server as ds
+import mocha_core.database_utils as du
+import mocha_core.synchronize_channel as sync
 
 
 def ping(host):

@@ -28,7 +28,15 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   DEPENDENCIES std_msgs geometry_msgs vision_msgs builtin_interfaces
 )
 
-# Install Python executables
+# Install Python package modules as library
+install(
+  DIRECTORY mocha_core/
+  DESTINATION ${PYTHON_INSTALL_DIR}/${PROJECT_NAME}
+  FILES_MATCHING PATTERN "*.py"
+  PATTERN "__pycache__" EXCLUDE
+)
+
+# Install executables as scripts
 install(PROGRAMS
   mocha_core/integrate_database.py
   mocha_core/database_server.py
@@ -52,7 +60,7 @@ install(DIRECTORY config
 if(BUILD_TESTING)
   # find_package(ament_lint_auto REQUIRED)
   find_package(ament_cmake_pytest REQUIRED)
-  
+
   # the following line skips the linter which checks for copyrights
   # comment the line when a copyright and license is added to all source files
   set(ament_cmake_copyright_FOUND TRUE)
@@ -61,7 +69,7 @@ if(BUILD_TESTING)
   # a copyright and license is added to all source files
   set(ament_cmake_cpplint_FOUND TRUE)
   # ament_lint_auto_find_test_dependencies()
-  
+
   # Add Python tests
   ament_add_pytest_test(test_database test/test_database.py)
   ament_add_pytest_test(test_database_utils test/test_database_utils.py)

@@ -10,6 +10,7 @@ import ament_index_python
 import yaml
 import re
 import mocha_core.msg
+import mocha_core.database_utils as du
 
 import mocha_core.srv
 
@@ -181,9 +182,7 @@ def create_topic_publisher_node(robot_name, robot_configs_path=None, topic_confi
         current_dir = os.path.dirname(os.path.abspath(__file__))
         ddb_path = os.path.join(current_dir, "..")
     
-    # Add path for database_utils
-    sys.path.append(os.path.join(ddb_path, "."))
-    import database_utils as du
+    # database_utils is imported at module level
 
     # Get the robot_config path and generate the robot_configs object
     if robot_configs_path is None:

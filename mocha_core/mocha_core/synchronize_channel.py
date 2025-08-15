@@ -4,10 +4,10 @@ import enum
 import threading
 import time
 import smach
-import database as db
-import database_utils as du
-import hash_comm as hc
-import zmq_comm_node
+import mocha_core.database as db
+import mocha_core.database_utils as du
+import mocha_core.hash_comm as hc
+import mocha_core.zmq_comm_node as zmq_comm_node
 import logging
 import rclpy
 import rclpy.logging

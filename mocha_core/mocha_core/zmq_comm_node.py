@@ -8,7 +8,7 @@ import rclpy.logging
 import rclpy.time
 import rclpy.node
 import zmq
-import hash_comm
+import mocha_core.hash_comm as hash_comm
 import mocha_core.msg
 
 HASH_LENGTH = hash_comm.Hash.HASH_LENGTH

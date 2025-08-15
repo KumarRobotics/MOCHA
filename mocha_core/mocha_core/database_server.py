@@ -6,9 +6,9 @@ import rclpy
 import rclpy.logging
 import rclpy.time
 import mocha_core.srv
-import database
+import mocha_core.database as database
 import pdb
-import database_utils as du
+import mocha_core.database_utils as du
 
 
 class DatabaseServer:

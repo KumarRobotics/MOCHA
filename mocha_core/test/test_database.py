@@ -109,10 +109,10 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 mocha_core_path = os.path.join(current_dir, "..", "mocha_core")
 sys.path.append(mocha_core_path)
 
-import database
+import mocha_core.database as database
 import sample_db
-import hash_comm as hc
-import database_utils as du
+import mocha_core.hash_comm as hc
+import mocha_core.database_utils as du
 
 if __name__ == '__main__':
     # Run test cases!
