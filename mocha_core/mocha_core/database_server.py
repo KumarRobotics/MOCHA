@@ -53,15 +53,15 @@ class DatabaseServer:
         self.service_list = []
         if self.node is not None:
             s = self.node.create_service(mocha_core.srv.AddUpdateDB,
-                                        'AddUpdateDB',
+                                        '/mocha_core/add_update_db',
                                         self.add_update_db_service_cb)
             self.service_list.append(s)
             s = self.node.create_service(mocha_core.srv.GetDataHeaderDB,
-                                        'GetDataHeaderDB',
+                                        '/mocha_core/get_data_header_db',
                                         self.get_data_hash_db_service_cb)
             self.service_list.append(s)
             s = self.node.create_service(mocha_core.srv.SelectDB,
-                                        'SelectDB',
+                                        '/mocha_core/select_db',
                                         self.select_db_service_cb)
             self.service_list.append(s)
 

@@ -34,7 +34,7 @@ class Translator:
         self.__topic_id = topic_id
         self.__this_robot = this_robot
         self.__this_robot_id = this_robot_id
-        self.__service_name = "add_update_db"
+        self.__service_name = "/mocha_core/add_update_db"
         
         # Create service client
         self.__add_update_db = self.__node.create_client(

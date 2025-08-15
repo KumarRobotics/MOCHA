@@ -34,8 +34,8 @@ class TopicPublisher():
         self.__logger = self.__node.get_logger()
 
         # Service configuration
-        self.__select_service = "select_db"
-        self.__get_header_service = "get_data_header_db"
+        self.__select_service = "/mocha_core/select_db"
+        self.__get_header_service = "/mocha_core/get_data_header_db"
 
         # Create service clients
         self.__select_db = self.__node.create_client(
