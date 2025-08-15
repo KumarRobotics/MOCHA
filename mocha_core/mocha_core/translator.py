@@ -197,3 +197,43 @@ if __name__ == "__main__":
     finally:
         node.destroy_node()
         rclpy.shutdown()
+
+def main():
+    rclpy.init(args=None)
+    node = rclpy.create_node('translator')
+    
+    # Declare parameters
+    node.declare_parameter('robot_name', '')
+    node.declare_parameter('robot_configs', '')
+    node.declare_parameter('topic_configs', '')
+    
+    logger = node.get_logger()
+    
+    # Get robot name from parameters 
+    this_robot = node.get_parameter('robot_name').get_parameter_value().string_value
+    if not this_robot:
+        logger.error('robot_name parameter not set')
+        sys.exit(1)
+
+    # Get config file paths from parameters
+    robot_configs_path = node.get_parameter("robot_configs").get_parameter_value().string_value
+    topic_configs_path = node.get_parameter("topic_configs").get_parameter_value().string_value
+    
+    # Use empty strings as None for the function
+    robot_configs_path = robot_configs_path if robot_configs_path else None
+    topic_configs_path = topic_configs_path if topic_configs_path else None
+
+    try:
+        # Create translator node and translators
+        create_translator_node(this_robot, robot_configs_path, topic_configs_path, node)
+        
+        # Spin the node
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
+
+if __name__ == "__main__":
+    main()

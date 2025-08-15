@@ -253,6 +253,7 @@ if __name__ == "__main__":
     robot_configs_path = robot_configs_path if robot_configs_path else None
     topic_configs_path = topic_configs_path if topic_configs_path else None
 
+    pub = None
     try:
         # Create topic publisher node and publisher instance
         _, pub = create_topic_publisher_node(this_robot, robot_configs_path, topic_configs_path, node)
@@ -263,6 +264,51 @@ if __name__ == "__main__":
         pass
     finally:
         # Cleanup
-        pub.shutdown()
+        if pub is not None:
+            pub.shutdown()
         node.destroy_node()
         rclpy.shutdown()
+
+def main():
+    rclpy.init(args=None)
+    node = rclpy.create_node("topic_publisher")
+    logger = node.get_logger()
+
+    # Declare parameters
+    node.declare_parameter("robot_name", "")
+    node.declare_parameter("robot_configs", "")
+    node.declare_parameter("topic_configs", "")
+
+    # Get robot from the parameters
+    this_robot = node.get_parameter("robot_name").get_parameter_value().string_value
+    if not this_robot:
+        logger.error("robot_name parameter is required")
+        rclpy.shutdown()
+        sys.exit(1)
+
+    # Get config file paths from parameters
+    robot_configs_path = node.get_parameter("robot_configs").get_parameter_value().string_value
+    topic_configs_path = node.get_parameter("topic_configs").get_parameter_value().string_value
+    
+    # Use empty strings as None for the function
+    robot_configs_path = robot_configs_path if robot_configs_path else None
+    topic_configs_path = topic_configs_path if topic_configs_path else None
+
+    pub = None
+    try:
+        # Create topic publisher node and publisher instance
+        _, pub = create_topic_publisher_node(this_robot, robot_configs_path, topic_configs_path, node)
+        
+        # Run the publisher
+        pub.run()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        # Cleanup
+        if pub is not None:
+            pub.shutdown()
+        node.destroy_node()
+        rclpy.shutdown()
+
+if __name__ == "__main__":
+    main()
