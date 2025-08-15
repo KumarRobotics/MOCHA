@@ -163,8 +163,9 @@ class IntegrateDatabase:
             channel.comm_node.terminate()
             self.all_channels.remove(channel)
         self.logger.warning(f"{self.this_robot} - Integrate - " + "Killed Channels")
-        self.DBServer.shutdown()
-        self.logger.warning(f"{self.this_robot} - Integrate - " + "Killed DB")
+        if hasattr(self, 'DBServer') and self.DBServer is not None:
+            self.DBServer.shutdown()
+            self.logger.warning(f"{self.this_robot} - Integrate - " + "Killed DB")
         if rclpy.ok():
             rclpy.shutdown()
         self.logger.warning(f"{self.this_robot} - Integrate - " + "Shutting down")
@@ -180,6 +181,9 @@ class IntegrateDatabase:
                 traceback.print_exception(*sys.exc_info())
 
 
-if __name__ == "__main__":
+def main():
     # Start the node
     IntegrateDatabase()
+
+if __name__ == "__main__":
+    main()

@@ -74,7 +74,8 @@ class test(unittest.TestCase):
             req.topic_id = tid
             req.timestamp = rclpy.clock.Clock().now().to_msg()
             req.msg_content = serialized_msg
-            answ = self.dbs.add_update_db_service_cb(req)
+            response = mocha_core.srv.AddUpdateDB.Response()
+            answ = self.dbs.add_update_db_service_cb(req, response)
             answ_header = answ.new_header
         except Exception as exc:
             print("Service did not process request: " + str(exc))
@@ -87,7 +88,8 @@ class test(unittest.TestCase):
             # Create request and call service method directly
             req = mocha_core.srv.GetDataHeaderDB.Request()
             req.msg_header = answ_header
-            answ = self.dbs.get_data_hash_db_service_cb(req)
+            response = mocha_core.srv.GetDataHeaderDB.Response()
+            answ = self.dbs.get_data_hash_db_service_cb(req, response)
         except Exception as exc:
             print("Service did not process request: " + str(exc))
             self.assertTrue(False)
@@ -125,7 +127,8 @@ class test(unittest.TestCase):
                 req.topic_id = tid
                 req.timestamp = rclpy.clock.Clock().now().to_msg()
                 req.msg_content = serialized_msg
-                answ = self.dbs.add_update_db_service_cb(req)
+                response = mocha_core.srv.AddUpdateDB.Response()
+                answ = self.dbs.add_update_db_service_cb(req, response)
                 answ_header = answ.new_header
             except Exception as exc:
                 print("Service did not process request: " + str(exc))
@@ -140,7 +143,8 @@ class test(unittest.TestCase):
             req.robot_id = robot_id
             req.topic_id = 0  # Changed from None to 0 since it's uint8
             req.ts_limit = rclpy.clock.Clock().now().to_msg()
-            answ = self.dbs.select_db_service_cb(req)
+            response = mocha_core.srv.SelectDB.Response()
+            answ = self.dbs.select_db_service_cb(req, response)
         except Exception as exc:
             print("Service did not process request: " + str(exc))
             self.assertTrue(False)
@@ -185,7 +189,8 @@ class test(unittest.TestCase):
                     req.topic_id = tid
                     req.timestamp = timestamp
                     req.msg_content = serialized_msg
-                    _ = self.dbs.add_update_db_service_cb(req)
+                    response = mocha_core.srv.AddUpdateDB.Response()
+                    _ = self.dbs.add_update_db_service_cb(req, response)
                 except Exception as exc:
                     print(f"Service did not process request: {exc}")
 
@@ -209,7 +214,8 @@ class test(unittest.TestCase):
             req.robot_id = robot_id
             req.topic_id = 0  # Changed from None to 0 since it's uint8
             req.ts_limit = rclpy.clock.Clock().now().to_msg()
-            answ = self.dbs.select_db_service_cb(req)
+            response = mocha_core.srv.SelectDB.Response()
+            answ = self.dbs.select_db_service_cb(req, response)
         except Exception as exc:
             print("Service did not process request: " + str(exc))
             self.assertTrue(False)

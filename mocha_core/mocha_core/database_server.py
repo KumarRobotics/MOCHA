@@ -67,54 +67,53 @@ class DatabaseServer:
 
         self.msg_types = du.msg_types(self.robot_configs, self.topic_configs)
 
-    def add_update_db_service_cb(self, req):
+    def add_update_db_service_cb(self, request, response):
         try:
-            if not isinstance(req.topic_id, int) or req.topic_id is None:
+            if not isinstance(request.topic_id, int) or request.topic_id is None:
                 self.logger.error("topic_id empty")
-                return mocha_core.srv.AddUpdateDB.Response()
-            if len(req.msg_content) == 0:
+                return response
+            if len(request.msg_content) == 0:
                 self.logger.error("msg_content empty")
-                return mocha_core.srv.AddUpdateDB.Response()
-            if req.topic_id >= len(self.topic_list):  # Changed > to >= for proper bounds check
-                self.logger.error(f"topic_id {req.topic_id} not in topic_list (length: {len(self.topic_list)})")
-                return mocha_core.srv.AddUpdateDB.Response()
+                return response
+            if request.topic_id >= len(self.topic_list):  # Changed > to >= for proper bounds check
+                self.logger.error(f"topic_id {request.topic_id} not in topic_list (length: {len(self.topic_list)})")
+                return response
             
-            topic = self.topic_list[req.topic_id]
+            topic = self.topic_list[request.topic_id]
             priority = du.get_priority_number(topic["msg_priority"])
-            ts = req.timestamp
+            ts = request.timestamp
             # ROS2 builtin_interfaces/Time uses 'sec' and 'nanosec' fields
             ts = rclpy.time.Time(seconds=ts.sec, nanoseconds=ts.nanosec)
             
             # Convert array to bytes if needed (ROS2 service messages use array)
-            msg_data = req.msg_content
+            msg_data = request.msg_content
             if hasattr(msg_data, 'tobytes'):
                 msg_data = msg_data.tobytes()
             elif isinstance(msg_data, (list, tuple)):
                 msg_data = bytes(msg_data)
             
             dbm = database.DBMessage(self.robot_number,
-                                     req.topic_id,
-                                     dtype=self.msg_types[self.robot_number][req.topic_id]["dtype"],
+                                     request.topic_id,
+                                     dtype=self.msg_types[self.robot_number][request.topic_id]["dtype"],
                                      priority=priority,
                                      ts=ts,
                                      data=msg_data)
 
             header = self.dbl.add_modify_data(dbm)
-            response = mocha_core.srv.AddUpdateDB.Response()
             response.new_header = header
             return response
         except Exception as e:
             self.logger.error(f"Exception in add_update_db_service_cb: {e}")
-            return mocha_core.srv.AddUpdateDB.Response()
+            return response
 
-    def get_data_hash_db_service_cb(self, req):
+    def get_data_hash_db_service_cb(self, request, response):
         try:
-            if req.msg_header is None or len(req.msg_header) == 0:
+            if request.msg_header is None or len(request.msg_header) == 0:
                 self.logger.error("msg_header empty")
-                return mocha_core.srv.GetDataHeaderDB.Response()
+                return response
             
             # Convert array to bytes if needed (ROS2 service messages use array)
-            header_data = req.msg_header
+            header_data = request.msg_header
             if hasattr(header_data, 'tobytes'):
                 header_data = header_data.tobytes()
             elif isinstance(header_data, (list, tuple)):
@@ -122,7 +121,6 @@ class DatabaseServer:
             
             dbm = self.dbl.find_header(header_data)
             
-            response = mocha_core.srv.GetDataHeaderDB.Response()
             response.robot_id = dbm.robot_id
             response.topic_id = dbm.topic_id
             response.timestamp = dbm.ts
@@ -130,23 +128,21 @@ class DatabaseServer:
             return response
         except Exception as e:
             self.logger.error(f"Exception in get_data_hash_db_service_cb: {e}")
-            return mocha_core.srv.GetDataHeaderDB.Response()
+            return response
 
-    def select_db_service_cb(self, req):
+    def select_db_service_cb(self, request, response):
         try:
             # TODO Implement filtering
-            response = mocha_core.srv.SelectDB.Response()
             
             # Note: robot_id and topic_id are uint8 in ROS2, so they can't be None
             # We can add range validation if needed, but for now just proceed
                 
-            list_headers = self.dbl.get_header_list(req.robot_id)
+            list_headers = self.dbl.get_header_list(request.robot_id)
             
             response.headers = du.serialize_headers(list_headers)
             return response
         except Exception as e:
             self.logger.error(f"Exception in select_db_service_cb: {e}")
-            response = mocha_core.srv.SelectDB.Response()
             response.headers = b''
             return response
 
