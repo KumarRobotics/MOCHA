@@ -24,7 +24,7 @@ class SyncStatus(enum.Enum):
 
 class Comm_node:
     def __init__(self, this_node, client_node, robot_configs,
-                 client_callback, server_callback, client_timeout, node=None):
+                 client_callback, server_callback, client_timeout, ros_node):
         # Check input arguments
         assert isinstance(this_node, str)
         assert isinstance(client_node, str)
@@ -33,13 +33,11 @@ class Comm_node:
         assert callable(server_callback)
         assert isinstance(client_timeout, (int, float))
 
-        # Store or create the ROS2 node
-        self.node = node
-        if self.node is None:
-            # Create a minimal logger if no node provided
-            self.logger = rclpy.logging.get_logger('zmq_comm_node')
-        else:
-            self.logger = self.node.get_logger()
+        # Confirm that we are providing a ROS node
+        assert ros_node is not None
+        self.ros_node = ros_node
+        self.logger = self.ros_node.get_logger()
+        self.ros_node_name = self.ros_node.get_fully_qualified_name()
 
         # Check that this_node and client_node exist in the config file
         if this_node not in robot_configs:
@@ -50,7 +48,6 @@ class Comm_node:
         if client_node not in robot_configs[self.this_node]["clients"]:
             self.logger.error(f"{this_node} - Node: client_node not in config file")
             raise ValueError("client_node not in config file")
-
         self.client_node = client_node
 
         self.robot_configs = robot_configs
@@ -72,14 +69,11 @@ class Comm_node:
         self.client_timeout = client_timeout
 
         # Create a publisher for the client bandwidth
-        if self.node is not None:
-            self.pub_client_stats = self.node.create_publisher(
-                mocha_core.msg.ClientStats,
-                f"ddb/client_stats/{self.client_node}",
-                10
-            )
-        else:
-            self.pub_client_stats = None
+        self.pub_client_stats = self.ros_node.create_publisher(
+            mocha_core.msg.ClientStats,
+            f"{self.ros_node_name}/client_stats/{self.client_node}",
+            10
+        )
         self.pub_client_count = 0
 
         self.syncStatus = SyncStatus.IDLE
@@ -134,11 +128,8 @@ class Comm_node:
         self.logger.debug(f"{self.this_node} - Node - SENDMSG: " +
                        f"Sending ({full_msg})")
         client.send(full_msg)
-        if self.node is not None:
-            start_ts = self.node.get_clock().now()
-        else:
-            import time
-            start_ts = time.time()
+        start_ts = self.ros_node.get_clock().now()
+
         # Wait at most self.client_timeout * 1000 ms
         socks = dict(poll.poll(self.client_timeout*1000))
         if socks.get(client) == zmq.POLLIN:
@@ -157,29 +148,22 @@ class Comm_node:
                         f"{self.this_node} - Node - SENDMSG: Server replied " +
                         f"({len(reply)} bytes)"
                     )
-                    if self.node is not None:
-                        stop_ts = self.node.get_clock().now()
-                        time_d = (stop_ts - start_ts).nanoseconds
-                        time_s = float(time_d / 1e9)
-                    else:
-                        import time
-                        stop_ts = time.time()
-                        time_s = stop_ts - start_ts
-                    
+                    stop_ts = self.ros_node.get_clock().now()
+                    time_d = (stop_ts - start_ts).nanoseconds
+                    time_s = float(time_d / 1e9)
+
                     bw = len(reply)/time_s/1024/1024
-                    
-                    if self.pub_client_stats is not None:
-                        stats = mocha_core.msg.ClientStats()
-                        if self.node is not None:
-                            stats.header.stamp = self.node.get_clock().now().to_msg()
-                        stats.header.frame_id = self.this_node
-                        # Note: ROS2 doesn't have seq field in header
-                        stats.msg = msg[:5].decode("utf-8")
-                        stats.rtt = time_s
-                        stats.bw = bw
-                        stats.answ_len = len(reply)
-                        self.pub_client_stats.publish(stats)
-                        self.pub_client_count += 1
+
+                    stats = mocha_core.msg.ClientStats()
+                    stats.header.stamp = self.ros_node.get_clock().now().to_msg()
+                    stats.header.frame_id = self.this_node
+                    # Note: ROS2 doesn't have seq field in header
+                    stats.msg = msg[:5].decode("utf-8")
+                    stats.rtt = time_s
+                    stats.bw = bw
+                    stats.answ_len = len(reply)
+                    self.pub_client_stats.publish(stats)
+                    self.pub_client_count += 1
                     if len(reply) > 10*1024 and SHOW_BANDWIDTH:
                         self.logger.info(f"{self.this_node} - Node - " +
                                       f"SENDMSG: Data RTT: {time_s}")
