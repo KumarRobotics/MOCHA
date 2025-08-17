@@ -8,7 +8,6 @@ import mocha_core.database as db
 import mocha_core.database_utils as du
 import mocha_core.hash_comm as hc
 import mocha_core.zmq_comm_node as zmq_comm_node
-import logging
 import rclpy
 import rclpy.logging
 import rclpy.time
@@ -226,9 +225,8 @@ class TransmissionEnd(smach.State):
                 # We received an ACK
                 if self.outer.client_sync_complete_pub is not None:
                     time_msg = Time()
-                    if self.outer.node is not None:
-                        current_time = self.outer.node.get_clock().now()
-                        time_msg.sec, time_msg.nanosec = current_time.seconds_nanoseconds()
+                    current_time = self.outer.ros_node.get_clock().now()
+                    time_msg.sec, time_msg.nanosec = current_time.seconds_nanoseconds()
                     self.outer.client_sync_complete_pub.publish(time_msg)
                 break
             time.sleep(CHECK_POLL_TIME)
@@ -273,7 +271,7 @@ class Bistable():
 class Channel():
     def __init__(self, dbl, this_robot,
                  target_robot, robot_configs,
-                 client_timeout, node=None):
+                 client_timeout, ros_node):
         # Check input arguments
         assert type(dbl) is db.DBwLock
         assert type(this_robot) is str
@@ -281,16 +279,15 @@ class Channel():
         assert type(robot_configs) is dict
         assert type(client_timeout) is float or type(client_timeout) is int
 
-        # Store or create the ROS2 node
-        self.node = node
-        if self.node is None:
-            self.logger = rclpy.logging.get_logger('synchronize_channel')
-        else:
-            self.logger = self.node.get_logger()
-        
+        # Confirm that we are providing ad ROS node
+        assert ros_node is not None
+        self.ros_node = ros_node
+        self.logger = self.ros_node.get_logger()
+        self.ros_node_name = self.ros_node.get_fully_qualified_name()
+
         # Add shutdown_requested attribute for ROS2 compatibility
         self.shutdown_requested = False
-        
+
         # Override smach logger to use ROS2 loggers
         smach.set_loggers(self.logger.debug, self.logger.warn,
                           self.logger.debug, self.logger.error)
@@ -322,30 +319,23 @@ class Channel():
         self.sm = smach.StateMachine(outcomes=['failure', 'stopped'])
 
         # Create topic to notify that the transmission ended
-        if self.node is not None:
-            self.client_sync_complete_pub = self.node.create_publisher(
-                Time,
-                f"ddb/client_sync_complete/{self.target_robot}",
-                20
-            )
-            self.server_sync_complete_pub = self.node.create_publisher(
-                Time,
-                f"ddb/server_sync_complete/{self.target_robot}",
-                20
-            )
-        else:
-            self.client_sync_complete_pub = None
-            self.server_sync_complete_pub = None
+        self.client_sync_complete_pub = self.ros_node.create_publisher(
+            Time,
+            f"{self.ros_node_name}/client_sync_complete/{self.target_robot}",
+            20
+        )
+        self.server_sync_complete_pub = self.ros_node.create_publisher(
+            Time,
+            f"{self.ros_node_name}/server_sync_complete/{self.target_robot}",
+            20
+        )
 
         # Create a topic that prints the current state of the state machine
-        if self.node is not None:
-            self.sm_state_pub = self.node.create_publisher(
-                SMState,
-                f"ddb/client_sm_state/{self.target_robot}",
-                20
-            )
-        else:
-            self.sm_state_pub = None
+        self.sm_state_pub = self.ros_node.create_publisher(
+            SMState,
+            f"{self.ros_node_name}/client_sm_state/{self.target_robot}",
+            20
+        )
         self.sm_state_count = 0
 
         with self.sm:
@@ -397,8 +387,7 @@ class Channel():
         assert type(msg) is str
         if self.sm_state_pub is not None:
             state_msg = SMState()
-            if self.node is not None:
-                state_msg.header.stamp = self.node.get_clock().now().to_msg()
+            state_msg.header.stamp = self.ros_node.get_clock().now().to_msg()
             state_msg.header.frame_id = self.this_robot
             # Note: ROS2 doesn't have seq field in header
             self.sm_state_count += 1
@@ -416,11 +405,11 @@ class Channel():
                                                  self.callback_client,
                                                  self.callback_server,
                                                  self.client_timeout,
-                                                 self.node)
+                                                 self.ros_node)
         # Unset this flag before starting the SM thread
         self.sm_shutdown.clear()
         self.th = threading.Thread(target=self.sm_thread, args=())
-        self.th.setDaemon(True)
+        self.th.daemon = True
         self.th.start()
 
     def stop(self):
@@ -496,9 +485,8 @@ class Channel():
                              f"My target: {self.target_robot}")
             if self.server_sync_complete_pub is not None:
                 time_msg = Time()
-                if self.node is not None:
-                    current_time = self.node.get_clock().now()
-                    time_msg.sec, time_msg.nanosec = current_time.seconds_nanoseconds()
+                current_time = self.ros_node.get_clock().now()
+                time_msg.sec, time_msg.nanosec = current_time.seconds_nanoseconds()
                 self.server_sync_complete_pub.publish(time_msg)
             return "Ack".encode()
         return Comm_msgs.SERRM.name.encode()
