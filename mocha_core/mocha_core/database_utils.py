@@ -3,6 +3,7 @@ import rclpy.time
 import rclpy.logging
 import mocha_core.database as db
 import mocha_core.hash_comm as hash_comm
+from rclpy.serialization import serialize_message, deserialize_message
 import io
 import pdb
 import importlib
@@ -14,7 +15,6 @@ HEADER_LENGTH = hash_comm.TsHeader.HEADER_LENGTH
 
 def get_robot_id_from_name(robot_configs, robot_name):
     """ Returns the current robot number, based on the name of the
-    robot. If no name is provided, returns the number of the current
     robot. """
 
     # Check input arguments
@@ -29,6 +29,7 @@ def get_robot_id_from_name(robot_configs, robot_name):
 
 
 def get_robot_name_from_id(robot_configs, robot_id):
+    """ Returns the robot name from the ID """
     assert isinstance(robot_configs, dict)
     assert robot_id is not None and isinstance(robot_id, int)
     robots = {get_robot_id_from_name(robot_configs, robot): robot for robot
@@ -37,13 +38,17 @@ def get_robot_name_from_id(robot_configs, robot_id):
 
 
 def get_topic_id_from_name(robot_configs, topic_configs,
-                           robot_name, topic_name):
+                           robot_name, topic_name, ros_node):
     """ Returns the topic id for a particular robot,
     by searching the topic name"""
     assert isinstance(robot_configs, dict)
     assert isinstance(topic_configs, dict)
+    assert ros_node is not None
     assert robot_name is not None and isinstance(robot_name, str)
     assert topic_name is not None and isinstance(topic_name, str)
+    assert ros_node is not None
+
+    logger = ros_node.get_logger()
 
     list_topics = topic_configs[robot_configs[robot_name]["node-type"]]
     id = None
@@ -52,18 +57,22 @@ def get_topic_id_from_name(robot_configs, topic_configs,
             id = i
             break
     if id is None:
-        logger = rclpy.logging.get_logger('database_utils')
         logger.error(f"{topic_name} does not exist in topic_configs")
         return None
     return id
 
 
-def get_topic_name_from_id(robot_configs, topic_configs, robot_name, topic_id):
+def get_topic_name_from_id(robot_configs, topic_configs, robot_name, topic_id,
+                           ros_node):
     """ Returns the topic name for a particular robot, given its id"""
     assert isinstance(robot_configs, dict)
     assert isinstance(topic_configs, dict)
     assert robot_name is not None and isinstance(robot_name, str)
     assert topic_id is not None and isinstance(topic_id, int)
+    assert ros_node is not None
+
+    logger = ros_node.get_logger()
+
     list_topics = topic_configs[robot_configs[robot_name]["node-type"]]
     if topic_id >= len(list_topics):
         logger = rclpy.logging.get_logger('database_utils')
@@ -132,41 +141,21 @@ def unpack_data(header, packed_data):
 
 
 def serialize_ros_msg(msg):
-    # TODO check that we are not entering garbage
-    # In ROS2, we use CDR serialization
-    from rclpy.serialization import serialize_message
+    """ Serialize and compress a message using ROS 2 serialization """
     serialized = serialize_message(msg)
     compressed = lz4.frame.compress(serialized)
-    
-    # Debug: Test round-trip compression
-    try:
-        test_decompress = lz4.frame.decompress(compressed)
-        if test_decompress != serialized:
-            raise Exception("LZ4 round-trip test failed")
-    except Exception as e:
-        raise Exception(f"LZ4 compression test failed: {e}")
-    
     return compressed
+
+def deserialize_ros_msg(msg):
+    """ Decompress and deserialize a message using ROS 2 serialization """
 
 
 def parse_answer(api_answer, msg_types):
     constructor = msg_types[api_answer.robot_id][api_answer.topic_id]['obj']
     # api_answer.msg_content has the compressed message
-    
+
     # Debug: Check what we're trying to decompress
-    print(f"DEBUG: Trying to decompress {len(api_answer.msg_content)} bytes")
-    print(f"DEBUG: First 20 bytes: {api_answer.msg_content[:20]}")
-    
-    try:
-        decompressed = lz4.frame.decompress(api_answer.msg_content)
-    except Exception as e:
-        print(f"DEBUG: LZ4 decompression failed: {e}")
-        print(f"DEBUG: msg_content type: {type(api_answer.msg_content)}")
-        print(f"DEBUG: msg_content length: {len(api_answer.msg_content)}")
-        raise
-    
-    # In ROS2, we use CDR deserialization
-    from rclpy.serialization import deserialize_message
+    decompressed = lz4.frame.decompress(api_answer.msg_content)
     msg = deserialize_message(decompressed, constructor)
     robot_id = api_answer.robot_id
     topic_id = api_answer.topic_id
@@ -174,7 +163,7 @@ def parse_answer(api_answer, msg_types):
     return robot_id, topic_id, ts, msg
 
 
-def msg_types(robot_configs, topic_configs):
+def msg_types(robot_configs, topic_configs, ros_node):
     """
     Extracts message types from the topic_configs dictionary and validates
     them. Returns a dictionary with message type names as keys and
@@ -184,6 +173,9 @@ def msg_types(robot_configs, topic_configs):
         - 'obj' (the message type object itself)
     """
     assert isinstance(topic_configs, dict)
+    assert ros_node is not None
+
+    logger = ros_node.get_logger()
 
     msg_list = []
     for robot in topic_configs:
@@ -195,7 +187,6 @@ def msg_types(robot_configs, topic_configs):
             if not (len(parts) == 2 and
                     all(part.replace("_", "").isalnum()
                         for part in parts)):
-                logger = rclpy.logging.get_logger('database_utils')
                 logger.error(f"Error: msg_type {msg} not valid")
                 return None
             msg_list.append(topic['msg_type'])
@@ -233,6 +224,7 @@ def generate_random_header():
     robot_id = random.randint(0, 255)
     topic_id = random.randint(0, 255)
     # Generate a random rclpy timestamp
-    time = rclpy.time.Time(seconds=int(random.random() * 1000), nanoseconds=int(random.random() * 1e9))
+    time = rclpy.time.Time(seconds=random.randint(0, 65535),
+                           nanoseconds=random.randint(0, 1000)*1e6)
     h = hash_comm.TsHeader.from_data(robot_id, topic_id, time)
     return h.bindigest()
