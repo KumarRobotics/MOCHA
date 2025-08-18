@@ -46,6 +46,9 @@ class DBMessage():
         header = hash_comm.TsHeader.from_data(self.robot_id,
                                               self.topic_id, self.ts)
         self.header = header.bindigest()
+        # Update timestamp to match header precision (ms resolution)
+        _, _, header_ts = header.get_id_and_time()
+        self.ts = header_ts
 
     def __eq__(self, other):
         if not isinstance(other, DBMessage):
@@ -67,7 +70,7 @@ class DBMessage():
     def __str__(self):
         return "%d, %d, %d, %d, %f" % (self.robot_id, self.topic_id,
                                        self.dtype, self.priority,
-                                       self.ts)
+                                       self.ts.nanoseconds)
 
 
 class DBwLock():
