@@ -13,25 +13,24 @@ import mocha_core.database_utils as du
 
 class DatabaseServer:
     """ Starts a clean database and offers an API-like service
-    to interact with the databaseself.
+    to interact with the database.
 
     Please see the list of services in the srv folder
     """
-    def __init__(self, robot_configs, topic_configs, robot_name, node=None):
+    def __init__(self, robot_configs, topic_configs, robot_name, ros_node):
         # Check input topics
         assert isinstance(robot_configs, dict)
         assert isinstance(topic_configs, dict)
         assert isinstance(robot_name, str)
+        assert ros_node is not None
 
         self.robot_configs = robot_configs
         self.topic_configs = topic_configs
-        
+
         # Store or create the ROS2 node
-        self.node = node
-        if self.node is None:
-            self.logger = rclpy.logging.get_logger('database_server')
-        else:
-            self.logger = self.node.get_logger()
+        self.ros_node = ros_node
+        self.logger = self.ros_node.get_logger()
+        self.ros_node_name = self.ros_node.get_fully_qualified_name()
 
         # Get robot name from parameter
         self.robot_name = robot_name
@@ -51,101 +50,79 @@ class DatabaseServer:
 
         # create services for all the possible calls to the DB
         self.service_list = []
-        if self.node is not None:
-            s = self.node.create_service(mocha_core.srv.AddUpdateDB,
-                                        '/mocha_core/add_update_db',
-                                        self.add_update_db_service_cb)
-            self.service_list.append(s)
-            s = self.node.create_service(mocha_core.srv.GetDataHeaderDB,
-                                        '/mocha_core/get_data_header_db',
-                                        self.get_data_hash_db_service_cb)
-            self.service_list.append(s)
-            s = self.node.create_service(mocha_core.srv.SelectDB,
-                                        '/mocha_core/select_db',
-                                        self.select_db_service_cb)
-            self.service_list.append(s)
+        s = self.ros_node.create_service(mocha_core.srv.AddUpdateDB,
+                                    f"{self.ros_node_name}/add_update_db",
+                                    self.add_update_db_service_cb)
+        self.service_list.append(s)
+        s = self.ros_node.create_service(mocha_core.srv.GetDataHeaderDB,
+                                    f"{self.ros_node_name}/get_data_header_db",
+                                    self.get_data_hash_db_service_cb)
+        self.service_list.append(s)
+        s = self.ros_node.create_service(mocha_core.srv.SelectDB,
+                                    f"{self.ros_node_name}/select_db",
+                                    self.select_db_service_cb)
+        self.service_list.append(s)
+        self.msg_types = du.msg_types(self.robot_configs, self.topic_configs,
+                                      self.ros_node)
 
-        self.msg_types = du.msg_types(self.robot_configs, self.topic_configs)
-
-    def add_update_db_service_cb(self, request, response):
-        try:
-            if not isinstance(request.topic_id, int) or request.topic_id is None:
-                self.logger.error("topic_id empty")
-                return response
-            if len(request.msg_content) == 0:
-                self.logger.error("msg_content empty")
-                return response
-            if request.topic_id >= len(self.topic_list):  # Changed > to >= for proper bounds check
-                self.logger.error(f"topic_id {request.topic_id} not in topic_list (length: {len(self.topic_list)})")
-                return response
-            
-            topic = self.topic_list[request.topic_id]
-            priority = du.get_priority_number(topic["msg_priority"])
-            ts = request.timestamp
-            # ROS2 builtin_interfaces/Time uses 'sec' and 'nanosec' fields
-            ts = rclpy.time.Time(seconds=ts.sec, nanoseconds=ts.nanosec)
-            
-            # Convert array to bytes if needed (ROS2 service messages use array)
-            msg_data = request.msg_content
-            if hasattr(msg_data, 'tobytes'):
-                msg_data = msg_data.tobytes()
-            elif isinstance(msg_data, (list, tuple)):
-                msg_data = bytes(msg_data)
-            
-            dbm = database.DBMessage(self.robot_number,
-                                     request.topic_id,
-                                     dtype=self.msg_types[self.robot_number][request.topic_id]["dtype"],
-                                     priority=priority,
-                                     ts=ts,
-                                     data=msg_data)
-
-            header = self.dbl.add_modify_data(dbm)
-            response.new_header = header
+    def add_update_db_service_cb(self, req, response):
+        if not isinstance(req.topic_id, int) or req.topic_id is None:
+            self.logger.error("topic_id empty")
             return response
-        except Exception as e:
-            self.logger.error(f"Exception in add_update_db_service_cb: {e}")
+        if len(req.msg_content) == 0:
+            self.logger.error("msg_content empty")
+            return response
+        if req.topic_id >= len(self.topic_list):  # Changed > to >= for proper bounds check
+            self.logger.error(f"topic_id {req.topic_id} not in topic_list (length: {len(self.topic_list)})")
             return response
 
-    def get_data_hash_db_service_cb(self, request, response):
-        try:
-            if request.msg_header is None or len(request.msg_header) == 0:
-                self.logger.error("msg_header empty")
-                return response
-            
-            # Convert array to bytes if needed (ROS2 service messages use array)
-            header_data = request.msg_header
-            if hasattr(header_data, 'tobytes'):
-                header_data = header_data.tobytes()
-            elif isinstance(header_data, (list, tuple)):
-                header_data = bytes(header_data)
-            
-            dbm = self.dbl.find_header(header_data)
-            
-            response.robot_id = dbm.robot_id
-            response.topic_id = dbm.topic_id
-            response.timestamp = dbm.ts
-            response.msg_content = dbm.data
-            return response
-        except Exception as e:
-            self.logger.error(f"Exception in get_data_hash_db_service_cb: {e}")
+        topic = self.topic_list[req.topic_id]
+        priority = du.get_priority_number(topic["msg_priority"])
+        # req.timestamp is already a builtin_interfaces.msg.Time
+        # Convert to rclpy.time.Time for internal processing
+        ts_msg = req.timestamp
+        ts = rclpy.time.Time.from_msg(ts_msg)
+
+        # Convert array to bytes if needed (ROS2 service messages use array)
+        msg_data = req.msg_content
+        msg_data = bytes(msg_data)
+
+        dbm = database.DBMessage(self.robot_number,
+                                 req.topic_id,
+                                 dtype=self.msg_types[self.robot_number][req.topic_id]["dtype"],
+                                 priority=priority,
+                                 ts=ts,
+                                 data=msg_data)
+
+        header = self.dbl.add_modify_data(dbm)
+        response.new_header = header
+        return response
+
+    def get_data_hash_db_service_cb(self, req, response):
+        if req.msg_header is None or len(req.msg_header) == 0:
+            self.logger.error("msg_header empty")
             return response
 
-    def select_db_service_cb(self, request, response):
-        try:
-            # TODO Implement filtering
-            
-            # Note: robot_id and topic_id are uint8 in ROS2, so they can't be None
-            # We can add range validation if needed, but for now just proceed
-                
-            list_headers = self.dbl.get_header_list(request.robot_id)
-            
-            response.headers = du.serialize_headers(list_headers)
-            return response
-        except Exception as e:
-            self.logger.error(f"Exception in select_db_service_cb: {e}")
-            response.headers = b''
-            return response
+        # Convert array to bytes if needed (ROS2 service messages use array)
+        header_data = req.msg_header
+        header_data = bytes(header_data)
 
-    def shutdown(self):
-        # In ROS2, services are automatically cleaned up when the node is destroyed
-        pass
+        dbm = self.dbl.find_header(header_data)
+
+        response.robot_id = dbm.robot_id
+        response.topic_id = dbm.topic_id
+        # Convert rclpy.time.Time to builtin_interfaces.msg.Time
+        response.timestamp = dbm.ts.to_msg()
+        response.msg_content = dbm.data
+        return response
+
+    def select_db_service_cb(self, req, response):
+        # TODO Implement filtering
+
+        # Note: robot_id and topic_id are uint8 in ROS2, so they can't be None
+        # We can add range validation if needed, but for now just proceed
+
+        list_headers = self.dbl.get_header_list(req.robot_id)
+
+        response.headers = du.serialize_headers(list_headers)
+        return response

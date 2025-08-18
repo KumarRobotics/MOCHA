@@ -9,47 +9,68 @@ import time
 import unittest
 import warnings
 from pprint import pprint
-
+import threading
+from rclpy.logging import LoggingSeverity
+from rclpy.executors import SingleThreadedExecutor
+from rclpy.node import Node
 import rclpy
 import rclpy.time
 import rclpy.clock
 import yaml
 from colorama import Fore, Style
 from geometry_msgs.msg import PointStamped
+import mocha_core.database_server as ds
+import mocha_core.database_utils as du
 
 import mocha_core.srv
 
+class Database_server_test(Node):
+    def __init__(self):
+        super().__init__("test_database_server")
 
 class test(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        # Load configurations at the class level
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        ddb_path = os.path.join(current_dir, "..")
+
+        # Load robot configs
+        robot_configs_path = os.path.join(ddb_path, "config/testConfigs/robot_configs.yaml")
+        with open(robot_configs_path, "r") as f:
+            cls.robot_configs = yaml.load(f, Loader=yaml.FullLoader)
+
+        # Load topic configs
+        topic_configs_path = os.path.join(ddb_path, "config/testConfigs/topic_configs.yaml")
+        with open(topic_configs_path, "r") as f:
+            cls.topic_configs = yaml.load(f, Loader=yaml.FullLoader)
+        cls.robot_name = "charon"
+
+
     def setUp(self):
         test_name = self._testMethodName
         print("\n", Fore.RED, 20 * "=", test_name, 20 * "=", Style.RESET_ALL)
 
-        # Ignore pesky warnings about sockets
-        warnings.filterwarnings(
-            action="ignore", message="unclosed", category=ResourceWarning
-        )
+        rclpy.init()
+        self.test_ros_node = Database_server_test()
+        self.executor = SingleThreadedExecutor()
+        self.executor.add_node(self.test_ros_node)
+        self.logger = self.test_ros_node.get_logger()
+        self.msg_types = du.msg_types(self.robot_configs, self.topic_configs,
+                             self.test_ros_node)
+        executor_thread = threading.Thread(target=self.executor.spin, daemon=True)
+        executor_thread.start()
 
-        # Initialize ROS2 if not already done
-        if not rclpy.ok():
-            rclpy.init()
-        
-        # Create a ROS2 node for the database server
-        self.node = rclpy.create_node('test_database_server_node')
-        
         # Create a database server object with the node (this will create the services)
-        self.dbs = ds.DatabaseServer(robot_configs, topic_configs, "charon", node=self.node)
+        self.dbs = ds.DatabaseServer(self.robot_configs, self.topic_configs,
+                                     self.robot_name, self.test_ros_node)
 
         super().setUp()
 
     def tearDown(self):
-        self.dbs.shutdown()
-        
-        # Shutdown ROS2 node and spin thread
-        if hasattr(self, 'node'):
-            self.node.destroy_node()
-        
-        import time
+        self.executor.shutdown()
+        self.test_ros_node.destroy_node()
+        rclpy.shutdown()
         time.sleep(1)
         super().tearDown()
 
@@ -63,7 +84,8 @@ class test(unittest.TestCase):
         sample_msg.header.stamp = rclpy.clock.Clock().now().to_msg()
 
         tid = du.get_topic_id_from_name(
-            robot_configs, topic_configs, robot_name, "/pose"
+            self.robot_configs, self.topic_configs, self.robot_name, "/pose",
+            self.test_ros_node
         )
         # Serialize and send through service
         serialized_msg = du.serialize_ros_msg(sample_msg)
@@ -95,7 +117,7 @@ class test(unittest.TestCase):
             self.assertTrue(False)
 
         # Parse answer and compare results
-        _, ans_topic_id, _, ans_data = du.parse_answer(answ, msg_types)
+        _, ans_topic_id, _, ans_data = du.parse_answer(answ, self.msg_types)
 
         self.assertEqual(tid, ans_topic_id)
         self.assertEqual(ans_data, sample_msg)
@@ -116,7 +138,9 @@ class test(unittest.TestCase):
             sample_msg.point.z = random.random()
             sample_msg.header.stamp = rclpy.clock.Clock().now().to_msg()
             tid = du.get_topic_id_from_name(
-                robot_configs, topic_configs, robot_name, "/pose"
+                self.robot_configs, self.topic_configs, self.robot_name,
+                "/pose",
+                self.test_ros_node
             )
 
             # Serialize and send through service
@@ -137,7 +161,7 @@ class test(unittest.TestCase):
 
         # Request the list of headers through the service
         try:
-            robot_id = du.get_robot_id_from_name(robot_configs, "charon")
+            robot_id = du.get_robot_id_from_name(self.robot_configs, self.robot_name)
             # Create request and call service method directly
             req = mocha_core.srv.SelectDB.Request()
             req.robot_id = robot_id
@@ -167,7 +191,9 @@ class test(unittest.TestCase):
         def recorder_thread():
             # Get a random ros time
             tid = du.get_topic_id_from_name(
-                robot_configs, topic_configs, robot_name, "/pose"
+                self.robot_configs, self.topic_configs, self.robot_name,
+                "/pose",
+                self.test_ros_node
             )
             sample_msg = PointStamped()
             sample_msg.header.frame_id = "world"
@@ -208,7 +234,7 @@ class test(unittest.TestCase):
 
         # Get the list of hashes from the DB and count them
         try:
-            robot_id = du.get_robot_id_from_name(robot_configs, "charon")
+            robot_id = du.get_robot_id_from_name(self.robot_configs, self.robot_name)
             # Create request and call service method directly
             req = mocha_core.srv.SelectDB.Request()
             req.robot_id = robot_id
@@ -223,33 +249,6 @@ class test(unittest.TestCase):
 
         self.assertEqual(len(returned_headers), NUM_THREADS * LOOPS_PER_THREAD)
 
-
-# Add the mocha_core module path for imports
-current_dir = os.path.dirname(os.path.abspath(__file__))
-mocha_core_path = os.path.join(current_dir, "..", "mocha_core")
-sys.path.append(mocha_core_path)
-
-import mocha_core.database_server as ds
-import mocha_core.database_utils as du
-
-# Load robot configs
-robot_configs_path = os.path.join(
-    current_dir, "..", "config", "testConfigs", "robot_configs.yaml"
-)
-with open(robot_configs_path, "r") as f:
-    robot_configs = yaml.load(f, Loader=yaml.FullLoader)
-
-# Load topic configs
-topic_configs_path = os.path.join(
-    current_dir, "..", "config", "testConfigs", "topic_configs.yaml"
-)
-with open(topic_configs_path, "r") as f:
-    topic_configs = yaml.load(f, Loader=yaml.FullLoader)
-
-msg_types = du.msg_types(robot_configs, topic_configs)
-
-# Set robot name
-robot_name = "charon"
 
 if __name__ == "__main__":
     unittest.main()
