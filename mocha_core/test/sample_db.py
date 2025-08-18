@@ -4,11 +4,6 @@ from pprint import pprint
 import sys
 import os
 
-# Add the mocha_core module path for imports
-current_dir = os.path.dirname(os.path.abspath(__file__))
-mocha_core_path = os.path.join(current_dir, "..", "mocha_core")
-sys.path.append(mocha_core_path)
-
 import mocha_core.hash_comm as hash_comm
 import mocha_core.database as db
 import mocha_core.database_utils as du

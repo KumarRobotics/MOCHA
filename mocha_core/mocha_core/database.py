@@ -58,10 +58,7 @@ class DBMessage():
             return False
         if other.priority != self.priority:
             return False
-        if other.ts.seconds_nanoseconds()[0] != self.ts.seconds_nanoseconds()[0]:
-            return False
-        if np.abs(other.ts.seconds_nanoseconds()[1] - self.ts.seconds_nanoseconds()[1]) > 1000000:
-            print("nsecs diff: %d" % np.abs(other.ts.seconds_nanoseconds()[1] - self.ts.seconds_nanoseconds()[1]))
+        if other.ts.nanoseconds != self.ts.nanoseconds:
             return False
         if other.data != self.data:
             return False
@@ -130,20 +127,22 @@ class DBwLock():
             if filter_robot_id is not None and robot_id != filter_robot_id:
                 continue
             for topic in self.db[robot_id]:
-                if filter_latest:
-                    latest_msg_ts = rclpy.time.Time(seconds=1, nanoseconds=0)
-                    latest_msg = None
-                for header in self.db[robot_id][topic]:
-                    msg_content = self.db[robot_id][topic][header]
-                    if filter_latest and msg_content.ts > latest_msg_ts:
-                        latest_msg_ts = msg_content.ts
-                        latest_msg = msg_content
-                    if not filter_latest:
+                if not filter_latest:
+                    for header in self.db[robot_id][topic]:
+                        msg_content = self.db[robot_id][topic][header]
                         header_list[header] = {'prio': msg_content.priority,
                                                'ts': msg_content.ts}
-                if filter_latest:
-                    header_list[latest_msg.header] = {'prio': latest_msg.priority,
-                                                      'ts': latest_msg.ts}
+                else:
+                    latest_msg_ts = rclpy.time.Time()
+                    latest_msg = None
+                    for header in self.db[robot_id][topic]:
+                        msg_content = self.db[robot_id][topic][header]
+                        if msg_content.ts > latest_msg_ts:
+                            latest_msg_ts = msg_content.ts
+                            latest_msg = msg_content
+                    if latest_msg is not None:
+                        header_list[latest_msg.header] = {'prio': latest_msg.priority,
+                                                          'ts': latest_msg.ts}
         self.lock.release()
 
         # Sort the dictionary by value, and get the keys
@@ -166,7 +165,7 @@ class DBwLock():
                 for header in self.db[robot_id][topic]:
                     msg = self.db[robot_id][topic][header]
                     ts_dict[robot_id][topic] = max(ts_dict[robot_id][topic],
-                                                   msg.ts.seconds_nanoseconds()[0] + msg.ts.seconds_nanoseconds()[1] / 1e9)
+                                                   msg.ts.nanoseconds)
         self.lock.release()
         return ts_dict
 
@@ -193,7 +192,7 @@ class DBwLock():
                     missing_headers.append(h.bindigest())
                 elif t_id not in ts_dict[h.robot_id]:
                     missing_headers.append(h.bindigest())
-                elif (time.seconds_nanoseconds()[0] + time.seconds_nanoseconds()[1] / 1e9) > ts_dict[h.robot_id][h.topic_id]:
+                elif (time > ts_dict[h.robot_id][h.topic_id]):
                     missing_headers.append(h.bindigest())
             return missing_headers
 

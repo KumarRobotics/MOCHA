@@ -5,6 +5,15 @@ import struct
 
 LENGTH = 6
 
+""" hash_comm.py
+    This file defines the potential headers to be used in the database. There
+    are two types:  Hash and TsHeader. Hash is created by hashing the data with
+    sha256 and cropping the hash. TsHeader is created using the robot_id,
+    topic_id, and timestamp when the message was created.
+
+    TsHeader is the implementation favored for MOCHA's paper, as it keeps the
+    size of the message exchange bounded.
+"""
 
 class Hash():
     HASH_LENGTH = LENGTH

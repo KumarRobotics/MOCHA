@@ -2,12 +2,13 @@
 import unittest
 import sys
 import os
-import uuid
 import pdb
-import rclpy
-import rclpy.time
 from colorama import Fore, Back, Style
-import yaml
+import mocha_core.database as database
+import sample_db
+import mocha_core.hash_comm as hc
+import mocha_core.database_utils as du
+
 import pprint
 
 ROBOT0_TOPIC0_PRIO0 = b'\x00\x00\x00u\x00\xde'
@@ -102,17 +103,6 @@ class test(unittest.TestCase):
         self.assertEqual(dbm.priority, prio)
         self.assertAlmostEqual(dbm.ts, ts)
         self.assertEqual(dbm.data, data)
-
-
-# Add the mocha_core module path for imports
-current_dir = os.path.dirname(os.path.abspath(__file__))
-mocha_core_path = os.path.join(current_dir, "..", "mocha_core")
-sys.path.append(mocha_core_path)
-
-import mocha_core.database as database
-import sample_db
-import mocha_core.hash_comm as hc
-import mocha_core.database_utils as du
 
 if __name__ == '__main__':
     # Run test cases!
