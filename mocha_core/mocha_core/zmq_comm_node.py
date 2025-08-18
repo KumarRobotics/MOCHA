@@ -74,7 +74,6 @@ class Comm_node:
             f"{self.ros_node_name}/client_stats/{self.client_node}",
             10
         )
-        self.pub_client_count = 0
 
         self.syncStatus = SyncStatus.IDLE
         self.syncStatus_lock = threading.Lock()
@@ -163,7 +162,6 @@ class Comm_node:
                     stats.bw = bw
                     stats.answ_len = len(reply)
                     self.pub_client_stats.publish(stats)
-                    self.pub_client_count += 1
                     if len(reply) > 10*1024 and SHOW_BANDWIDTH:
                         self.logger.info(f"{self.this_node} - Node - " +
                                       f"SENDMSG: Data RTT: {time_s}")

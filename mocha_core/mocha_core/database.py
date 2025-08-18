@@ -83,7 +83,8 @@ class DBwLock():
         if sample_db is not None:
             assert isinstance(sample_db, dict)
             # For ROS2, we can't deepcopy Time objects, so we'll just assign directly
-            # This is acceptable for testing purposes
+            # This is acceptable for testing purposes. This function should not
+            # be called during production.
             self.db = sample_db
         else:
             self.db = {}
