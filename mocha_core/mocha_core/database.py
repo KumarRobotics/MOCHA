@@ -105,6 +105,8 @@ class DBwLock():
             self.db[dbm.robot_id] = {}
         if dbm.topic_id not in self.db[dbm.robot_id]:
             self.db[dbm.robot_id][dbm.topic_id] = {}
+        if dbm.header in self.db[dbm.robot_id][dbm.topic_id]:
+            raise Exception("database: Header Collision Detected")
         self.db[dbm.robot_id][dbm.topic_id][dbm.header] = dbm
         self.lock.release()
         return dbm.header
