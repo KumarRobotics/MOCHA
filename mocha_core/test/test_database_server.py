@@ -11,7 +11,7 @@ import warnings
 from pprint import pprint
 import threading
 from rclpy.logging import LoggingSeverity
-from rclpy.executors import SingleThreadedExecutor
+from rclpy.executors import SingleThreadedExecutor, MultiThreadedExecutor
 from rclpy.node import Node
 import rclpy
 import rclpy.time
@@ -27,6 +27,7 @@ from mocha_core.srv import AddUpdateDB, GetDataHeaderDB, SelectDB
 
 import mocha_core.srv
 
+
 class Database_server_test(Node):
     def __init__(self):
         super().__init__("test_database_server")
@@ -34,25 +35,28 @@ class Database_server_test(Node):
 
 class Database_client_test(Node):
     def __init__(self):
-        name_rnd = random.randint(0, 2**32)
-        self.node_name = f"test_database_client_{name_rnd}"
+        self.name_rnd = random.randint(0, 2**32)
+        self.node_name = f"test_database_client_{self.name_rnd}"
         super().__init__(self.node_name)
         logger = self.get_logger()
         logger.set_level(LoggingSeverity.DEBUG)
         self.add_update_db_cli = self.create_client(AddUpdateDB,
-                                                    "/test_database_server/add_update_db")
+                                                    "/test_database_server/add_update_db",
+                                                    qos_profile=ds.DatabaseServer.QOS_PROFILE)
         while not self.add_update_db_cli.wait_for_service(timeout_sec=1.0):
             logger.debug("Waiting for add_update_db")
         self.get_data_header_db_cli = self.create_client(GetDataHeaderDB,
-                                                    "/test_database_server/get_data_header_db")
+                                                    "/test_database_server/get_data_header_db",
+                                                         qos_profile=ds.DatabaseServer.QOS_PROFILE)
         while not self.get_data_header_db_cli.wait_for_service(timeout_sec=1.0):
             logger.debug("Waiting for get_data_header_db")
         self.select_db_cli = self.create_client(SelectDB,
-                                                    "/test_database_server/select_db")
+                                                    "/test_database_server/select_db",
+                                                qos_profile=ds.DatabaseServer.QOS_PROFILE)
         while not self.select_db_cli.wait_for_service(timeout_sec=1.0):
             logger.debug("Waiting for get_data_header_db")
 
-    def recorder(self, loops_per_thread, robot_configs, topic_configs, robot_name):
+    def recorder_async(self, loops_per_thread, robot_configs, topic_configs, robot_name):
         # Get a random ros time
         tid = du.get_topic_id_from_name(
             robot_configs, topic_configs, robot_name,
@@ -68,9 +72,9 @@ class Database_client_test(Node):
         # Serialize and send through service
         serialized_msg = du.serialize_ros_msg(sample_msg)
 
-        def response_callback(future):
-            pass
+        all_futures = []
 
+        # Fire all requests as fast as possible
         for i in range(loops_per_thread):
             timestamp = rclpy.time.Time(
                 seconds=random.randint(0, 65535),
@@ -83,10 +87,11 @@ class Database_client_test(Node):
                 req.timestamp = timestamp
                 req.msg_content = serialized_msg
                 future = self.add_update_db_cli.call_async(req)
-                future.add_done_callback(response_callback)
-                # rclpy.spin_until_future_complete(self, future)
+                all_futures.append((self, future))  # Store node and future
             except Exception as exc:
                 print(f"Service did not process request: {exc}")
+
+        return all_futures  # Return futures to be waited on later
 
 
 class test(unittest.TestCase):
@@ -114,19 +119,17 @@ class test(unittest.TestCase):
 
         rclpy.init()
         self.test_server_node = Database_server_test()
-        ds.DatabaseServer(self.robot_configs, self.topic_configs, self.robot_name,
-                          self.test_server_node)
-        self.executor = SingleThreadedExecutor()
+        self.executor = MultiThreadedExecutor(num_threads=4)
         self.executor.add_node(self.test_server_node)
         executor_thread = threading.Thread(target=self.executor.spin, daemon=True)
         executor_thread.start()
+        # Create a database server object with the node (this will create the services)
+        self.dbs = ds.DatabaseServer(self.robot_configs, self.topic_configs,
+                                     self.robot_name, self.test_server_node)
 
         # Create an empty list for the client nodes
         self.test_client_nodes = set()
 
-        # Create a database server object with the node (this will create the services)
-        self.dbs = ds.DatabaseServer(self.robot_configs, self.topic_configs,
-                                     self.robot_name, self.test_server_node)
         super().setUp()
 
     def setUpClient(self):
@@ -137,7 +140,7 @@ class test(unittest.TestCase):
         executor_thread = threading.Thread(target=executor.spin, daemon=True)
         executor_thread.start()
         self.test_client_nodes.add((test_client_node, executor, logger))
-        return test_client_node, logger
+        return test_client_node, logger, executor_thread
 
     def tearDown(self):
         self.executor.shutdown()
@@ -151,7 +154,7 @@ class test(unittest.TestCase):
 
     def test_add_retrieve_single_msg(self):
         # Create a single client
-        client_node, _ = self.setUpClient()
+        client_node, _, _ = self.setUpClient()
 
         # Simulate sending a "/pose" message from Charon
         sample_msg = PointStamped()
@@ -162,7 +165,7 @@ class test(unittest.TestCase):
         sample_msg.header.stamp = rclpy.clock.Clock().now().to_msg()
 
         tid = du.get_topic_id_from_name(
-            self.robot_configs, self.topic_configs, 
+            self.robot_configs, self.topic_configs,
             self.robot_name, "/pose",
             client_node
         )
@@ -210,7 +213,7 @@ class test(unittest.TestCase):
 
     def test_add_select_robot(self):
         # Create a single client
-        client_node, _ = self.setUpClient()
+        client_node, _, _ = self.setUpClient()
 
         stored_headers = []
         for i in range(3):
@@ -276,22 +279,23 @@ class test(unittest.TestCase):
         NUM_THREADS = 100
         LOOPS_PER_THREAD = 10
 
-        # Spin a number of threads to write into the database (tests concurrent access)
-
-        import threading
-        thread_list = []
+        all_futures = []
+        # Fire all service calls from all threads
         for i in range(NUM_THREADS):
-            client_node, _ = self.setUpClient()
-            client_node.recorder(LOOPS_PER_THREAD, self.robot_configs,
-                                 self.topic_configs, self.robot_name)
+            client_node, _, executor_thread = self.setUpClient()
+            futures = client_node.recorder_async(LOOPS_PER_THREAD,
+                                               self.robot_configs,
+                                               self.topic_configs,
+                                               self.robot_name)
+            all_futures.extend(futures)
+        random.shuffle(all_futures)
 
-        for t in thread_list:
-            t.start()
-
-        for t in thread_list:
-            t.join()
+        # Wait for all the futures to complete
+        for node, future in all_futures:
+            rclpy.spin_until_future_complete(node, future)
 
         # Get the list of hashes from the DB and count them
+        # Use the last client_node for the final query
         try:
             robot_id = du.get_robot_id_from_name(self.robot_configs, self.robot_name)
             # Create request and call service method directly
@@ -299,8 +303,9 @@ class test(unittest.TestCase):
             req.robot_id = robot_id
             req.topic_id = 0  # Changed from None to 0 since it's uint8
             req.ts_limit = rclpy.clock.Clock().now().to_msg()
-            response = mocha_core.srv.SelectDB.Response()
-            answ = self.dbs.select_db_service_cb(req, response)
+            future = client_node.select_db_cli.call_async(req)
+            rclpy.spin_until_future_complete(client_node, future)
+            answ = future.result()
         except Exception as exc:
             print("Service did not process request: " + str(exc))
             self.assertTrue(False)

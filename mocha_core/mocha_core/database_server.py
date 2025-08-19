@@ -5,10 +5,13 @@ import threading
 import rclpy
 import rclpy.logging
 import rclpy.time
+from rclpy.callback_groups import ReentrantCallbackGroup
 import mocha_core.srv
 import mocha_core.database as database
 import pdb
 import mocha_core.database_utils as du
+
+from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPolicy
 
 
 class DatabaseServer:
@@ -17,6 +20,12 @@ class DatabaseServer:
 
     Please see the list of services in the srv folder
     """
+    QOS_PROFILE = QoSProfile(
+        reliability=ReliabilityPolicy.RELIABLE,
+        durability=DurabilityPolicy.VOLATILE,
+        history=HistoryPolicy.KEEP_ALL,
+    )
+
     def __init__(self, robot_configs, topic_configs, robot_name, ros_node):
         # Check input topics
         assert isinstance(robot_configs, dict)
@@ -31,6 +40,8 @@ class DatabaseServer:
         self.ros_node = ros_node
         self.logger = self.ros_node.get_logger()
         self.ros_node_name = self.ros_node.get_fully_qualified_name()
+
+        self.callback_group = ReentrantCallbackGroup()
 
         # Get robot name from parameter
         self.robot_name = robot_name
@@ -50,17 +61,24 @@ class DatabaseServer:
 
         # create services for all the possible calls to the DB
         self.service_list = []
+        self.logger.debug("database_server: Starting database server")
         s = self.ros_node.create_service(mocha_core.srv.AddUpdateDB,
                                     f"{self.ros_node_name}/add_update_db",
-                                    self.add_update_db_service_cb)
+                                    self.add_update_db_service_cb,
+                                    callback_group=self.callback_group,
+                                    qos_profile=self.QOS_PROFILE)
         self.service_list.append(s)
         s = self.ros_node.create_service(mocha_core.srv.GetDataHeaderDB,
                                     f"{self.ros_node_name}/get_data_header_db",
-                                    self.get_data_hash_db_service_cb)
+                                    self.get_data_hash_db_service_cb,
+                                    callback_group=self.callback_group,
+                                    qos_profile=self.QOS_PROFILE)
         self.service_list.append(s)
         s = self.ros_node.create_service(mocha_core.srv.SelectDB,
                                     f"{self.ros_node_name}/select_db",
-                                    self.select_db_service_cb)
+                                    self.select_db_service_cb,
+                                    callback_group=self.callback_group,
+                                    qos_profile=self.QOS_PROFILE)
         self.service_list.append(s)
         self.msg_types = du.msg_types(self.robot_configs, self.topic_configs,
                                       self.ros_node)
