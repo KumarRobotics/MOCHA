@@ -53,7 +53,7 @@ class DatabaseServer:
         self.topic_list = self.topic_configs[self.robot_configs[self.robot_name]["node-type"]]
 
         # Create the empty database with lock
-        self.dbl = database.DBwLock()
+        self.dbl = database.DBwLock(ros_node=self.ros_node)
 
         # Get current robot number
         self.robot_number = du.get_robot_id_from_name(self.robot_configs,
@@ -136,9 +136,6 @@ class DatabaseServer:
 
     def select_db_service_cb(self, req, response):
         # TODO Implement filtering
-
-        # Note: robot_id and topic_id are uint8 in ROS2, so they can't be None
-        # We can add range validation if needed, but for now just proceed
 
         list_headers = self.dbl.get_header_list(req.robot_id)
 
