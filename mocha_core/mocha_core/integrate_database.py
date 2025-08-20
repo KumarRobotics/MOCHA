@@ -22,7 +22,6 @@ import subprocess
 import mocha_core.database_server as ds
 import mocha_core.database_utils as du
 import mocha_core.synchronize_channel as sync
-from mocha_core.srv import AddUpdateDB, GetDataHeaderDB, SelectDB
 
 
 def ping(host):
@@ -41,13 +40,11 @@ class IntegrateDatabase(Node):
         super().__init__("integrate_database")
 
         # Handle shutdown signal
-        self.interrupted = False
         self.shutdownTriggered = threading.Event()
         self.shutdownTriggered.clear()
+
         def signal_handler(sig, frame):
-            self.logger.warning(f"{self.this_robot} - Integrate - " +
-                               f"Got SIGINT. Triggering shutdown.")
-            self.interrupted = True
+            self.logger.warning(f"{self.this_robot} - Integrate - Got SIGINT. Triggering shutdown.")
             self.shutdown("Killed by user")
         signal.signal(signal.SIGINT, signal_handler)
 
@@ -66,7 +63,8 @@ class IntegrateDatabase(Node):
         self.rssi_threshold = self.get_parameter("rssi_threshold").get_parameter_value().integer_value
 
         if len(self.this_robot) == 0:
-            self.shutdown("Empty robot name")
+            self.logger.error(f"{self.this_robot} - Integrate - Empty robot name")
+            raise ValueError("Empty robot name")
 
         self.logger.info(f"{self.this_robot} - Integrate - " +
                         f"RSSI threshold: {self.rssi_threshold}")
@@ -80,9 +78,11 @@ class IntegrateDatabase(Node):
             with open(self.robot_configs_file, "r") as f:
                 self.robot_configs = yaml.load(f, Loader=yaml.FullLoader)
         except Exception as e:
-            self.shutdown(f"Error opening robot_configs file: {e}")
+            self.logger.error(f"{self.this_robot} - Integrate - robot_configs file")
+            raise e
         if self.this_robot not in self.robot_configs.keys():
-            self.shutdown("Robot not in config file")
+            self.logger.error(f"{self.this_robot} - Integrate - robot_configs file")
+            raise ValueError("Robot not in config file")
 
         # Load and check radio configs
         self.radio_configs_file = self.get_parameter("radio_configs").get_parameter_value().string_value
@@ -90,10 +90,12 @@ class IntegrateDatabase(Node):
             with open(self.radio_configs_file, "r") as f:
                 self.radio_configs = yaml.load(f, Loader=yaml.FullLoader)
         except Exception as e:
-            self.shutdown(f"Error opening radio_configs file: {e}")
+            self.logger.error(f"{self.this_robot} - Integrate - radio_configs file")
+            raise e
         self.radio = self.robot_configs[self.this_robot]["using-radio"]
         if self.radio not in self.radio_configs.keys():
-            self.shutdown("Radio {self.radio} not in config file")
+            self.logger.error(f"{self.this_robot} - Integrate - radio_configs file")
+            raise ValueError("Radio {self.radio} not in config file")
 
         # Load and check topic configs
         self.topic_configs_file = self.get_parameter("topic_configs").get_parameter_value().string_value
@@ -101,18 +103,19 @@ class IntegrateDatabase(Node):
             with open(self.topic_configs_file, "r") as f:
                 self.topic_configs = yaml.load(f, Loader=yaml.FullLoader)
         except Exception as e:
-            self.shutdown(f"Error opening topic_configs file: {e}")
+            self.logger.error(f"{self.this_robot} - Integrate - topics_configs file")
+            raise e
         self_type = self.robot_configs[self.this_robot]["node-type"]
         if self_type not in self.topic_configs.keys():
-            self.shutdown("Node type not in config file")
+            self.logger.error(f"{self.this_robot} - Integrate - topics_configs file")
+            raise ValueError("Node type not in config file")
 
         # Check that we can ping the radios
         ip = self.robot_configs[self.this_robot]["IP-address"]
         if not ping(ip):
             self.logger.error(f"{self.this_robot} - Integrate - " +
                              f"Cannot ping self {ip}. Is the radio on?")
-            self.shutdown("Cannot ping self")
-            return
+            raise ValueError("Cannot ping self")
 
         # Create database server
         self.DBServer = ds.DatabaseServer(self.robot_configs,
@@ -141,8 +144,8 @@ class IntegrateDatabase(Node):
                                    self.this_robot,
                                    other_robot, self.robot_configs,
                                    self.client_timeout, self)
-            self.all_channels.append(channel)
             channel.run()
+            self.all_channels.append(channel)
 
             # Attach a radio trigger to each channel. This will be triggered
             # when the RSSI is high enough. You can use another approach here
@@ -157,23 +160,9 @@ class IntegrateDatabase(Node):
                 10
             )
 
-        # Wait for all the robots to start
-        for _ in range(100):
-            if self.interrupted or not rclpy.ok():
-                self.shutdown("Killed while waiting for other robots")
-                return
-            time.sleep(0.1)
-        # Node is ready
-        self.mtexecutor = MultiThreadedExecutor(num_threads=4)
-        self.mtexecutor.add_node(self)
-
-    def run(self):
-        self.mtexecutor.spin()
-
     def shutdown(self, reason):
         # Only trigger shutdown once
         if self.shutdownTriggered.is_set():
-            sys.exit(1)
             return
         self.shutdownTriggered.set()
 
@@ -183,21 +172,11 @@ class IntegrateDatabase(Node):
         if hasattr(self, 'all_channels') and len(self.all_channels) != 0:
             for channel in self.all_channels:
                 channel.stop()
-                self.all_channels.remove(channel)
             self.logger.warning(f"{self.this_robot} - Integrate - " + "Killed Channels")
             # Wait for all the channels to be gone. This needs to be slightly
             # larger than RECV_TIMEOUT
             time.sleep(3.5)
-
-        pdb.set_trace()
-
-        # Stop the executor to exit the spin loop
-        if hasattr(self, 'mtexecutor') and self.mtexecutor is not None:
-            self.mtexecutor.shutdown()
-            self.logger.warning(f"{self.this_robot} - Integrate - " + "Executor shut down")
-        self.destroy_node()
-        self.logger.warning(f"{self.this_robot} - Integrate - " + "Node destroyed")
-        sys.exit(1)
+        self.logger.warning(f"{self.this_robot} - Integrate - " + "Shutdown complete")
 
     def rssi_cb(self, data, comm_node):
         rssi = data.data
@@ -217,19 +196,30 @@ def main(args=None):
     # Start the node
     try:
         integrate_db = IntegrateDatabase()
-    except RuntimeError as e:
+    except Exception as e:
         print(f"Node initialization failed: {e}")
+        rclpy.shutdown()
         return
 
+    # Load mtexecutor
+    mtexecutor = MultiThreadedExecutor(num_threads=4)
+    mtexecutor.add_node(integrate_db)
+
+    # Use context manager for clean shutdown
     try:
-        integrate_db.run()
+        # Spin with periodic checking for shutdown
+        while rclpy.ok() and not integrate_db.shutdownTriggered.is_set():
+            mtexecutor.spin_once(timeout_sec=0.1)
     except KeyboardInterrupt:
         print("Keyboard Interrupt")
-        pass
+        integrate_db.shutdown("KeyboardInterrupt")
     except Exception as e:
-        print(e)
+        print(f"Exception: {e}")
+        integrate_db.shutdown(f"Exception: {e}")
     finally:
-        integrate_db.shutdown("Shutting down")
+        # Clean up node and ROS2 from main thread (safe)
+        integrate_db.destroy_node()
+        rclpy.shutdown()
 
 if __name__ == "__main__":
     main()

@@ -82,7 +82,8 @@ class Comm_node:
 
         # Start server thread
         self.th = threading.Thread(target=self.server_thread, args=())
-        self.server_running = True
+        self.server_running = threading.Event()
+        self.server_running.clear()
         self.th.start()
 
     def connect_send_message(self, msg):
@@ -185,6 +186,7 @@ class Comm_node:
         self.syncStatus_lock.release()
 
     def server_thread(self):
+        self.server_running.set()
         # This timer does not have a big impact as it is only the timer until
         # the recv times out Most calls from the client are very lightweight
         RECV_TIMEOUT = 1000
@@ -195,7 +197,7 @@ class Comm_node:
 
         self.server.bind("tcp://*:" + str(port))
 
-        while self.server_running:
+        while self.server_running.is_set():
             try:
                 request = self.server.recv()
             except zmq.ZMQError as e:
@@ -230,6 +232,6 @@ class Comm_node:
         self.context.term()
 
     def terminate(self):
-        self.server_running = False
+        self.server_running.clear()
         self.th.join()
         self.logger.warn(f"Node {self.this_node} <- {self.client_node} - Terminating server")
