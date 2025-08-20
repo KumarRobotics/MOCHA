@@ -4,12 +4,17 @@ import random
 import signal
 import sys
 import time
+import pdb
 import traceback
 from functools import partial
 
 import rclpy
+from rclpy.logging import LoggingSeverity
 import rclpy.logging
 import rclpy.time
+from rclpy.node import Node
+from rclpy.executors import MultiThreadedExecutor
+import threading
 import yaml
 import std_msgs.msg
 import subprocess
@@ -17,6 +22,7 @@ import subprocess
 import mocha_core.database_server as ds
 import mocha_core.database_utils as du
 import mocha_core.synchronize_channel as sync
+from mocha_core.srv import AddUpdateDB, GetDataHeaderDB, SelectDB
 
 
 def ping(host):
@@ -30,58 +36,74 @@ def ping(host):
         return False
 
 
-class IntegrateDatabase:
-    def __init__(self, node=None):
-        # Initialize ROS2 if not already done
-        if not rclpy.ok():
-            rclpy.init()
-        
-        # Create or use provided node
-        if node is None:
-            self.node = rclpy.create_node("integrate_database")
-        else:
-            self.node = node
-        
-        self.logger = self.node.get_logger()
+class IntegrateDatabase(Node):
+    def __init__(self):
+        super().__init__("integrate_database")
 
-        # In ROS2, parameters need to be declared before use
-        self.node.declare_parameter("robot_name", "")
-        self.node.declare_parameter("rssi_threshold", 20)
-        self.node.declare_parameter("client_timeout", 6.0)
-        self.node.declare_parameter("robot_configs", "")
-        self.node.declare_parameter("radio_configs", "")
-        self.node.declare_parameter("topic_configs", "")
+        # Handle shutdown signal
+        self.interrupted = False
+        self.shutdownTriggered = threading.Event()
+        self.shutdownTriggered.clear()
+        def signal_handler(sig, frame):
+            self.logger.warning(f"{self.this_robot} - Integrate - " +
+                               f"Got SIGINT. Triggering shutdown.")
+            self.interrupted = True
+            self.shutdown("Killed by user")
+        signal.signal(signal.SIGINT, signal_handler)
 
-        self.this_robot = self.node.get_parameter("robot_name").get_parameter_value().string_value
-        self.rssi_threshold = self.node.get_parameter("rssi_threshold").get_parameter_value().integer_value
-        self.all_channels = []
+        self.logger = self.get_logger()
+        # self.logger.set_level(LoggingSeverity.DEBUG)
+
+        # Declare parameters
+        self.declare_parameter("robot_name", "")
+        self.declare_parameter("rssi_threshold", 20)
+        self.declare_parameter("client_timeout", 6.0)
+        self.declare_parameter("robot_configs", "")
+        self.declare_parameter("radio_configs", "")
+        self.declare_parameter("topic_configs", "")
+
+        self.this_robot = self.get_parameter("robot_name").get_parameter_value().string_value
+        self.rssi_threshold = self.get_parameter("rssi_threshold").get_parameter_value().integer_value
+
+        if len(self.this_robot) == 0:
+            self.shutdown("Empty robot name")
+
         self.logger.info(f"{self.this_robot} - Integrate - " +
                         f"RSSI threshold: {self.rssi_threshold}")
-        self.client_timeout = self.node.get_parameter("client_timeout").get_parameter_value().double_value
+        self.client_timeout = self.get_parameter("client_timeout").get_parameter_value().double_value
         self.logger.info(f"{self.this_robot} - Integrate - " +
                         f"Client timeout: {self.client_timeout}")
 
         # Load and check robot configs
-        self.robot_configs_file = self.node.get_parameter("robot_configs").get_parameter_value().string_value
-        with open(self.robot_configs_file, "r") as f:
-            self.robot_configs = yaml.load(f, Loader=yaml.FullLoader)
+        self.robot_configs_file = self.get_parameter("robot_configs").get_parameter_value().string_value
+        try:
+            with open(self.robot_configs_file, "r") as f:
+                self.robot_configs = yaml.load(f, Loader=yaml.FullLoader)
+        except Exception as e:
+            self.shutdown(f"Error opening robot_configs file: {e}")
         if self.this_robot not in self.robot_configs.keys():
             self.shutdown("Robot not in config file")
 
         # Load and check radio configs
-        self.radio_configs_file = self.node.get_parameter("radio_configs").get_parameter_value().string_value
-        with open(self.radio_configs_file, "r") as f:
-            self.radio_configs = yaml.load(f, Loader=yaml.FullLoader)
+        self.radio_configs_file = self.get_parameter("radio_configs").get_parameter_value().string_value
+        try:
+            with open(self.radio_configs_file, "r") as f:
+                self.radio_configs = yaml.load(f, Loader=yaml.FullLoader)
+        except Exception as e:
+            self.shutdown(f"Error opening radio_configs file: {e}")
         self.radio = self.robot_configs[self.this_robot]["using-radio"]
         if self.radio not in self.radio_configs.keys():
-            self.shutdown("Radio not in config file")
+            self.shutdown("Radio {self.radio} not in config file")
 
         # Load and check topic configs
-        self.topic_configs_file = self.node.get_parameter("topic_configs").get_parameter_value().string_value
-        with open(self.topic_configs_file, "r") as f:
-            self.topic_configs = yaml.load(f, Loader=yaml.FullLoader)
-        self.node_type = self.robot_configs[self.this_robot]["node-type"]
-        if self.node_type not in self.topic_configs.keys():
+        self.topic_configs_file = self.get_parameter("topic_configs").get_parameter_value().string_value
+        try:
+            with open(self.topic_configs_file, "r") as f:
+                self.topic_configs = yaml.load(f, Loader=yaml.FullLoader)
+        except Exception as e:
+            self.shutdown(f"Error opening topic_configs file: {e}")
+        self_type = self.robot_configs[self.this_robot]["node-type"]
+        if self_type not in self.topic_configs.keys():
             self.shutdown("Node type not in config file")
 
         # Check that we can ping the radios
@@ -92,26 +114,18 @@ class IntegrateDatabase:
             self.shutdown("Cannot ping self")
             return
 
-        # Create a database server object with ROS2 node
+        # Create database server
         self.DBServer = ds.DatabaseServer(self.robot_configs,
-                                          self.topic_configs, self.this_robot, node=self.node)
+                                          self.topic_configs, self.this_robot, self)
+
 
         self.num_robot_in_comm = 0
-
-        # Handle possible interruptions
-        self.interrupted = False
-
-        def signal_handler(sig, frame):
-            self.logger.warning(f"{self.this_robot} - Integrate - " +
-                               f"Got signal. Killing comm nodes.")
-            self.interrupted = True
-            self.shutdown("Killed by user")
-        signal.signal(signal.SIGINT, signal_handler)
 
         self.logger.info(f"{self.this_robot} - Integrate - " +
                         "Created all communication channels!")
 
         # Start comm channels with other robots
+        self.all_channels = []
         self.other_robots = [i for i in list(self.robot_configs.keys()) if i !=
                              self.this_robot]
         for other_robot in self.other_robots:
@@ -126,7 +140,7 @@ class IntegrateDatabase:
             channel = sync.Channel(self.DBServer.dbl,
                                    self.this_robot,
                                    other_robot, self.robot_configs,
-                                   self.client_timeout)
+                                   self.client_timeout, self)
             self.all_channels.append(channel)
             channel.run()
 
@@ -135,8 +149,8 @@ class IntegrateDatabase:
             # such as using a timer to periodically trigger the sync
             def make_callback(ch):
                 return lambda msg: self.rssi_cb(msg, ch)
-            
-            self.node.create_subscription(
+
+            self.create_subscription(
                 std_msgs.msg.Int32,
                 'ddb/rajant/rssi/' + other_robot,
                 make_callback(channel),
@@ -149,26 +163,41 @@ class IntegrateDatabase:
                 self.shutdown("Killed while waiting for other robots")
                 return
             time.sleep(0.1)
+        # Node is ready
+        self.mtexecutor = MultiThreadedExecutor(num_threads=4)
+        self.mtexecutor.add_node(self)
 
-        # Spin!
-        try:
-            rclpy.spin(self.node)
-        except KeyboardInterrupt:
-            pass
+    def run(self):
+        self.mtexecutor.spin()
 
     def shutdown(self, reason):
+        # Only trigger shutdown once
+        if self.shutdownTriggered.is_set():
+            sys.exit(1)
+            return
+        self.shutdownTriggered.set()
+
         assert isinstance(reason, str)
         self.logger.error(f"{self.this_robot} - Integrate - " + reason)
-        for channel in self.all_channels:
-            channel.comm_node.terminate()
-            self.all_channels.remove(channel)
-        self.logger.warning(f"{self.this_robot} - Integrate - " + "Killed Channels")
-        if hasattr(self, 'DBServer') and self.DBServer is not None:
-            self.DBServer.shutdown()
-            self.logger.warning(f"{self.this_robot} - Integrate - " + "Killed DB")
-        if rclpy.ok():
-            rclpy.shutdown()
-        self.logger.warning(f"{self.this_robot} - Integrate - " + "Shutting down")
+        # Shutting down communication channels
+        if hasattr(self, 'all_channels') and len(self.all_channels) != 0:
+            for channel in self.all_channels:
+                channel.stop()
+                self.all_channels.remove(channel)
+            self.logger.warning(f"{self.this_robot} - Integrate - " + "Killed Channels")
+            # Wait for all the channels to be gone. This needs to be slightly
+            # larger than RECV_TIMEOUT
+            time.sleep(3.5)
+
+        pdb.set_trace()
+
+        # Stop the executor to exit the spin loop
+        if hasattr(self, 'mtexecutor') and self.mtexecutor is not None:
+            self.mtexecutor.shutdown()
+            self.logger.warning(f"{self.this_robot} - Integrate - " + "Executor shut down")
+        self.destroy_node()
+        self.logger.warning(f"{self.this_robot} - Integrate - " + "Node destroyed")
+        sys.exit(1)
 
     def rssi_cb(self, data, comm_node):
         rssi = data.data
@@ -181,9 +210,26 @@ class IntegrateDatabase:
                 traceback.print_exception(*sys.exc_info())
 
 
-def main():
+def main(args=None):
+    # Initialize ROS2 with command line arguments
+    rclpy.init(args=args)
+
     # Start the node
-    IntegrateDatabase()
+    try:
+        integrate_db = IntegrateDatabase()
+    except RuntimeError as e:
+        print(f"Node initialization failed: {e}")
+        return
+
+    try:
+        integrate_db.run()
+    except KeyboardInterrupt:
+        print("Keyboard Interrupt")
+        pass
+    except Exception as e:
+        print(e)
+    finally:
+        integrate_db.shutdown("Shutting down")
 
 if __name__ == "__main__":
     main()
