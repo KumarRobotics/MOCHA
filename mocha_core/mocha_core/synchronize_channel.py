@@ -232,7 +232,7 @@ class TransmissionEnd(smach.State):
             time.sleep(CHECK_POLL_TIME)
             i += 1
         if self.outer.sm_shutdown.is_set():
-            self.outer.publishState("TransmissionEnd to Stopped")
+            # self.outer.publishState("TransmissionEnd to Stopped")
             return 'to_stopped'
         self.outer.sync.reset()
         self.outer.publishState("TransmissionEnd to Idle")
@@ -336,7 +336,6 @@ class Channel():
             f"{self.ros_node_name}/client_sm_state/{self.target_robot}",
             20
         )
-        self.sm_state_count = 0
 
         with self.sm:
             smach.StateMachine.add('IDLE',
@@ -389,8 +388,6 @@ class Channel():
             state_msg = SMState()
             state_msg.header.stamp = self.ros_node.get_clock().now().to_msg()
             state_msg.header.frame_id = self.this_robot
-            # Note: ROS2 doesn't have seq field in header
-            self.sm_state_count += 1
             state_msg.state = msg
             self.sm_state_pub.publish(state_msg)
 
@@ -409,13 +406,14 @@ class Channel():
         # Unset this flag before starting the SM thread
         self.sm_shutdown.clear()
         self.th = threading.Thread(target=self.sm_thread, args=())
-        self.th.daemon = True
         self.th.start()
 
     def stop(self):
         # Set the flag and wait until the state machine finishes
         self.sm_shutdown.set()
+        # This terminates the comm node, so we can wait for the thread to finish
         self.th.join()
+        self.logger.warn(f"Channel {self.this_robot} -> {self.target_robot} destroyed")
 
 
     def sm_thread(self):

@@ -81,9 +81,9 @@ class Comm_node:
         self.context = zmq.Context(1)
 
         # Start server thread
-        server = threading.Thread(target=self.server_thread, args=())
+        self.th = threading.Thread(target=self.server_thread, args=())
         self.server_running = True
-        server.start()
+        self.th.start()
 
     def connect_send_message(self, msg):
         # TODO keep connection open instead of opening in each call
@@ -230,5 +230,6 @@ class Comm_node:
         self.context.term()
 
     def terminate(self):
-        self.logger.debug(f"{self.this_node} - Node - Terminating server")
         self.server_running = False
+        self.th.join()
+        self.logger.warn(f"Node {self.this_node} <- {self.client_node} - Terminating server")
