@@ -29,6 +29,7 @@ from mocha_core.srv import AddUpdateDB, GetDataHeaderDB, SelectDB
 
 class Database_server_test(Node):
     def __init__(self):
+        # Important to match the topic that the translator expects
         super().__init__("integrate_database")
 
 
@@ -56,7 +57,7 @@ class test_translator(unittest.TestCase):
 
         rclpy.init()
         self.test_server_node = Database_server_test()
-        self.executor = MultiThreadedExecutor(num_threads=4)
+        self.executor = MultiThreadedExecutor(num_threads=1)
         self.executor.add_node(self.test_server_node)
         executor_thread = threading.Thread(target=self.executor.spin, daemon=True)
         executor_thread.start()
@@ -77,7 +78,7 @@ class test_translator(unittest.TestCase):
             robot_configs=self.robot_configs_path,
             topic_configs=self.topic_configs_path
         )
-        executor = SingleThreadedExecutor()
+        executor = MultiThreadedExecutor(num_threads=4)
         executor.add_node(test_translator_node)
         logger = test_translator_node.get_logger()
         executor_thread = threading.Thread(target=executor.spin, daemon=True)
@@ -134,7 +135,7 @@ class test_translator(unittest.TestCase):
         sample_msg.point.x = random.random()
         sample_msg.point.y = random.random()
         sample_msg.point.z = random.random()
-        sample_msg.header.stamp = rclpy.clock.Clock().now().to_msg()
+        sample_msg.header.stamp = translator_node.get_clock().now().to_msg()
 
         # Publish the message (translator should receive and store it)
         test_publisher.publish(sample_msg)
@@ -148,8 +149,8 @@ class test_translator(unittest.TestCase):
             # Create request to check database
             req = SelectDB.Request()
             req.robot_id = robot_id
-            req.topic_id = 0  # All topics
-            req.ts_limit = rclpy.clock.Clock().now().to_msg()
+            req.topic_id = 0  # Not being used
+            req.ts_limit = translator_node.get_clock().now().to_msg() # Not being used
 
             # Use the translator node's service client to query the database
             select_client = translator_node.create_client(
@@ -207,6 +208,109 @@ class test_translator(unittest.TestCase):
             subscriptions_info = translator_node.get_subscriptions_info_by_topic(topic_name)
             self.assertEqual(len(subscriptions_info), 2,
                               f"Expected exactly 1 subscription for {topic_name} topic, got {len(subscriptions_info)}")
+
+    def test_translator_storm(self):
+        """Storm test: publish many messages to translator topics and verify they're all stored"""
+        MSGS_PER_TOPIC = 20
+
+        # Create translator node
+        translator_node, logger, _ = self.setUpTranslator()
+
+        # Wait for translator to be fully set up
+        time.sleep(1.0)
+
+        # Get available topics for this robot
+        this_robot_topics = self.topic_configs[self.robot_configs[self.robot_name]["node-type"]]
+        msg_types = du.msg_types(self.robot_configs, self.topic_configs, translator_node)
+        robot_id = du.get_robot_id_from_name(self.robot_configs, self.robot_name)
+
+        def topic_publisher(topic_id, topic_info, msgs_count):
+            """Publisher function for a single topic - runs in its own thread"""
+            topic_name = topic_info["msg_topic"]
+
+            # Create a separate node for publishing
+            pub_node = Node(f"topic_publisher_{topic_name.replace('/', '_')}")
+
+            # Get message type for this topic
+            obj = msg_types[robot_id][topic_id]["obj"]
+            pub = pub_node.create_publisher(obj, topic_name, 10)
+
+            # Wait for publisher to connect
+            time.sleep(0.5)
+
+            # Publish messages with 2ms delay between each
+            for i in range(msgs_count):
+                # Create random message based on topic type
+                if topic_name == "/pose":
+                    msg = PointStamped()
+                    msg.header.frame_id = "world"
+                    msg.point.x = random.random()
+                    msg.point.y = random.random()
+                    msg.point.z = random.random()
+                    msg.header.stamp = pub_node.get_clock().now().to_msg()
+                elif topic_name == "/odometry":
+                    msg = Odometry()
+                    msg.header.frame_id = "world"
+                    msg.pose.pose.position.x = random.random()
+                    msg.pose.pose.position.y = random.random()
+                    msg.pose.pose.position.z = random.random()
+                    msg.header.stamp = pub_node.get_clock().now().to_msg()
+                else:
+                    continue  # Skip unknown topic types
+
+                pub.publish(msg)
+                # Wait 300 ms between messages to avoid double publication
+                time.sleep(0.3)
+
+            pub_node.destroy_node()
+
+        # Launch one thread per topic
+        threads = []
+        for topic_id, topic in enumerate(this_robot_topics):
+            thread = threading.Thread(target=topic_publisher, args=(topic_id, topic, MSGS_PER_TOPIC))
+            thread.start()
+            threads.append(thread)
+
+        # Wait for all publishing threads to complete
+        for thread in threads:
+            thread.join()
+
+        # Wait for translator to process all messages
+        time.sleep(1.0)
+
+        # Query the database to count stored messages
+        try:
+            robot_id = du.get_robot_id_from_name(self.robot_configs, self.robot_name)
+            req = SelectDB.Request()
+            req.robot_id = robot_id
+            req.topic_id = 0 # This is not used as filtering is not implemented
+            req.ts_limit = translator_node.get_clock().now().to_msg() # Not used
+
+            select_client = translator_node.create_client(
+                SelectDB,
+                "/integrate_database/select_db",
+                qos_profile=ds.DatabaseServer.QOS_PROFILE
+            )
+            while not select_client.wait_for_service(timeout_sec=1.0):
+                pass
+
+            future = select_client.call_async(req)
+            rclpy.spin_until_future_complete(translator_node, future)
+            answ = future.result()
+            returned_headers = du.deserialize_headers(answ.headers)
+
+            # Calculate expected total messages
+            # Each topic gets MSGS_PER_TOPIC messages
+            # charon robot has 2 topics: /pose and /odometry
+            expected_total = MSGS_PER_TOPIC * len(this_robot_topics)
+
+            # Verify all messages were stored
+            self.assertEqual(len(returned_headers), expected_total,
+                              f"Expected {expected_total} messages in database, got {len(returned_headers)}")
+
+        except Exception as exc:
+            print(f"Database query failed: {exc}")
+            self.assertTrue(False)
 
 if __name__ == "__main__":
     unittest.main()

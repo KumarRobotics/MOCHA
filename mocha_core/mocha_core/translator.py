@@ -11,6 +11,7 @@ from rclpy.node import Node
 import mocha_core.srv
 # Get the database utils module
 from rclpy.executors import MultiThreadedExecutor
+from rclpy.callback_groups import ReentrantCallbackGroup
 import mocha_core.database_utils as du
 from mocha_core.srv import AddUpdateDB, GetDataHeaderDB, SelectDB
 import mocha_core.database_server as ds
@@ -18,7 +19,7 @@ import mocha_core.database_server as ds
 
 class Translator():
     def __init__(
-        self, this_robot, this_robot_id, topic_name, topic_id, msg_type, ros_node
+        self, this_robot, this_robot_id, topic_name, topic_id, msg_type, ros_node, callback_group=None
     ):
 
         self.logger = ros_node.get_logger()
@@ -39,9 +40,10 @@ class Translator():
             if wait_counter % 5 == 0:
                 self.logger.warn("Translator - Waiting for add_update_db for more than 5 seconds")
 
-        # Create subscriber
+        # Create subscriber with callback group
         self.subscription = self.ros_node.create_subscription(
-            msg_type, self.topic_name, self.translator_cb, 10
+            msg_type, self.topic_name, self.translator_cb, 10,
+            callback_group=callback_group
         )
         self.logger.info(f"Translator created for {self.topic_name}")
 
@@ -77,6 +79,9 @@ class TranslatorNode(Node):
         self.declare_parameter("robot_configs", "")
         self.declare_parameter("topic_configs", "")
         self.logger = self.get_logger()
+
+        # Create reentrant callback group like DatabaseServer
+        self.callback_group = ReentrantCallbackGroup()
 
         self.this_robot = self.get_parameter("robot_name").get_parameter_value().string_value if this_robot is None else this_robot
 
@@ -121,7 +126,7 @@ class TranslatorNode(Node):
             robot_id = du.get_robot_id_from_name(self.robot_configs, self.this_robot)
             obj = self.msg_types[robot_id][topic_id]["obj"]
             translator = Translator(
-                self.this_robot, robot_id, topic["msg_topic"], topic_id, obj, self
+                self.this_robot, robot_id, topic["msg_topic"], topic_id, obj, self, self.callback_group
             )
             translators.append(translator)
 
