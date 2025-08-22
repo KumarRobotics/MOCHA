@@ -171,11 +171,11 @@ class DBwLock():
                 ts_dict[robot_id] = {}
             for topic in self.db[robot_id]:
                 if topic not in ts_dict[robot_id]:
-                    ts_dict[robot_id][topic] = -np.inf
+                    ts_dict[robot_id][topic] = None
                 for header in self.db[robot_id][topic]:
                     msg = self.db[robot_id][topic][header]
-                    ts_dict[robot_id][topic] = max(ts_dict[robot_id][topic],
-                                                   msg.ts.nanoseconds)
+                    curr_time = ts_dict[robot_id][topic]
+                    ts_dict[robot_id][topic] = max(curr_time, msg.ts) if curr_time is not None else msg.ts
         self.lock.release()
         return ts_dict
 
