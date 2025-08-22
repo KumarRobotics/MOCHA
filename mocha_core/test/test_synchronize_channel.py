@@ -52,7 +52,8 @@ class test(unittest.TestCase):
         super().tearDown()
 
     def test_onehop_oneway_sync(self):
-        dbl1 = sample_db.get_sample_dbl()
+        """ Start both DBs, insert a message in DB2, trigger_sync DB1, and check that both DBs are the same """
+        dbl1 = sample_db.get_sample_dbl() 
         dbl2 = sample_db.get_sample_dbl()
         dbm = db.DBMessage(1, 1, 2, 1,
                            rclpy.time.Time(seconds=123, nanoseconds=456000000), bytes('New data', 'utf-8'))
@@ -74,6 +75,8 @@ class test(unittest.TestCase):
         time.sleep(4)
 
     def test_convoluted_onehop_oneway_sync(self):
+        """ Start one DB1, insert a message in DB2 but don't start, trigger_sync
+        DB1 (should be busy), start DB2, trigger_sync DB1, DBs should be the same """
         self.maxDiff=None
         dbl1 = sample_db.get_sample_dbl()
         dbl2 = sample_db.get_sample_dbl()
@@ -111,6 +114,8 @@ class test(unittest.TestCase):
         time.sleep(4)
 
     def test_convoluted_onehop_twoway_sync(self):
+        """ Insert a message in DB1, start DB1, insert a message in DB2 but don't start, trigger_sync
+        DB1 (should be busy), start DB2, trigger_sync DB1, DBs should be the same """
         self.maxDiff=None
         dbl1 = sample_db.get_sample_dbl()
         dbl2 = sample_db.get_sample_dbl()
@@ -195,57 +200,6 @@ class test(unittest.TestCase):
         # already in use
         time.sleep(2)
 
-
-    def test_delay_run(self):
-        self.maxDiff = None
-        db_gs = sample_db.get_sample_dbl()
-        db_r1 = sample_db.get_sample_dbl()
-        db_r2 = sample_db.get_sample_dbl()
-
-        node_gs_r1 = sync.Channel(db_gs, 'basestation', 'charon', self.robot_configs, 2, self.test_ros_node)
-        node_gs_r2 = sync.Channel(db_gs, 'basestation', 'styx', self.robot_configs, 2, self.test_ros_node)
-
-        node_r1_gs = sync.Channel(db_r1, 'charon', 'basestation', self.robot_configs, 2, self.test_ros_node)
-        node_r2_gs = sync.Channel(db_r2, 'styx', 'basestation', self.robot_configs, 2, self.test_ros_node)
-
-        node_r1_r2 = sync.Channel(db_r1, 'charon', 'styx', self.robot_configs, 2, self.test_ros_node)
-        node_r2_r1 = sync.Channel(db_r2, 'styx', 'charon', self.robot_configs, 2, self.test_ros_node)
-
-        node_gs_r1.run()
-        node_gs_r2.run()
-
-        dbm = db.DBMessage(1, 1, 2, 1, rclpy.time.Time(seconds=int(time.time())), bytes('r1_data', 'utf-8'))
-        db_r1.add_modify_data(dbm)
-
-        node_gs_r1.trigger_sync()
-        time.sleep(4)
-
-        node_r1_gs.run()
-        node_r2_gs.run()
-
-        dbm = db.DBMessage(2, 2, 1, 2, rclpy.time.Time(seconds=int(time.time())), bytes('r2_data', 'utf-8'))
-        db_r2.add_modify_data(dbm)
-
-        node_r1_r2.run()
-
-        node_r1_r2.trigger_sync()
-        time.sleep(4)
-
-        node_gs_r2.trigger_sync()
-        time.sleep(2)
-
-        node_r2_r1.run()
-
-        node_gs_r1.stop()
-        node_r1_gs.stop()
-
-        node_r1_r2.stop()
-        node_r2_r1.stop()
-
-        node_r2_gs.stop()
-        node_gs_r2.stop()
-
-        time.sleep(2)
 
     def test_delay_run(self):
         self.maxDiff = None

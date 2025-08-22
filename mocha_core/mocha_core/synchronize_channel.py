@@ -49,8 +49,7 @@ class Idle(smach.State):
 
     def execute(self, userdata):
         self.outer.publishState("Idle Start")
-        while (not self.outer.sm_shutdown.is_set() and
-               not self.outer.shutdown_requested):
+        while (not self.outer.sm_shutdown.is_set()):
             if self.outer.sync.get_state():
                 # trigger sync and reset bistable
                 self.outer.publishState("Idle to RequestHash")
@@ -282,9 +281,6 @@ class Channel():
         self.ros_node = ros_node
         self.logger = self.ros_node.get_logger()
         self.ros_node_name = self.ros_node.get_fully_qualified_name()
-
-        # Add shutdown_requested attribute for ROS2 compatibility
-        self.shutdown_requested = False
 
         # Override smach logger to use ROS2 loggers
         smach.set_loggers(self.logger.debug, self.logger.warn,
