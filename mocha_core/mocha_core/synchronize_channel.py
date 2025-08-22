@@ -224,10 +224,8 @@ class TransmissionEnd(smach.State):
             if answer is not None:
                 # We received an ACK
                 if self.outer.client_sync_complete_pub is not None:
-                    time_msg = Time()
                     current_time = self.outer.ros_node.get_clock().now()
-                    time_msg.sec, time_msg.nanosec = current_time.seconds_nanoseconds()
-                    self.outer.client_sync_complete_pub.publish(time_msg)
+                    self.outer.client_sync_complete_pub.publish(current_time.to_msg())
                 break
             time.sleep(CHECK_POLL_TIME)
             i += 1
@@ -482,9 +480,7 @@ class Channel():
                              f" Target: {target.decode()} - " +
                              f"My target: {self.target_robot}")
             if self.server_sync_complete_pub is not None:
-                time_msg = Time()
                 current_time = self.ros_node.get_clock().now()
-                time_msg.sec, time_msg.nanosec = current_time.seconds_nanoseconds()
-                self.server_sync_complete_pub.publish(time_msg)
+                self.server_sync_complete_pub.publish(current_time.to_msg())
             return "Ack".encode()
         return Comm_msgs.SERRM.name.encode()
