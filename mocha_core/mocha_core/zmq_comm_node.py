@@ -234,4 +234,4 @@ class Comm_node:
     def terminate(self):
         self.server_running.clear()
         self.th.join()
-        self.logger.warn(f"Node {self.this_node} <- {self.client_node} - Terminating server")
+        self.logger.info(f"Node {self.this_node} -> {self.client_node} terminating server")

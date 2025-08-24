@@ -407,21 +407,21 @@ class Channel():
         self.sm_shutdown.set()
         # This terminates the comm node, so we can wait for the thread to finish
         self.th.join()
-        self.logger.warn(f"Channel {self.this_robot} -> {self.target_robot} destroyed")
+        self.logger.info(f"Channel {self.this_robot} -> {self.target_robot} destroyed")
 
 
     def sm_thread(self):
         # Start the state machine and wait until it ends
-        self.logger.warn(f"Channel {self.this_robot} -> {self.target_robot} started")
+        self.logger.info(f"Channel {self.this_robot} -> {self.target_robot} started")
         outcome = self.sm.execute()
+        # Terminate the comm node once the state machine ends
+        self.comm_node.terminate()
         exit_msg = f"Channel {self.this_robot} -> {self.target_robot}" + \
             f" finished with outcome: {outcome}"
         if outcome == 'failure':
             self.logger.error(exit_msg)
         elif outcome == 'stopped':
-            self.logger.warn(exit_msg)
-        # Terminate the comm node once the state machine ends
-        self.comm_node.terminate()
+            self.logger.info(exit_msg)
 
     def get_comm_node(self):
         if not self.comm_node:
@@ -431,7 +431,7 @@ class Channel():
 
     def trigger_sync(self):
         if self.sync.get_state():
-            self.logger.warn(f"{self.this_robot} <- {self.target_robot}: Channel Busy")
+            self.logger.warn(f"{self.this_robot} <- {self.target_robot}: Channel busy")
         else:
             self.sync.set()
 
