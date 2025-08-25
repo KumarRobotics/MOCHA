@@ -31,7 +31,7 @@ class Translator():
 
         # Create service client
         self.add_update_db_cli = self.ros_node.create_client(AddUpdateDB,
-                                                             "/integrate_database/add_update_db",
+                                                             "/mocha/add_update_db",
                                                              qos_profile=ds.DatabaseServer.QOS_PROFILE)
         wait_counter = 0
         while not self.add_update_db_cli.wait_for_service(timeout_sec=1.0):

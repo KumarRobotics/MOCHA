@@ -35,16 +35,16 @@ def ping(host):
         return False
 
 
-class IntegrateDatabase(Node):
+class Mocha(Node):
     def __init__(self):
-        super().__init__("integrate_database")
+        super().__init__("mocha_setver")
 
         # Handle shutdown signal
         self.shutdownTriggered = threading.Event()
         self.shutdownTriggered.clear()
 
         def signal_handler(sig, frame):
-            self.logger.warning(f"{self.this_robot} - Integrate - Got SIGINT. Triggering shutdown.")
+            self.logger.warning(f"{self.this_robot} - MOCHA Server - Got SIGINT. Triggering shutdown.")
             self.shutdown("Killed by user")
         signal.signal(signal.SIGINT, signal_handler)
 
@@ -63,13 +63,13 @@ class IntegrateDatabase(Node):
         self.rssi_threshold = self.get_parameter("rssi_threshold").get_parameter_value().integer_value
 
         if len(self.this_robot) == 0:
-            self.logger.error(f"{self.this_robot} - Integrate - Empty robot name")
+            self.logger.error(f"{self.this_robot} - MOCHA Server - Empty robot name")
             raise ValueError("Empty robot name")
 
-        self.logger.info(f"{self.this_robot} - Integrate - " +
+        self.logger.info(f"{self.this_robot} - MOCHA Server - " +
                         f"RSSI threshold: {self.rssi_threshold}")
         self.client_timeout = self.get_parameter("client_timeout").get_parameter_value().double_value
-        self.logger.info(f"{self.this_robot} - Integrate - " +
+        self.logger.info(f"{self.this_robot} - MOCHA Server - " +
                         f"Client timeout: {self.client_timeout}")
 
         # Load and check robot configs
@@ -78,10 +78,10 @@ class IntegrateDatabase(Node):
             with open(self.robot_configs_file, "r") as f:
                 self.robot_configs = yaml.load(f, Loader=yaml.FullLoader)
         except Exception as e:
-            self.logger.error(f"{self.this_robot} - Integrate - robot_configs file")
+            self.logger.error(f"{self.this_robot} - MOCHA Server - robot_configs file")
             raise e
         if self.this_robot not in self.robot_configs.keys():
-            self.logger.error(f"{self.this_robot} - Integrate - robot_configs file")
+            self.logger.error(f"{self.this_robot} - MOCHA Server - robot_configs file")
             raise ValueError("Robot not in config file")
 
         # Load and check radio configs
@@ -90,11 +90,11 @@ class IntegrateDatabase(Node):
             with open(self.radio_configs_file, "r") as f:
                 self.radio_configs = yaml.load(f, Loader=yaml.FullLoader)
         except Exception as e:
-            self.logger.error(f"{self.this_robot} - Integrate - radio_configs file")
+            self.logger.error(f"{self.this_robot} - MOCHA Server - radio_configs file")
             raise e
         self.radio = self.robot_configs[self.this_robot]["using-radio"]
         if self.radio not in self.radio_configs.keys():
-            self.logger.error(f"{self.this_robot} - Integrate - radio_configs file")
+            self.logger.error(f"{self.this_robot} - MOCHA Server - radio_configs file")
             raise ValueError("Radio {self.radio} not in config file")
 
         # Load and check topic configs
@@ -103,17 +103,17 @@ class IntegrateDatabase(Node):
             with open(self.topic_configs_file, "r") as f:
                 self.topic_configs = yaml.load(f, Loader=yaml.FullLoader)
         except Exception as e:
-            self.logger.error(f"{self.this_robot} - Integrate - topics_configs file")
+            self.logger.error(f"{self.this_robot} - MOCHA Server - topics_configs file")
             raise e
         self_type = self.robot_configs[self.this_robot]["node-type"]
         if self_type not in self.topic_configs.keys():
-            self.logger.error(f"{self.this_robot} - Integrate - topics_configs file")
+            self.logger.error(f"{self.this_robot} - MOCHA Server - topics_configs file")
             raise ValueError("Node type not in config file")
 
         # Check that we can ping the radios
         ip = self.robot_configs[self.this_robot]["IP-address"]
         if not ping(ip):
-            self.logger.error(f"{self.this_robot} - Integrate - " +
+            self.logger.error(f"{self.this_robot} - MOCHA Server - " +
                              f"Cannot ping self {ip}. Is the radio on?")
             raise ValueError("Cannot ping self")
 
@@ -124,7 +124,7 @@ class IntegrateDatabase(Node):
 
         self.num_robot_in_comm = 0
 
-        self.logger.info(f"{self.this_robot} - Integrate - " +
+        self.logger.info(f"{self.this_robot} - MOCHA Server - " +
                         "Created all communication channels!")
 
         # Start comm channels with other robots
@@ -134,7 +134,7 @@ class IntegrateDatabase(Node):
         for other_robot in self.other_robots:
             if other_robot not in self.robot_configs[self.this_robot]["clients"]:
                 self.logger.warning(
-                    f"{self.this_robot} - Integrate - "+
+                    f"{self.this_robot} - MOCHA Server - "+
                     f"Skipping channel {self.this_robot}->{other_robot} " +
                     "as it is not in the graph of this robot"
                 )
@@ -167,16 +167,16 @@ class IntegrateDatabase(Node):
         self.shutdownTriggered.set()
 
         assert isinstance(reason, str)
-        self.logger.error(f"{self.this_robot} - Integrate - " + reason)
+        self.logger.error(f"{self.this_robot} - MOCHA Server - " + reason)
         # Shutting down communication channels
         if hasattr(self, 'all_channels') and len(self.all_channels) != 0:
             for channel in self.all_channels:
                 channel.stop()
-            self.logger.warning(f"{self.this_robot} - Integrate - " + "Killed Channels")
+            self.logger.warning(f"{self.this_robot} - MOCHA Server - " + "Killed Channels")
             # Wait for all the channels to be gone. This needs to be slightly
             # larger than RECV_TIMEOUT
             time.sleep(3.5)
-        self.logger.warning(f"{self.this_robot} - Integrate - " + "Shutdown complete")
+        self.logger.warning(f"{self.this_robot} - MOCHA Server - " + "Shutdown complete")
 
     def rssi_cb(self, data, comm_node):
         rssi = data.data
@@ -195,7 +195,7 @@ def main(args=None):
 
     # Start the node
     try:
-        integrate_db = IntegrateDatabase()
+        mocha = Mocha()
     except Exception as e:
         print(f"Node initialization failed: {e}")
         rclpy.shutdown()
@@ -203,22 +203,22 @@ def main(args=None):
 
     # Load mtexecutor
     mtexecutor = MultiThreadedExecutor(num_threads=4)
-    mtexecutor.add_node(integrate_db)
+    mtexecutor.add_node(mocha)
 
     # Use context manager for clean shutdown
     try:
         # Spin with periodic checking for shutdown
-        while rclpy.ok() and not integrate_db.shutdownTriggered.is_set():
+        while rclpy.ok() and not mocha.shutdownTriggered.is_set():
             mtexecutor.spin_once(timeout_sec=0.1)
     except KeyboardInterrupt:
         print("Keyboard Interrupt")
-        integrate_db.shutdown("KeyboardInterrupt")
+        mocha.shutdown("KeyboardInterrupt")
     except Exception as e:
         print(f"Exception: {e}")
-        integrate_db.shutdown(f"Exception: {e}")
+        mocha.shutdown(f"Exception: {e}")
     finally:
         # Clean up node and ROS2 from main thread (safe)
-        integrate_db.destroy_node()
+        mocha.destroy_node()
         rclpy.shutdown()
 
 if __name__ == "__main__":

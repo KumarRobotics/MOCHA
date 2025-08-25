@@ -19,7 +19,7 @@ setup(
     tests_require=["pytest"],
     entry_points={
         "console_scripts": [
-            "integrate_database = mocha_core.integrate_database:main",
+            "mocha = mocha_core.mocha:main",
             "database_server = mocha_core.database_server:main",
             "synchronize_channel = mocha_core.synchronize_channel:main",
             "zmq_comm_node = mocha_core.zmq_comm_node:main",

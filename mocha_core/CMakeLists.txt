@@ -39,7 +39,7 @@ install(
 
 # Install executables as scripts
 install(PROGRAMS
-  mocha_core/integrate_database.py
+  mocha_core/mocha.py
   mocha_core/database_server.py
   mocha_core/synchronize_channel.py
   mocha_core/zmq_comm_node.py

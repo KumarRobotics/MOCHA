@@ -30,7 +30,7 @@ from mocha_core.srv import AddUpdateDB, GetDataHeaderDB, SelectDB
 class Database_server_test(Node):
     def __init__(self):
         # Important to match the topic that the translator expects
-        super().__init__("integrate_database")
+        super().__init__("mocha")
 
 
 class test_translator(unittest.TestCase):
@@ -155,7 +155,7 @@ class test_translator(unittest.TestCase):
             # Use the translator node's service client to query the database
             select_client = translator_node.create_client(
                 SelectDB,
-                "/integrate_database/select_db",
+                "/mocha/select_db",
                 qos_profile=ds.DatabaseServer.QOS_PROFILE
             )
             while not select_client.wait_for_service(timeout_sec=1.0):
@@ -288,7 +288,7 @@ class test_translator(unittest.TestCase):
 
             select_client = translator_node.create_client(
                 SelectDB,
-                "/integrate_database/select_db",
+                "/mocha/select_db",
                 qos_profile=ds.DatabaseServer.QOS_PROFILE
             )
             while not select_client.wait_for_service(timeout_sec=1.0):
