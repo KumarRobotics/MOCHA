@@ -78,10 +78,10 @@ class Mocha(Node):
             with open(self.robot_configs_file, "r") as f:
                 self.robot_configs = yaml.load(f, Loader=yaml.FullLoader)
         except Exception as e:
-            self.logger.error(f"{self.this_robot} - MOCHA Server - robot_configs file")
+            self.logger.error(f"{self.this_robot} - MOCHA Server - Error with robot_configs file")
             raise e
         if self.this_robot not in self.robot_configs.keys():
-            self.logger.error(f"{self.this_robot} - MOCHA Server - robot_configs file")
+            self.logger.error(f"{self.this_robot} - MOCHA Server - Robot not in robot_configs file")
             raise ValueError("Robot not in config file")
 
         # Load and check radio configs
@@ -90,11 +90,11 @@ class Mocha(Node):
             with open(self.radio_configs_file, "r") as f:
                 self.radio_configs = yaml.load(f, Loader=yaml.FullLoader)
         except Exception as e:
-            self.logger.error(f"{self.this_robot} - MOCHA Server - radio_configs file")
+            self.logger.error(f"{self.this_robot} - MOCHA Server - Error with radio_configs file")
             raise e
         self.radio = self.robot_configs[self.this_robot]["using-radio"]
         if self.radio not in self.radio_configs.keys():
-            self.logger.error(f"{self.this_robot} - MOCHA Server - radio_configs file")
+            self.logger.error(f"{self.this_robot} - MOCHA Server - Radio not in radio_configs file")
             raise ValueError("Radio {self.radio} not in config file")
 
         # Load and check topic configs
@@ -103,11 +103,11 @@ class Mocha(Node):
             with open(self.topic_configs_file, "r") as f:
                 self.topic_configs = yaml.load(f, Loader=yaml.FullLoader)
         except Exception as e:
-            self.logger.error(f"{self.this_robot} - MOCHA Server - topics_configs file")
+            self.logger.error(f"{self.this_robot} - MOCHA Server - Error with topics_configs file")
             raise e
         self_type = self.robot_configs[self.this_robot]["node-type"]
         if self_type not in self.topic_configs.keys():
-            self.logger.error(f"{self.this_robot} - MOCHA Server - topics_configs file")
+            self.logger.error(f"{self.this_robot} - MOCHA Server - Node type not in topics_configs file")
             raise ValueError("Node type not in config file")
 
         # Check that we can ping the radios
