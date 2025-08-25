@@ -44,12 +44,12 @@ class RajantParser(Node):
         for mac in self.MAC_DICT.keys():
             for robot in self.robot_cfg.keys():
                 if self.MAC_DICT[mac]['radio'] == self.robot_cfg[robot]['using-radio'] and robot != self.this_robot:
-                    self.MAC_DICT[mac]['publisher'] = self.create_publisher(Int32, 'ddb/rajant/rssi/' + robot, 10)
+                    self.MAC_DICT[mac]['publisher'] = self.create_publisher(Int32, 'mocha/rajant/rssi/' + robot, 10)
 
         # Create subscriber
         self.subscription = self.create_subscription(
             String,
-            'ddb/rajant/log',
+            'mocha/rajant/log',
             self.update_dict,
             10
         )
