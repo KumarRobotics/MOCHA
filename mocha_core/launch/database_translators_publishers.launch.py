@@ -46,6 +46,11 @@ def generate_launch_description():
         description='Path to radio configuration file'
     )
 
+    sigterm_timeout_arg = DeclareLaunchArgument(
+        'sigterm_timeout', default_value='10',
+        description='Modify default SIGTERM timeout to 10 seconds'
+    )
+
     # Get launch configurations
     robot_name = LaunchConfiguration('robot_name')
     robot_configs = LaunchConfiguration('robot_configs')
@@ -92,6 +97,7 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
+        sigterm_timeout_arg,
         robot_name_arg,
         robot_configs_arg,
         topic_configs_arg,
