@@ -1,4 +1,4 @@
-ground-robot:
+ground_robot:
   - msg_topic: "/local_costmap/costmap"
     msg_type: "nav_msgs/OccupancyGrid"
     msg_priority: "MEDIUM_PRIORITY"
