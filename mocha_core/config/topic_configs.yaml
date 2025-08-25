@@ -52,7 +52,7 @@ base_station:
     msg_priority: "HIGH_PRIORITY"
     msg_history: "LAST_MESSAGE"
   - msg_topic: "/to_io/navigation_ack"
-    msg_type: "teaming_msgs/Int16"
+    msg_type: "std_msgs/Int16"
     msg_priority: "HIGH_PRIORITY"
     msg_history: "LAST_MESSAGE"
   - msg_topic: "/to_io/vlm_request"
