@@ -109,20 +109,20 @@ class RajantParser(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    
+
     # Create a temporary node to get parameters
     temp_node = Node('temp_rajant_parser')
-    
+
     # Declare parameters
     temp_node.declare_parameter('robot_name', 'charon')
     temp_node.declare_parameter('robot_configs', '')
     temp_node.declare_parameter('radio_configs', '')
-    
+
     # Get parameters
     robot_name = temp_node.get_parameter('robot_name').get_parameter_value().string_value
     robot_configs_file = temp_node.get_parameter('robot_configs').get_parameter_value().string_value
     radio_configs_file = temp_node.get_parameter('radio_configs').get_parameter_value().string_value
-    
+
     # Load robot configs
     with open(robot_configs_file, "r") as f:
         robot_configs = yaml.load(f, Loader=yaml.FullLoader)
@@ -141,13 +141,13 @@ def main(args=None):
         temp_node.destroy_node()
         rclpy.shutdown()
         return
-    
+
     # Clean up temp node
     temp_node.destroy_node()
-    
+
     # Create the actual parser node
     rajant_parser = RajantParser(robot_name, robot_configs, radio_configs)
-    
+
     try:
         rclpy.spin(rajant_parser)
     except KeyboardInterrupt:

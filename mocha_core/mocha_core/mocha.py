@@ -37,7 +37,7 @@ def ping(host):
 
 class Mocha(Node):
     def __init__(self):
-        super().__init__("mocha_setver")
+        super().__init__("mocha")
 
         # Handle shutdown signal
         self.shutdownTriggered = threading.Event()
@@ -155,7 +155,7 @@ class Mocha(Node):
 
             self.create_subscription(
                 std_msgs.msg.Int32,
-                'ddb/rajant/rssi/' + other_robot,
+                'mocha/rajant/rssi/' + other_robot,
                 make_callback(channel),
                 10
             )

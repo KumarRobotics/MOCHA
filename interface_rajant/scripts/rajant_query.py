@@ -73,17 +73,17 @@ ON_POSIX = 'posix' in sys.builtin_module_names
 class RajantQueryNode(Node):
     def __init__(self):
         super().__init__('rajant_query')
-        
+
         # Declare parameters
         self.declare_parameter('robot_name', 'charon')
         self.declare_parameter('robot_configs', '')
         self.declare_parameter('radio_configs', '')
-        
+
         # Get parameters
         self.robot_name = self.get_parameter('robot_name').get_parameter_value().string_value
         robot_configs_file = self.get_parameter('robot_configs').get_parameter_value().string_value
         radio_configs_file = self.get_parameter('radio_configs').get_parameter_value().string_value
-        
+
         # Load robot configs
         with open(robot_configs_file, "r") as f:
             robot_configs = yaml.load(f, Loader=yaml.FullLoader)
@@ -108,7 +108,7 @@ class RajantQueryNode(Node):
             return
 
         # Create ROS publisher
-        self.pub = self.create_publisher(String, 'ddb/rajant/log', 10)
+        self.pub = self.create_publisher(String, 'mocha/rajant/log', 10)
 
         # Get package path
         try:
@@ -125,10 +125,10 @@ class RajantQueryNode(Node):
         self.p = None
         self.q = None
         self.t = None
-        
+
         # Start the Java process
         self.start_java_process()
-        
+
         # Go
         self.get_logger().info(f"{self.robot_name} - Rajant API Query - Starting on {rajant_name}")
 
@@ -187,9 +187,9 @@ class RajantQueryNode(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    
+
     rajant_query_node = RajantQueryNode()
-    
+
     try:
         rclpy.spin(rajant_query_node)
     except KeyboardInterrupt:

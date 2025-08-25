@@ -65,7 +65,7 @@ class DatabaseServer:
             database_cb_msg.header.frame_id = self.robot_name
             database_cb_msg.robot_id = robot_id
             database_cb_msg.topic_id = topic_id
-            database_cb_msg.msgheader = header
+            database_cb_msg.msg_header = header
             pub_database.publish(database_cb_msg)
 
         # Create the empty database with lock
