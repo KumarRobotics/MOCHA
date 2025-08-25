@@ -218,6 +218,7 @@ class test(unittest.TestCase):
         self.assertTrue(client_node.data_answer is not None)
         self.assertEqual(client_node.data_answer.topic_id, tid)
         self.assertEqual(client_node.data_answer.header.frame_id, self.robot_name)
+        self.assertEqual(client_node.data_answer.msgheader, answ_header)
 
     def test_add_select_robot(self):
         # Create a single client

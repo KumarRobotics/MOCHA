@@ -118,7 +118,7 @@ class DBwLock():
         self.lock.release()
         # Callback on insertion of new data
         if self.insertion_cb is not None:
-            self.insertion_cb(dbm.robot_id, dbm.topic_id, dbm.ts)
+            self.insertion_cb(dbm.robot_id, dbm.topic_id, dbm.ts, dbm.header)
         return dbm.header
 
     def get_header_list(self, filter_robot_id=None, filter_latest=None):

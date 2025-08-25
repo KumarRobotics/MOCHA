@@ -59,12 +59,13 @@ class DatabaseServer:
             f"{self.ros_node_name}/database_cb",
             10
         )
-        def database_cb(robot_id, topic_id, ts):
+        def database_cb(robot_id, topic_id, ts, header):
             database_cb_msg = mocha_core.msg.DatabaseCB()
             database_cb_msg.header.stamp = ts.to_msg()
             database_cb_msg.header.frame_id = self.robot_name
             database_cb_msg.robot_id = robot_id
             database_cb_msg.topic_id = topic_id
+            database_cb_msg.msgheader = header
             pub_database.publish(database_cb_msg)
 
         # Create the empty database with lock
