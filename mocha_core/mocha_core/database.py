@@ -82,7 +82,7 @@ class DBwLock():
 
     sample_db may be a valid dictionary that can be preloaded into
     the object (useful for debugging, see sample_db.py) """
-    def __init__(self, sample_db=None, ros_node=None):
+    def __init__(self, sample_db=None, ros_node=None, insertion_cb=None):
         if sample_db is not None:
             assert isinstance(sample_db, dict)
             # For ROS2, we can't deepcopy Time objects, so we'll just assign directly
@@ -91,8 +91,11 @@ class DBwLock():
             self.db = sample_db
         else:
             self.db = {}
+        if insertion_cb is not None:
+            assert callable(insertion_cb)
         self.lock = threading.Lock()
         self.ros_node = ros_node
+        self.insertion_cb = insertion_cb
 
     def add_modify_data(self, dbm):
         """ Insert new stuff into the db. Use the header as message index """
@@ -113,6 +116,9 @@ class DBwLock():
                 raise Exception("database: Header Collision Detected")
         self.db[dbm.robot_id][dbm.topic_id][dbm.header] = dbm
         self.lock.release()
+        # Callback on insertion of new data
+        if self.insertion_cb is not None:
+            self.insertion_cb(dbm.robot_id, dbm.topic_id, dbm.ts)
         return dbm.header
 
     def get_header_list(self, filter_robot_id=None, filter_latest=None):

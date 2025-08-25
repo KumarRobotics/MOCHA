@@ -10,6 +10,7 @@ import mocha_core.srv
 import mocha_core.database as database
 import pdb
 import mocha_core.database_utils as du
+import mocha_core.msg
 
 from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPolicy
 
@@ -52,8 +53,22 @@ class DatabaseServer:
 
         self.topic_list = self.topic_configs[self.robot_configs[self.robot_name]["node-type"]]
 
+        # Publish a message every time that the database is modified
+        pub_database = self.ros_node.create_publisher(
+            mocha_core.msg.DatabaseCB,
+            f"{self.ros_node_name}/database_cb",
+            10
+        )
+        def database_cb(robot_id, topic_id, ts):
+            database_cb_msg = mocha_core.msg.DatabaseCB()
+            database_cb_msg.header.stamp = ts.to_msg()
+            database_cb_msg.header.frame_id = self.robot_name
+            database_cb_msg.robot_id = robot_id
+            database_cb_msg.topic_id = topic_id
+            pub_database.publish(database_cb_msg)
+
         # Create the empty database with lock
-        self.dbl = database.DBwLock(ros_node=self.ros_node)
+        self.dbl = database.DBwLock(ros_node=self.ros_node, insertion_cb=database_cb)
 
         # Get current robot number
         self.robot_number = du.get_robot_id_from_name(self.robot_configs,

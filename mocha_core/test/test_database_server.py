@@ -23,9 +23,7 @@ from geometry_msgs.msg import PointStamped
 import mocha_core.database_server as ds
 import mocha_core.database_utils as du
 from mocha_core.srv import AddUpdateDB, GetDataHeaderDB, SelectDB
-
-
-import mocha_core.srv
+from mocha_core.msg import DatabaseCB
 
 
 class Database_server_test(Node):
@@ -51,10 +49,17 @@ class Database_client_test(Node):
         while not self.get_data_header_db_cli.wait_for_service(timeout_sec=1.0):
             logger.debug("Waiting for get_data_header_db")
         self.select_db_cli = self.create_client(SelectDB,
-                                                    "/test_database_server/select_db",
+                                                "/test_database_server/select_db",
                                                 qos_profile=ds.DatabaseServer.QOS_PROFILE)
         while not self.select_db_cli.wait_for_service(timeout_sec=1.0):
             logger.debug("Waiting for get_data_header_db")
+
+        # Subscribe to the answers from the database
+        def callback(data):
+            self.data_answer = data
+        self.database_cb_sub = self.create_subscription(DatabaseCB,
+                                                        "/test_database_server/database_cb",
+                                                        callback, 10)
 
     def recorder_async(self, loops_per_thread, robot_configs, topic_configs, robot_name):
         # Get a random ros time
@@ -82,7 +87,7 @@ class Database_client_test(Node):
             ).to_msg()
             try:
                 # Create request and call service method directly
-                req = mocha_core.srv.AddUpdateDB.Request()
+                req = AddUpdateDB.Request()
                 req.topic_id = tid
                 req.timestamp = timestamp
                 req.msg_content = serialized_msg
@@ -174,7 +179,7 @@ class test(unittest.TestCase):
 
         try:
             # Create request and call service method directly
-            req = mocha_core.srv.AddUpdateDB.Request()
+            req = AddUpdateDB.Request()
             req.topic_id = tid
             req.timestamp = rclpy.clock.Clock().now().to_msg()
             req.msg_content = serialized_msg
@@ -191,7 +196,7 @@ class test(unittest.TestCase):
         # Request the same hash through service
         try:
             # Create request and call service method directly
-            req = mocha_core.srv.GetDataHeaderDB.Request()
+            req = GetDataHeaderDB.Request()
             req.msg_header = answ_header
             future = client_node.get_data_header_db_cli.call_async(req)
             rclpy.spin_until_future_complete(client_node, future)
@@ -207,9 +212,12 @@ class test(unittest.TestCase):
 
         self.assertEqual(tid, ans_topic_id)
         self.assertEqual(ans_data, sample_msg)
-        # print("Received topic:", ans_topic_name)
-        # print("ROS msg:", ans_data)
-        # print("Timestamp:", ans_ts)
+
+        # We will now test the callback from the database when a new message is
+        # published
+        self.assertTrue(client_node.data_answer is not None)
+        self.assertEqual(client_node.data_answer.topic_id, tid)
+        self.assertEqual(client_node.data_answer.header.frame_id, self.robot_name)
 
     def test_add_select_robot(self):
         # Create a single client
@@ -237,7 +245,7 @@ class test(unittest.TestCase):
             serialized_msg = du.serialize_ros_msg(sample_msg)
             try:
                 # Create request and call service method directly
-                req = mocha_core.srv.AddUpdateDB.Request()
+                req = AddUpdateDB.Request()
                 req.topic_id = tid
                 req.timestamp = rclpy.clock.Clock().now().to_msg()
                 req.msg_content = serialized_msg
@@ -254,7 +262,7 @@ class test(unittest.TestCase):
         try:
             robot_id = du.get_robot_id_from_name(self.robot_configs, self.robot_name)
             # Create request and call service method directly
-            req = mocha_core.srv.SelectDB.Request()
+            req = SelectDB.Request()
             req.robot_id = robot_id
             req.topic_id = 0  # Changed from None to 0 since it's uint8
             req.ts_limit = rclpy.clock.Clock().now().to_msg()
@@ -299,7 +307,7 @@ class test(unittest.TestCase):
         try:
             robot_id = du.get_robot_id_from_name(self.robot_configs, self.robot_name)
             # Create request and call service method directly
-            req = mocha_core.srv.SelectDB.Request()
+            req = SelectDB.Request()
             req.robot_id = robot_id
             req.topic_id = 0  # Changed from None to 0 since it's uint8
             req.ts_limit = rclpy.clock.Clock().now().to_msg()
@@ -315,4 +323,4 @@ class test(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    unittest.main(failfast=True)

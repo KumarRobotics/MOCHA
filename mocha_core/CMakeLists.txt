@@ -22,6 +22,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/ClientStats.msg"
   "msg/HeaderPub.msg"
   "msg/SMState.msg"
+  "msg/DatabaseCB.msg"
   "srv/AddUpdateDB.srv"
   "srv/GetDataHeaderDB.srv"
   "srv/SelectDB.srv"
