@@ -216,10 +216,6 @@ def main(args=None):
     except Exception as e:
         print(f"Exception: {e}")
         mocha.shutdown(f"Exception: {e}")
-    finally:
-        # Clean up node and ROS2 from main thread (safe)
-        mocha.destroy_node()
-        rclpy.shutdown()
 
 if __name__ == "__main__":
     main()

@@ -149,10 +149,6 @@ def main(args=None):
         print("Keyboard Interrupt")
     except Exception as e:
         print(f"Exception: {e}")
-    finally:
-        # Clean up node and ROS2 from main thread (safe)
-        translator_node.destroy_node()
-        rclpy.shutdown()
 
 if __name__ == "__main__":
     main()
