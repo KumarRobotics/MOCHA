@@ -16,6 +16,15 @@ import mocha_core.database_utils as du
 from mocha_core.srv import AddUpdateDB, GetDataHeaderDB, SelectDB
 import mocha_core.database_server as ds
 
+from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPolicy
+
+
+QOS_PROFILE = QoSProfile(
+    reliability=ReliabilityPolicy.RELIABLE,
+    durability=DurabilityPolicy.VOLATILE,
+    history=HistoryPolicy.KEEP_ALL,
+)
+
 
 class Translator():
     def __init__(
@@ -42,8 +51,9 @@ class Translator():
 
         # Create subscriber with callback group
         self.subscription = self.ros_node.create_subscription(
-            msg_type, self.topic_name, self.translator_cb, 10,
-            callback_group=callback_group
+            msg_type, self.topic_name, self.translator_cb,
+            callback_group=callback_group,
+            qos_profile=QOS_PROFILE
         )
         self.logger.info(f"Translator created for {self.topic_name}")
 

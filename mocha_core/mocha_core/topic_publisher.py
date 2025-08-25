@@ -20,6 +20,14 @@ from mocha_core.msg import DatabaseCB
 import mocha_core.database_server as ds
 import mocha_core.hash_comm as hc
 import queue
+from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPolicy
+
+
+QOS_PROFILE = QoSProfile(
+    reliability=ReliabilityPolicy.RELIABLE,
+    durability=DurabilityPolicy.VOLATILE,
+    history=HistoryPolicy.KEEP_ALL,
+)
 
 
 class TopicPublisher:
@@ -41,7 +49,7 @@ class TopicPublisher:
 
         self.publisher = self.ros_node.create_publisher(obj,
                                                         f"/{robot_name}{topic_name}",
-                                                        10)
+                                                        qos_profile=QOS_PROFILE)
         self.is_shutdown = threading.Event()
         self.is_shutdown.set()
 

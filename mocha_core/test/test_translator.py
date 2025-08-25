@@ -123,7 +123,7 @@ class test_translator(unittest.TestCase):
         test_publisher = translator_node.create_publisher(
             PointStamped,
             "/pose",
-            10
+            qos_profile=tr.QOS_PROFILE
         )
 
         # Wait for connections to be established
@@ -233,7 +233,7 @@ class test_translator(unittest.TestCase):
 
             # Get message type for this topic
             obj = msg_types[robot_id][topic_id]["obj"]
-            pub = pub_node.create_publisher(obj, topic_name, 10)
+            pub = pub_node.create_publisher(obj, topic_name, tr.QOS_PROFILE)
 
             # Wait for publisher to connect
             time.sleep(0.5)
