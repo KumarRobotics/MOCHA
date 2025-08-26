@@ -87,7 +87,7 @@ class RajantParser(Node):
                             msg.data = rssi
                             self.MAC_DICT[mac]['publisher'].publish(msg)
                         else:
-                            self.get_logger().warn(f"{self.this_robot} - Rajant API Parser - " +
+                            self.get_logger().debug(f"{self.this_robot} - Rajant API Parser - " +
                                           f"active radio {self.MAC_DICT[mac]['radio']} not assigned to any robot")
                     elif 'mac' in state[wireless_channel][peer].keys() and 'rssi' not in state[wireless_channel][peer].keys():
                         mac = state[wireless_channel][peer]['mac']
@@ -103,7 +103,7 @@ class RajantParser(Node):
                                 msg.data = no_rssi
                                 self.MAC_DICT[mac]['publisher'].publish(msg)
                             else:
-                                self.get_logger().warn(f"{self.this_robot} - Rajant API Parser - " +
+                                self.get_logger().debug(f"{self.this_robot} - Rajant API Parser - " +
                                               f"active radio {self.MAC_DICT[mac]['radio']} not assigned to any robot")
 
 
