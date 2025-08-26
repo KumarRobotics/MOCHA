@@ -67,25 +67,29 @@ class TopicPublisher:
                 msg_header = self.msg_queue.get(timeout=1)
             except queue.Empty:
                 continue
-            self.logger.info(f"{self.robot_name}{self.topic_name} - Topic Publisher - Loop")
+            self.logger.debug(f"{self.robot_name}{self.topic_name} - Topic Publisher - Loop")
             req = mocha_core.srv.GetDataHeaderDB.Request()
             req.msg_header = msg_header
             future = self.get_data_header_db_cli.call_async(req)
-            rclpy.spin_until_future_complete(
-                self.ros_node, future, timeout_sec=2.0
-            )
-            if future.done():
-                answ = future.result()
-            else:
-                self.logger.warning(f"{self.robot_name} - Topic Publisher - get_data_header_db service call timeout")
-                continue
-            ans_robot_id, ans_topic_id, ans_ts, ans_data = du.parse_answer(
-                answ, self.msg_types
-            )
-            self.publisher.publish(ans_data)
+
+            def handle_response(future):
+                try:
+                    if future.done():
+                        answ = future.result()
+                        ans_robot_id, ans_topic_id, ans_ts, ans_data = du.parse_answer(
+                            answ, self.msg_types
+                        )
+                        self.publisher.publish(ans_data)
+                        # self.msg_queue.task_done()
+                    else:
+                        self.logger.warning(f"{self.robot_name} - Topic Publisher - get_data_header_db service call timeout")
+                except Exception as e:
+                    self.logger.error(f"{self.robot_name} - Topic Publisher - Error handling service response: {e}")
+
+            future.add_done_callback(handle_response)
 
     def get_message(self, msg_header):
-        self.logger.warning(f"{self.robot_name} - Topic Publisher - Callback")
+        self.logger.debug(f"{self.robot_name} - Topic Publisher - Callback")
         self.msg_queue.put(msg_header)
 
     def shutdown(self):
@@ -180,10 +184,10 @@ class TopicPublisherNode(Node):
                 self.list_of_threads[robot_id][topic_id] = tp
                 tp.th.start()
         sub = self.create_subscription(DatabaseCB, "/mocha/database_cb",
-                                       self.msgheader_callback, 10)
+                                       self.msgheader_callback, 10,
+                                       callback_group=self.callback_group)
 
     def msgheader_callback(self, data):
-        pdb.set_trace()
         robot_id = data.robot_id
         topic_id = data.topic_id
         msg_header = data.msg_header
