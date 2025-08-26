@@ -68,9 +68,15 @@ class DBMessage():
         return True
 
     def __str__(self):
-        return "%d, %d, %d, %d, %f" % (self.robot_id, self.topic_id,
-                                       self.dtype, self.priority,
-                                       self.ts.nanoseconds)
+        string =  f"----- Database Message -----\n"
+        string += f"Robot ID: {self.robot_id}\n"
+        string += f"Topic ID: {self.topic_id}\n"
+        string += f"Data type: {self.dtype}\n"
+        string += f"Priority: {self.priority}\n"
+        string += f"Timestamp (ns): {self.ts.nanoseconds}\n"
+        string += f"Binary data: {self.data}\n"
+        string += f"----------------------------"
+        return string
 
 
 class DBwLock():
