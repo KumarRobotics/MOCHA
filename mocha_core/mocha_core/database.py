@@ -111,7 +111,10 @@ class DBwLock():
             self.db[dbm.robot_id][dbm.topic_id] = {}
         if dbm.header in self.db[dbm.robot_id][dbm.topic_id]:
             if self.ros_node is not None:
-                self.ros_node.get_logger().error("Database - Header Collision Detected. " + "You may want to decrease your publish rate into MOCHA")
+                error_msg =  f"Database - Header collision detected."
+                error_msg += f"You may want to decrease your publish rate into MOCHA."
+                error_msg += f"Robot ID {dbm.robot_id}. Topic ID {dbm.topic_id}"
+                self.ros_node.get_logger().error(error_msg)
             else:
                 raise Exception("database: Header Collision Detected")
         self.db[dbm.robot_id][dbm.topic_id][dbm.header] = dbm
