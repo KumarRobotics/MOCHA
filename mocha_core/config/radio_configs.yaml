@@ -88,6 +88,16 @@ deep-blue-3:
         MAC-address: ["48:a9:8a:a0:75:69"]
         computed-IP-address: 10.209.254.1
 
+deep-blue-4:
+        SN: "DX2-24-125991"
+        MAC-address: ["48:8f:5a:48:8f:38"]
+        computed-IP-address: 10.236.39.1
+
+deep-blue-5:
+        SN: "DX2-24-125992"
+        MAC-address: ["2c:c8:1b:e1:9b:d6"]
+        computed-IP-address: 10.236.40.1
+
 dx4-1:
         SN: "DX4-5252E-106727"
         MAC-address: ["00:0e:8e:bd:d9:24", "00:0e:8e:bd:d9:23"]
