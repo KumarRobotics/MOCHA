@@ -19,7 +19,15 @@ ground_robot:
     msg_type: "teaming_msgs/VLMResponse"
     msg_priority: "HIGH_PRIORITY"
     msg_history: "LAST_MESSAGE"
-
+  - msg_topic: "/behavior_request_ack"
+    msg_type: "std_msgs/Int16"
+    msg_priority: "HIGH_PRIORITY"
+    msg_history: "LAST_MESSAGE"
+  - msg_topic: "/behavior_result"
+    msg_type: "teaming_msgs/BehaviorResult"
+    msg_priority: "HIGH_PRIORITY"
+    msg_history: "LAST_MESSAGE"
+  
 base_station:
   # for callisto
   - msg_topic: "/to_callisto/navigation_request"
@@ -46,6 +54,15 @@ base_station:
     msg_type: "std_msgs/Int16"
     msg_priority: "HIGH_PRIORITY"
     msg_history: "LAST_MESSAGE"
+  - msg_topic: "/to_callisto/behavior_request"
+    msg_type: "teaming_msgs/BehaviorRequest"
+    msg_priority: "HIGH_PRIORITY"
+    msg_history: "LAST_MESSAGE"
+  - msg_topic: "/to_callisto/behavior_result_ack"
+    msg_type: "std_msgs/Int16"
+    msg_priority: "HIGH_PRIORITY"
+    msg_history: "LAST_MESSAGE"
+ 
   # for io
   - msg_topic: "/to_io/navigation_request"
     msg_type: "teaming_msgs/GoalRequest"
@@ -71,3 +88,12 @@ base_station:
     msg_type: "std_msgs/Int16"
     msg_priority: "HIGH_PRIORITY"
     msg_history: "LAST_MESSAGE"
+  - msg_topic: "/to_io/behavior_request"
+    msg_type: "teaming_msgs/BehaviorRequest"
+    msg_priority: "HIGH_PRIORITY"
+    msg_history: "LAST_MESSAGE"
+  - msg_topic: "/to_io/behavior_result_ack"
+    msg_type: "std_msgs/Int16"
+    msg_priority: "HIGH_PRIORITY"
+    msg_history: "LAST_MESSAGE"
+ 
