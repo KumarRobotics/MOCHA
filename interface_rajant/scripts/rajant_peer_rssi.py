@@ -11,8 +11,8 @@ import yaml
 import subprocess
 import sys
 import queue
-import csv
 import std_msgs.msg
+from collections import deque
 
 ON_POSIX = 'posix' in sys.builtin_module_names
 
@@ -27,6 +27,9 @@ def ping(host):
         return False
 
 class PeerPublisher():
+    # QUEUE_LENGTH is used to filter repeated RSSI
+    QUEUE_LENGTH = 3
+
     def __init__(self, target_name, ros_node):
         assert ros_node is not None
         assert target_name is not None and isinstance(target_name, str)
@@ -36,6 +39,9 @@ class PeerPublisher():
 
         self.last_registered_timestamp = None
         self.rssi_ts = []
+
+        self.published_rssi_queue = deque(maxlen=self.QUEUE_LENGTH)
+        self.repeated_counter = 0
 
         # Create a publisher for the node
         topic_name = f"mocha/rajant/rssi/{self.target_name}"
@@ -52,18 +58,54 @@ class PeerPublisher():
         # Skip if we did not collect info for this node in this session
         if self.last_registered_timestamp is None:
            return
-        assert ts == self.last_registered_timestamp
-        # Verify that all the timestamps are the same
+        # Check that current end timestamp and msg timestamps agree
+        if ts != self.last_registered_timestamp:
+            self.ros_node.get_logger().error(f"{self.ros_node.this_robot} - Rajant Peer RSSI - Timestamp of end message different than last registered timestamp in publish_all")
+            return
+        # Verify that all the timestamps are the same for all the radios
         all_ts = [i[0] for i in self.rssi_ts]
-        assert len(all_ts)!=0 and len(set(all_ts)) == 1
-        # Publish the biggest RSSI
-        msg = std_msgs.msg.Int32()
+        if not len(all_ts):
+            self.ros_node.get_logger().error(f"{self.ros_node.this_robot} - Rajant Peer RSSI - Empty list of timestamps in publish_all.")
+            return
+        if len(set(all_ts)) != 1:
+            self.ros_node.get_logger().error(f"{self.ros_node.this_robot} - Rajant Peer RSSI - Multiple different timestamps for the same group in publish_all.")
+            return
+
+        # Find out the largest RSSI and sum of RSSI
         all_rssi = [i[1] for i in self.rssi_ts]
-        msg.data = max(all_rssi)
-        self.pub.publish(msg)
+        max_rssi = max(all_rssi)
+        sum_rssi = sum(all_rssi)
+
         # Clear lists
         self.last_registered_timestamp = None
         self.rssi_ts = []
+
+        self.published_rssi_queue.append(sum_rssi)
+
+        # If we published the same sum of RSSI for the last QUEUE_LENGTH times we may drop
+        # the subscription. This may happen for two reasons:
+        # - It is a dead radio
+        # - The RSSI has just not changed
+        #
+        # As it is difficult to disambiguate one from the other one, a
+        # compromise solution is to throttle the topic where we observe this
+        # behavior by 1/4.
+        #
+        # With the current configuration it takes about 30 seconds for a node to
+        # disconnect, so this would publish one bad message only
+        #
+        # print(self.published_rssi_queue, set(self.published_rssi_queue))
+        if len(set(self.published_rssi_queue)) == 1 and \
+            len(self.published_rssi_queue) == self.QUEUE_LENGTH:
+            if self.repeated_counter < 4:
+                self.repeated_counter += 1
+                self.ros_node.get_logger().debug(f"{self.ros_node.this_robot} - Rajant Peer RSSI - Repeated RSSI for {self.target_name} for the last {self.QUEUE_LENGTH*3} seconds. Throttling counter {self.repeated_counter}")
+                return
+
+        self.ros_node.get_logger().debug(f"{self.ros_node.this_robot} - Rajant Peer RSSI - Publishing {self.target_name}")
+        msg = std_msgs.msg.Int32()
+        msg.data = max_rssi
+        self.pub.publish(msg)
 
 
 class RajantPeerRSSI(Node):
