@@ -38,18 +38,19 @@ def ping(host):
 class Mocha(Node):
     def __init__(self):
         super().__init__("mocha")
+        self.logger = self.get_logger()
+        # self.logger.set_level(LoggingSeverity.DEBUG)
 
         # Handle shutdown signal
         self.shutdownTriggered = threading.Event()
         self.shutdownTriggered.clear()
 
         def signal_handler(sig, frame):
-            self.logger.warning(f"{self.this_robot} - MOCHA Server - Got SIGINT. Triggering shutdown.")
-            self.shutdown("Killed by user")
+            if not self.shutdownTriggered.is_set():
+                self.logger.warning(f"{self.this_robot} - MOCHA Server - Got SIGINT. Triggering shutdown.")
+                self.shutdown("Killed by user")
         signal.signal(signal.SIGINT, signal_handler)
 
-        self.logger = self.get_logger()
-        # self.logger.set_level(LoggingSeverity.DEBUG)
 
         # Declare parameters
         self.declare_parameter("robot_name", "")
