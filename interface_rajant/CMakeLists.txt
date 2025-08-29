@@ -17,8 +17,7 @@ install(DIRECTORY launch
 
 # Install Python executables
 install(PROGRAMS
-  scripts/rajant_query.py
-  scripts/rajant_parser.py
+  scripts/rajant_peer_rssi.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
