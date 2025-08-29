@@ -28,9 +28,6 @@ base_station:
     msg_history: "LAST_MESSAGE"
  
   # for io
-    msg_type: "std_msgs/Int16"
-    msg_priority: "HIGH_PRIORITY"
-    msg_history: "LAST_MESSAGE"
   - msg_topic: "/to_io/behavior_request"
     msg_type: "teaming_msgs/BehaviorRequest"
     msg_priority: "HIGH_PRIORITY"
