@@ -36,4 +36,8 @@ base_station:
     msg_type: "std_msgs/Int16"
     msg_priority: "HIGH_PRIORITY"
     msg_history: "LAST_MESSAGE"
- 
+
+  - msg_topic: "/graph"
+    msg_type: "std_msgs/String"
+    msg_priority: "HIGH_PRIORITY"
+    msg_history: "LAST_MESSAGE"
