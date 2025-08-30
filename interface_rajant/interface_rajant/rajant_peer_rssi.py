@@ -103,6 +103,7 @@ class PeerPublisher():
                 return
 
         self.ros_node.get_logger().debug(f"{self.ros_node.this_robot} - Rajant Peer RSSI - Publishing {self.target_name}")
+        self.repeated_counter = 0
         msg = std_msgs.msg.Int32()
         msg.data = max_rssi
         self.pub.publish(msg)
