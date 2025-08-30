@@ -1,5 +1,5 @@
 uint8   robot_id
 uint8   topic_id
-time    ts_limit
+builtin_interfaces/Time ts_limit
 ---
 uint8[] headers
