@@ -37,6 +37,17 @@ base_station:
     msg_priority: "HIGH_PRIORITY"
     msg_history: "LAST_MESSAGE"
 
+
+    # for apollo
+  - msg_topic: "/to_apollo/behavior_request"
+    msg_type: "teaming_msgs/BehaviorRequest"
+    msg_priority: "HIGH_PRIORITY"
+    msg_history: "LAST_MESSAGE"
+  - msg_topic: "/to_apollo/behavior_result_ack"
+    msg_type: "std_msgs/Int16"
+    msg_priority: "HIGH_PRIORITY"
+    msg_history: "LAST_MESSAGE"
+
   - msg_topic: "/graph"
     msg_type: "std_msgs/String"
     msg_priority: "HIGH_PRIORITY"
