@@ -51,8 +51,9 @@ def get_topic_id_from_name(robot_configs, topic_configs,
     logger = ros_node.get_logger()
 
     list_topics = topic_configs[robot_configs[robot_name]["node-type"]]
+    sorted_list_topics = sorted(list_topics, key=lambda topic: topic['msg_topic'])
     id = None
-    for i, topic in enumerate(list_topics):
+    for i, topic in enumerate(sorted_list_topics):
         if topic_name == topic["msg_topic"]:
             id = i
             break
