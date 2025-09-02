@@ -6,6 +6,7 @@ basestation:
   clients:
     - "io"
     - "callisto"
+    - "apollo"
 #    - "europa"
 #    - "titan"
 
@@ -20,6 +21,18 @@ basestation:
 #     - "io"
 #     - "titan"
 # 
+
+apollo:
+  node-type: "ground_robot"
+  IP-address: "10.10.10.142"
+  using-radio: "cardinal-2"
+  base-port: "6234"
+  clients:
+    - "basestation"
+    - "callisto"
+    - "io"
+
+
 callisto:
   node-type: "ground_robot"
   IP-address: "10.10.10.102"
@@ -28,6 +41,7 @@ callisto:
   clients:
     - "basestation"
     - "io"
+    - "apollo"
  #   - "europa"
  #   - "titan"
 
@@ -39,6 +53,7 @@ io:
   clients:
     - "basestation"
     - "callisto"
+    - "apollo"
 #    - "europa"
 #    - "titan"
 
@@ -52,3 +67,4 @@ io:
 #     - "callisto"
 #     - "europa"
 #     - "io"
+
