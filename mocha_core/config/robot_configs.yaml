@@ -7,8 +7,21 @@ basestation:
     - "io"
     - "callisto"
     - "apollo"
+    - "triton"
 #    - "europa"
 #    - "titan"
+
+triton:
+  node-type: "ground_robot"
+  IP-address: "10.10.10.104"
+  using-radio: dx4-4"
+  base-port: "2234"
+  clients:
+    - "basestation"
+    - "callisto"
+    - "io"
+    - "apollo"
+
 
 # europa:
 #   node-type: "ground_robot"
@@ -31,6 +44,7 @@ apollo:
     - "basestation"
     - "callisto"
     - "io"
+    - "triton"
 
 
 callisto:
@@ -42,6 +56,7 @@ callisto:
     - "basestation"
     - "io"
     - "apollo"
+    - "triton"
  #   - "europa"
  #   - "titan"
 
@@ -54,6 +69,7 @@ io:
     - "basestation"
     - "callisto"
     - "apollo"
+    - "triton"
 #    - "europa"
 #    - "titan"
 
