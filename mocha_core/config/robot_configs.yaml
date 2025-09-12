@@ -73,14 +73,14 @@ io:
 #    - "europa"
 #    - "titan"
 
-# titan:
-#   node-type: "aerial_robot"
-#   IP-address: "10.10.10.107"
-#   using-radio: "blue-1"
-#   base-port: "6234"
-#   clients:
-#     - "basestation"
-#     - "callisto"
-#     - "europa"
-#     - "io"
+titan:
+  node-type: "aerial_robot"
+  IP-address: "10.10.10.107"
+  using-radio: "dx4-1"
+  base-port: "6234"
+  clients:
+    - "basestation"
+    - "callisto"
+    - "triton"
+    - "io"
 
