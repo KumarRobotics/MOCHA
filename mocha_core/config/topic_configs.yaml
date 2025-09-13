@@ -63,6 +63,11 @@ base_station:
     msg_priority: "HIGH_PRIORITY"
     msg_history: "LAST_MESSAGE"
  
+  - msg_topic: "/to_titan/goal"
+    msg_type: "geometry_msgs/PointStamped" 
+    msg_priority: "HIGH_PRIORITY"
+    msg_history: "LAST_MESSAGE"
+
 
 aerial_robot:
   - msg_topic: "/graph"
