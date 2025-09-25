@@ -59,6 +59,10 @@ def line_parser(line_bytes):
     if line_str.replace(" ", "")[:4] == "mac:":
         separator = line_str.find(":") + 2
         mac_str = line_str[separator:]
+        # FIXME The .replace that happens before can modify the MAC of the client.
+        # This is an ugly fix. The right way to solve this problem is to use the proto message
+        # (or implement a more resilient parser)
+        mac_str = mac_str.replace(":", "{")
         mac_bytes = bytes(mac_str, 'raw_unicode_escape')
         mac_decoded = ":".join(["%02x" % c for c in mac_bytes[1:-2]])
         line_str = line_str[:separator] + mac_decoded + "\n"
