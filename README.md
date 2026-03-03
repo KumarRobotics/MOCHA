@@ -1,5 +1,8 @@
 ☕ MOCHA: Multi-robot Opportunistic Communication for Heterogeneous Collaboration
 ---------------------------------------------------------------------------------
+
+[![build](https://github.com/KumarRobotics/MOCHA/actions/workflows/build.yaml/badge.svg?branch=ros2)](https://github.com/KumarRobotics/MOCHA/actions/workflows/build.yaml)
+
 ![MOCHA gif](mocha.gif)
 
 This repository contains the distributed and opportunistic communication stack used for multi-robot experiments at KumarRobotics.
