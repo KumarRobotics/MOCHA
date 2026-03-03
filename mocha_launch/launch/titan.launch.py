@@ -8,17 +8,14 @@ from launch_ros.substitutions import FindPackageShare
 
 
 def generate_launch_description():
-    """
-    Launch titan robot with database, translators, publishers, and Rajant interface
-    """
-    
+    """Launch titan robot with database, translators, publishers, and Rajant interface."""
     # Declare launch arguments
     robot_name_arg = DeclareLaunchArgument(
         'robot_name',
         default_value='titan',
         description='Name of the robot'
     )
-    
+
     robot_configs_arg = DeclareLaunchArgument(
         'robot_configs',
         default_value=PathJoinSubstitution([
@@ -27,16 +24,16 @@ def generate_launch_description():
         ]),
         description='Path to robot configuration file'
     )
-    
+
     topic_configs_arg = DeclareLaunchArgument(
-        'topic_configs', 
+        'topic_configs',
         default_value=PathJoinSubstitution([
             FindPackageShare('mocha_core'),
             'config', 'topic_configs.yaml'
         ]),
         description='Path to topic configuration file'
     )
-    
+
     radio_configs_arg = DeclareLaunchArgument(
         'radio_configs',
         default_value=PathJoinSubstitution([
@@ -45,13 +42,13 @@ def generate_launch_description():
         ]),
         description='Path to radio configuration file'
     )
-    
+
     # Get launch configurations
     robot_name = LaunchConfiguration('robot_name')
     robot_configs = LaunchConfiguration('robot_configs')
     topic_configs = LaunchConfiguration('topic_configs')
     radio_configs = LaunchConfiguration('radio_configs')
-    
+
     # Include database, translators and publishers launch file
     database_translators_publishers_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([
@@ -68,7 +65,7 @@ def generate_launch_description():
             'radio_configs': radio_configs
         }.items()
     )
-    
+
     # Include Rajant interface launch file
     rajant_interface_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([
@@ -85,7 +82,7 @@ def generate_launch_description():
             'radio_configs': radio_configs
         }.items()
     )
-    
+
     return LaunchDescription([
         robot_name_arg,
         robot_configs_arg,
