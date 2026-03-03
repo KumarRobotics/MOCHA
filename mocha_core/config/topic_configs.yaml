@@ -9,27 +9,12 @@ ground_robot:
     msg_priority: "NO_PRIORITY"
     msg_history: "LAST_MESSAGE"
 
-  - msg_topic: "/spomp_global/reachability_history"
-    msg_type: "spomp/LocalReachabilityArray"
-    msg_priority: "LOW_PRIORITY"
-    msg_history: "LAST_MESSAGE"
-
   - msg_topic: "/spomp_global/path_viz"
     msg_type: "nav_msgs/Path"
     msg_priority: "MEDIUM_PRIORITY"
     msg_history: "LAST_MESSAGE"
 
-  - msg_topic: "/goal_manager/claimed_goals"
-    msg_type: "spomp/ClaimedGoalArray"
-    msg_priority: "HIGH_PRIORITY"
-    msg_history: "LAST_MESSAGE"
-
 aerial_robot:
-  - msg_topic: "/asoom/map/compressed"
-    msg_type: "grid_map_msgs/GridMapCompressed"
-    msg_priority: "HIGH_PRIORITY"
-    msg_history: "LAST_MESSAGE"
-
   - msg_topic: "/asoom/recent_key_pose"
     msg_type: "geometry_msgs/PoseStamped"
     msg_priority: "NO_PRIORITY"

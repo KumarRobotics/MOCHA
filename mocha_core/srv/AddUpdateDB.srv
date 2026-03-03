@@ -1,5 +1,5 @@
 uint8   topic_id
-time    timestamp
+builtin_interfaces/Time timestamp
 uint8[] msg_content
 ---
 uint8[] new_header
