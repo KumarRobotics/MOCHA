@@ -138,3 +138,7 @@ super-brick:
         MAC-address: ["84:8d:84:41:4f:fb", "84:8d:84:41:4f:f7", "84:8d:84:41:4f:f8", "84:8d:84:41:4f:f9"]
         computed-IP-address: "10.149.180.1"
 
+another-brick:
+        SN: "FE1-2255X-130528"
+        MAC-address: ["84:8d:84:42:db:5d", "84:8d:84:42:db:5c", "84:8d:84:42:db:5b", "84:8d:84:42:db:5a"]
+        computed-IP-address: "10.253.224.1"
