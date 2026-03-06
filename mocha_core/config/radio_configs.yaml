@@ -73,6 +73,21 @@ cardinal-3:
         MAC-address: ["84:8d:84:ef:0d:7b","84:8d:84:ef:0d:7c"]
         computed-IP-address: "10.201.106.1"
 
+cardinal-4:
+        SN: "AG1-5250M-115930"
+        MAC-address: ["84:8d:84:ef:e8:20", "84:8d:84:ef:e8:21"]
+        computed-IP-address: "10.196.218.1"
+
+cardinal-5:
+        SN: "AG1-5250M-111565"
+        MAC-address: ["84:8d:84:ef:15:07", "84:8d:84:ef:15:08"]
+        computed-IP-address: "10.179.205.1"
+
+cardinal-6:
+        SN: "AG1-5250M-112727"
+        MAC-address: ["84:8d:84:ef:e2:c5", "84:8d:84:ef:e2:c6"]
+        computed-IP-address: "10.184.87.1"
+
 deep-blue-1:
         SN: "DX2-50-81745"
         MAC-address: ["c4:ad:34:79:e4:da"]
