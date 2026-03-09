@@ -1,54 +1,71 @@
 basestation:
   node-type: "base_station"
-  IP-address: "10.10.10.100"
-  using-radio: "brick-1"
+  IP-address: "10.10.10.10"
+  using-radio: "another-brick"
   base-port: "1234"
   clients:
-    - "callisto"
-    - "europa"
-    - "io"
-    - "titan"
+    - "dione"
+    - "phobos"
+    - "deimos"
+    - "titania"
+    - "aphrodite"
 
-europa:
-  node-type: "ground_robot"
-  IP-address: "10.10.10.101"
-  using-radio: "blue-2"
-  base-port: "2234"
-  clients:
-    - "basestation"
-    - "callisto"
-    - "io"
-    - "titan"
-
-callisto:
-  node-type: "ground_robot"
-  IP-address: "10.10.10.102"
-  using-radio: "blue-6"
-  base-port: "3234"
-  clients:
-    - "basestation"
-    - "europa"
-    - "io"
-    - "titan"
-
-io:
-  node-type: "ground_robot"
-  IP-address: "10.10.10.103"
-  using-radio: "blue-5"
-  base-port: "4234"
-  clients:
-    - "basestation"
-    - "europa"
-    - "callisto"
-    - "titan"
-
-titan:
+dione:
   node-type: "aerial_robot"
-  IP-address: "10.10.10.107"
-  using-radio: "blue-1"
+  IP-address: "10.10.10.106"
+  using-radio: "dx4-5"
   base-port: "6234"
   clients:
     - "basestation"
-    - "callisto"
-    - "europa"
-    - "io"
+    - "phobos"
+    - "deimos"
+    - "titania"
+    - "aphrodite"
+
+phobos:
+  node-type: "ground_robot"
+  IP-address: "10.10.10.111"
+  using-radio: "deep-blue-3"
+  base-port: "2234"
+  clients:
+    - "basestation"
+    - "dione"
+    - "deimos"
+    - "titania"
+    - "aphrodite"
+
+deimos:
+  node-type: "ground_robot"
+  IP-address: "10.10.10.112"
+  using-radio: "deep-blue-2"
+  base-port: "3234"
+  clients:
+    - "basestation"
+    - "phobos"
+    - "dione"
+    - "titania"
+    - "aphrodite"
+
+titania:
+  node-type: "ground_robot"
+  IP-address: "10.10.10.114"
+  using-radio: "deep-blue-5"
+  base-port: 5254
+  clients:
+    - "basestation"
+    - "phobos"
+    - "deimos"
+    - "dione"
+    - "aphrodite"
+
+aphrodite:
+  node-type: "ground_robot"
+  IP-address: "10.10.10.121"
+  using-radio: "cardinal-5"
+  base-port: 5545
+  clients:
+    - "basestation"
+    - "phobos"
+    - "deimos"
+    - "titania"
+    - "dione"

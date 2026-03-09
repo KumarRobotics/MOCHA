@@ -1,27 +1,42 @@
 ground_robot:
-  - msg_topic: "/top_down_render/pose_est"
-    msg_type: "geometry_msgs/PoseWithCovarianceStamped"
+  - msg_topic: "/dgps/antenna1/fix"
+    msg_type: "sensor_msgs/msg/NavSatFix"
     msg_priority: "HIGH_PRIORITY"
     msg_history: "LAST_MESSAGE"
 
-  - msg_topic: "/object_mapper/map"
-    msg_type: "sensor_msgs/PointCloud2"
-    msg_priority: "NO_PRIORITY"
+  - msg_topic: "/traige_report/gate1"
+    msg_type: "dtc_msgs/msg/Gate1"
+    msg_priority: "HIGH_PRIORITY"
     msg_history: "LAST_MESSAGE"
-
-  - msg_topic: "/spomp_global/path_viz"
-    msg_type: "nav_msgs/Path"
-    msg_priority: "MEDIUM_PRIORITY"
+  
+  - msg_topic: "/traige_report/gate2"
+    msg_type: "dtc_msgs/msg/Gate2"
+    msg_priority: "HIGH_PRIORITY"
+    msg_history: "LAST_MESSAGE"
+  
+  - msg_topic: "/traige_report/gate3"
+    msg_type: "dtc_msgs/msg/Gate1"
+    msg_priority: "HIGH_PRIORITY"
+    msg_history: "LAST_MESSAGE"
+  
+  - msg_topic: "/traige_report/gate4"
+    msg_type: "dtc_msgs/msg/Gate4"
+    msg_priority: "HIGH_PRIORITY"
     msg_history: "LAST_MESSAGE"
 
 aerial_robot:
-  - msg_topic: "/asoom/recent_key_pose"
-    msg_type: "geometry_msgs/PoseStamped"
-    msg_priority: "NO_PRIORITY"
+  - msg_topic: "/dgps/antenna1/fix"
+    msg_type: "sensor_msgs/msg/NavSatFix"
+    msg_priority: "HIGH_PRIORITY"
     msg_history: "LAST_MESSAGE"
 
+  - msg_topic: "/glider/casualty/fix"
+    msg_type: "dtc_msgs/msg/CasualtyFix"
+    msg_priority: "HIGH_PRIORITY"
+    msg_history: "LAST_MESSAGE" 
+
 base_station:
-  - msg_topic: "/target_goals"
-    msg_type: "geometry_msgs/PoseArray"
+  - msg_topic: "/dummy"
+    msg_type: "std_msgs/Header"
     msg_priority: "HIGH_PRIORITY"
     msg_history: "LAST_MESSAGE"
