@@ -1,37 +1,37 @@
 ground_robot:
   - msg_topic: "/dgps/antenna1/fix"
-    msg_type: "sensor_msgs/msg/NavSatFix"
+    msg_type: "sensor_msgs/NavSatFix"
     msg_priority: "HIGH_PRIORITY"
     msg_history: "LAST_MESSAGE"
 
   - msg_topic: "/traige_report/gate1"
-    msg_type: "dtc_msgs/msg/Gate1"
+    msg_type: "dtc_msgs/Gate1"
     msg_priority: "HIGH_PRIORITY"
     msg_history: "LAST_MESSAGE"
   
   - msg_topic: "/traige_report/gate2"
-    msg_type: "dtc_msgs/msg/Gate2"
+    msg_type: "dtc_msgs/Gate2"
     msg_priority: "HIGH_PRIORITY"
     msg_history: "LAST_MESSAGE"
   
   - msg_topic: "/traige_report/gate3"
-    msg_type: "dtc_msgs/msg/Gate1"
+    msg_type: "dtc_msgs/Gate1"
     msg_priority: "HIGH_PRIORITY"
     msg_history: "LAST_MESSAGE"
   
   - msg_topic: "/traige_report/gate4"
-    msg_type: "dtc_msgs/msg/Gate4"
+    msg_type: "dtc_msgs/Gate4"
     msg_priority: "HIGH_PRIORITY"
     msg_history: "LAST_MESSAGE"
 
 aerial_robot:
   - msg_topic: "/dgps/antenna1/fix"
-    msg_type: "sensor_msgs/msg/NavSatFix"
+    msg_type: "sensor_msgs/NavSatFix"
     msg_priority: "HIGH_PRIORITY"
     msg_history: "LAST_MESSAGE"
 
   - msg_topic: "/glider/casualty/fix"
-    msg_type: "dtc_msgs/msg/CasualtyFix"
+    msg_type: "dtc_msgs/CasualtyFix"
     msg_priority: "HIGH_PRIORITY"
     msg_history: "LAST_MESSAGE" 
 
