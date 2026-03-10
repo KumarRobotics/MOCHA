@@ -8,14 +8,17 @@ from launch_ros.substitutions import FindPackageShare
 
 
 def generate_launch_description():
-    """Launch Rajant interface nodes (query and parser)."""
+    """
+    Launch Rajant interface nodes (query and parser)
+    """
+    
     # Declare launch arguments
     robot_name_arg = DeclareLaunchArgument(
         'robot_name',
         default_value='charon',
         description='Name of the robot'
     )
-
+    
     robot_configs_arg = DeclareLaunchArgument(
         'robot_configs',
         default_value=PathJoinSubstitution([
@@ -24,7 +27,7 @@ def generate_launch_description():
         ]),
         description='Path to robot configuration file'
     )
-
+    
     radio_configs_arg = DeclareLaunchArgument(
         'radio_configs',
         default_value=PathJoinSubstitution([
@@ -33,12 +36,12 @@ def generate_launch_description():
         ]),
         description='Path to radio configuration file'
     )
-
+    
     # Get launch configurations
     robot_name = LaunchConfiguration('robot_name')
     robot_configs = LaunchConfiguration('robot_configs')
     radio_configs = LaunchConfiguration('radio_configs')
-
+    
     # Define nodes
     rajant_query_node = Node(
         package='interface_rajant',
@@ -51,7 +54,7 @@ def generate_launch_description():
             'radio_configs': radio_configs
         }]
     )
-
+    
     rajant_parser_node = Node(
         package='interface_rajant',
         executable='rajant_parser.py',
@@ -63,7 +66,7 @@ def generate_launch_description():
             'radio_configs': radio_configs
         }]
     )
-
+    
     return LaunchDescription([
         robot_name_arg,
         robot_configs_arg,

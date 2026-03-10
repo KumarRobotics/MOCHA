@@ -7,26 +7,24 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
-find_package(ament_cmake_python REQUIRED)
-find_package(rclpy REQUIRED)
+# uncomment the following section in order to fill in
+# further dependencies manually.
+# find_package(<dependency> REQUIRED)
+# Install launch files
+install(DIRECTORY launch
+  DESTINATION share/${PROJECT_NAME}
+)
 
-# Install Python modules
-ament_python_install_package(${PROJECT_NAME})
-
-# Install executables
+# Install Python executables
 install(PROGRAMS
-  interface_rajant/rajant_peer_rssi.py
+  scripts/rajant_query.py
+  scripts/rajant_parser.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
-# Install launch files
-install(DIRECTORY launch/
-  DESTINATION share/${PROJECT_NAME}/launch
-)
-
 # Install thirdParty directory (contains Java JAR file)
-install(DIRECTORY thirdParty/
-  DESTINATION share/${PROJECT_NAME}/thirdParty
+install(DIRECTORY scripts/thirdParty
+  DESTINATION share/${PROJECT_NAME}/scripts
 )
 
 if(BUILD_TESTING)
