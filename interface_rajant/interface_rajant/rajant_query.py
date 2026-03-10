@@ -118,7 +118,7 @@ class RajantQueryNode(Node):
             return
 
         # Java binary path
-        self.java_bin = os.path.join(ros_path, 'scripts',
+        self.java_bin = os.path.join(ros_path,
                                 'thirdParty/watchstate/bcapi-watchstate-11.19.0-SNAPSHOT-jar-with-dependencies.jar')
 
         # Initialize subprocess variables
