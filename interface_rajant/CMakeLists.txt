@@ -16,6 +16,8 @@ ament_python_install_package(${PROJECT_NAME})
 # Install executables
 install(PROGRAMS
   interface_rajant/rajant_peer_rssi.py
+  interface_rajant/rajant_query.py 
+  interface_rajant/rajant_parser.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

@@ -22,6 +22,8 @@ setup(
     entry_points={
         'console_scripts': [
             'rajant_peer_rssi = interface_rajant.rajant_peer_rssi:main',
+            'rajant_query = interface_rajant.rajant_query:main',
+            'rajant_parser = interface_rajant.rajant_parser:main'
         ],
     },
 )
