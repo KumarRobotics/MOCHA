@@ -15,7 +15,7 @@ ground_robot:
     msg_history: "LAST_MESSAGE"
   
   - msg_topic: "/triage_report/gate3"
-    msg_type: "dtc_msgs/Gate1"
+    msg_type: "dtc_msgs/Gate3"
     msg_priority: "HIGH_PRIORITY"
     msg_history: "LAST_MESSAGE"
   
