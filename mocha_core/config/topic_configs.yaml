@@ -4,22 +4,22 @@ ground_robot:
     msg_priority: "HIGH_PRIORITY"
     msg_history: "LAST_MESSAGE"
 
-  - msg_topic: "/traige_report/gate1"
+  - msg_topic: "/triage_report/gate1"
     msg_type: "dtc_msgs/Gate1"
     msg_priority: "HIGH_PRIORITY"
     msg_history: "LAST_MESSAGE"
   
-  - msg_topic: "/traige_report/gate2"
+  - msg_topic: "/triage_report/gate2"
     msg_type: "dtc_msgs/Gate2"
     msg_priority: "HIGH_PRIORITY"
     msg_history: "LAST_MESSAGE"
   
-  - msg_topic: "/traige_report/gate3"
+  - msg_topic: "/triage_report/gate3"
     msg_type: "dtc_msgs/Gate1"
     msg_priority: "HIGH_PRIORITY"
     msg_history: "LAST_MESSAGE"
   
-  - msg_topic: "/traige_report/gate4"
+  - msg_topic: "/triage_report/gate4"
     msg_type: "dtc_msgs/Gate4"
     msg_priority: "HIGH_PRIORITY"
     msg_history: "LAST_MESSAGE"
