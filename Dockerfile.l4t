@@ -5,7 +5,8 @@ RUN sudo apt update && sudo apt install -y \
  default-jre \
  iputils-ping \
  python3-lz4 \
- python3-defusedxml
+ python3-defusedxml \
+ ros-jazzy-smach
 
 WORKDIR /root
 RUN mv /ws .
