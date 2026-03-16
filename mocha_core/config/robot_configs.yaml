@@ -37,7 +37,7 @@ phobos:
 deimos:
   node-type: "ground_robot"
   IP-address: "10.10.10.112"
-  using-radio: "deep-blue-2"
+  using-radio: "deep-blue-4"
   base-port: "3234"
   clients:
     - "basestation"
