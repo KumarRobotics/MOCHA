@@ -31,7 +31,7 @@ aerial_robot:
     msg_history: "LAST_MESSAGE"
 
   - msg_topic: "/glider/casualty/fix"
-    msg_type: "dtc_msgs/CasualtyFix"
+    msg_type: "dtc_msgs/CasualtyFixArray"
     msg_priority: "HIGH_PRIORITY"
     msg_history: "LAST_MESSAGE" 
 
