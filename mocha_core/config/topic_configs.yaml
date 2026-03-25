@@ -19,9 +19,19 @@ aerial_robot:
     msg_type: "geometry_msgs/PoseStamped"
     msg_priority: "NO_PRIORITY"
     msg_history: "LAST_MESSAGE"
+  - msg_topic: "/graph"
+    msg_type: "std_msgs/String"
+    msg_priority: "HIGH_PRIORITY"
+    msg_history: "LAST_MESSAGE"
 
 base_station:
   - msg_topic: "/target_goals"
     msg_type: "geometry_msgs/PoseArray"
     msg_priority: "HIGH_PRIORITY"
+    msg_history: "LAST_MESSAGE"
+
+atak:
+  - msg_topic: "/atak_feedback"
+    msg_type: "std_msgs/String"
+    msg_priority: "NO_PRIORITY"
     msg_history: "LAST_MESSAGE"

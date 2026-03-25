@@ -52,3 +52,11 @@ titan:
     - "callisto"
     - "europa"
     - "io"
+
+atakbase:
+  node-type: "atak"
+  IP-address: "10.10.10.200"
+  using-radio: "brick-2"
+  base-port: "7234"
+  clients:
+   - "titan"
