@@ -40,22 +40,10 @@ def generate_launch_description():
     radio_configs = LaunchConfiguration('radio_configs')
 
     # Define nodes
-    rajant_query_node = Node(
+    rajant_peer_rssi = Node(
         package='interface_rajant',
-        executable='rajant_query.py',
-        name='rajant_query',
-        output='screen',
-        parameters=[{
-            'robot_name': robot_name,
-            'robot_configs': robot_configs,
-            'radio_configs': radio_configs
-        }]
-    )
-
-    rajant_parser_node = Node(
-        package='interface_rajant',
-        executable='rajant_parser.py',
-        name='rajant_parser',
+        executable='rajant_peer_rssi.py',
+        name='rajant_peer_rssi',
         output='screen',
         parameters=[{
             'robot_name': robot_name,
@@ -68,6 +56,5 @@ def generate_launch_description():
         robot_name_arg,
         robot_configs_arg,
         radio_configs_arg,
-        rajant_query_node,
-        rajant_parser_node
+        rajant_peer_rssi
     ])
