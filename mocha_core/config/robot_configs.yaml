@@ -44,8 +44,8 @@ io:
 
 titan:
   node-type: "aerial_robot"
-  IP-address: "10.10.10.107"
-  using-radio: "cardinal-1"
+  IP-address: "10.10.10.21"
+  using-radio: "deep-blue-1"
   base-port: "6234"
   clients:
     - "basestation"
