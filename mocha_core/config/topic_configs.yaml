@@ -15,10 +15,6 @@ ground_robot:
     msg_history: "LAST_MESSAGE"
 
 aerial_robot:
-  - msg_topic: "/asoom/recent_key_pose"
-    msg_type: "geometry_msgs/PoseStamped"
-    msg_priority: "NO_PRIORITY"
-    msg_history: "LAST_MESSAGE"
   - msg_topic: "/graph"
     msg_type: "std_msgs/String"
     msg_priority: "HIGH_PRIORITY"
@@ -31,7 +27,7 @@ base_station:
     msg_history: "LAST_MESSAGE"
 
 atak:
-  - msg_topic: "/atak_feedback"
-    msg_type: "std_msgs/String"
+  - msg_topic: "/waypoint"
+    msg_type: "geometry_msgs/PointStamped"
     msg_priority: "NO_PRIORITY"
     msg_history: "LAST_MESSAGE"
