@@ -3,7 +3,7 @@ ground_robot:
     msg_type: "nav_msgs/OccupancyGrid"
     msg_priority: "MEDIUM_PRIORITY"
     msg_history: "LAST_MESSAGE"
-  - msg_topic: "/grounding_dino_node/tracks"
+  - msg_topic: "/detector_node/tracks"
     msg_type: "teaming_msgs/Track"
     msg_priority: "HIGH_PRIORITY"
     msg_history: "LAST_MESSAGE"
