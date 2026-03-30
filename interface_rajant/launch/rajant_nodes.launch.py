@@ -34,33 +34,32 @@ def generate_launch_description():
         description='Path to radio configuration file'
     )
 
+    bcapi_jar_file_arg = DeclareLaunchArgument(
+        'bcapi_jar_file',
+        default_value=PathJoinSubstitution([
+            FindPackageShare('interface_rajant'),
+            'thirdParty', 'PeerRSSI-bcapi-11.26.1.jar'
+        ]),
+        description='Path to jar file used to get rssi'
+    )
+
     # Get launch configurations
     robot_name = LaunchConfiguration('robot_name')
     robot_configs = LaunchConfiguration('robot_configs')
     radio_configs = LaunchConfiguration('radio_configs')
+    bcapi_jar_file = LaunchConfiguration('bcapi_jar_file')
 
     # Define nodes
-    rajant_query_node = Node(
+    rajant_peer_rssi = Node(
         package='interface_rajant',
-        executable='rajant_query.py',
-        name='rajant_query',
+        executable='rajant_peer_rssi.py',
+        name='rajant_peer_rssi',
         output='screen',
         parameters=[{
             'robot_name': robot_name,
             'robot_configs': robot_configs,
-            'radio_configs': radio_configs
-        }]
-    )
-
-    rajant_parser_node = Node(
-        package='interface_rajant',
-        executable='rajant_parser.py',
-        name='rajant_parser',
-        output='screen',
-        parameters=[{
-            'robot_name': robot_name,
-            'robot_configs': robot_configs,
-            'radio_configs': radio_configs
+            'radio_configs': radio_configs,
+            'bcapi_jar_file': bcapi_jar_file
         }]
     )
 
@@ -68,6 +67,6 @@ def generate_launch_description():
         robot_name_arg,
         robot_configs_arg,
         radio_configs_arg,
-        rajant_query_node,
-        rajant_parser_node
+        bcapi_jar_file_arg,
+        rajant_peer_rssi,
     ])
