@@ -3,7 +3,7 @@ ground_robot:
     msg_type: "nav_msgs/OccupancyGrid"
     msg_priority: "MEDIUM_PRIORITY"
     msg_history: "LAST_MESSAGE"
-  - msg_topic: "/grounding_dino_node/tracks"
+  - msg_topic: "/detector_node/tracks"
     msg_type: "teaming_msgs/Track"
     msg_priority: "HIGH_PRIORITY"
     msg_history: "LAST_MESSAGE"
@@ -17,6 +17,12 @@ ground_robot:
     msg_history: "LAST_MESSAGE"
   
 base_station:
+
+  - msg_topic: "/graph"
+    msg_type: "std_msgs/String"
+    msg_priority: "HIGH_PRIORITY"
+    msg_history: "LAST_MESSAGE"
+
   # for callisto
   - msg_topic: "/to_callisto/behavior_request"
     msg_type: "teaming_msgs/BehaviorRequest"
@@ -37,7 +43,6 @@ base_station:
     msg_priority: "HIGH_PRIORITY"
     msg_history: "LAST_MESSAGE"
 
-
     # for apollo
   - msg_topic: "/to_apollo/behavior_request"
     msg_type: "teaming_msgs/BehaviorRequest"
@@ -47,8 +52,36 @@ base_station:
     msg_type: "std_msgs/Int16"
     msg_priority: "HIGH_PRIORITY"
     msg_history: "LAST_MESSAGE"
-
-  - msg_topic: "/graph"
-    msg_type: "std_msgs/String"
+    
+    # for prometheus
+  - msg_topic: "/to_prometheus/behavior_request"
+    msg_type: "teaming_msgs/BehaviorRequest"
     msg_priority: "HIGH_PRIORITY"
     msg_history: "LAST_MESSAGE"
+  - msg_topic: "/to_prometheus/behavior_result_ack"
+    msg_type: "std_msgs/Int16"
+    msg_priority: "HIGH_PRIORITY"
+    msg_history: "LAST_MESSAGE"
+ 
+  # for triton
+  - msg_topic: "/to_triton/behavior_request"
+    msg_type: "teaming_msgs/BehaviorRequest"
+    msg_priority: "HIGH_PRIORITY"
+    msg_history: "LAST_MESSAGE"
+  - msg_topic: "/to_triton/behavior_result_ack"
+    msg_type: "std_msgs/Int16"
+    msg_priority: "HIGH_PRIORITY"
+    msg_history: "LAST_MESSAGE"
+ 
+  - msg_topic: "/to_titan/goal"
+    msg_type: "geometry_msgs/PointStamped" 
+    msg_priority: "HIGH_PRIORITY"
+    msg_history: "LAST_MESSAGE"
+
+
+aerial_robot:
+  - msg_topic: "/graph"
+    msg_type: "std_msgs/String"
+    msg_priority: "HIGH_PRIORITY"  
+    msg_history: "LAST_MESSAGE"
+ 
