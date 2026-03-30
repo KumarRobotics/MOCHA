@@ -7,8 +7,24 @@ basestation:
     - "io"
     - "callisto"
     - "apollo"
+    - "triton"
+    - "titan"
+    - "prometheus"
 #    - "europa"
 #    - "titan"
+
+triton:
+  node-type: "ground_robot"
+  IP-address: "10.10.10.104"
+  using-radio: "dx4-4"
+  base-port: "2234"
+  clients:
+    - "basestation"
+    - "callisto"
+    - "io"
+    - "apollo"
+    - "titan"
+    - "prometheus"
 
 # europa:
 #   node-type: "ground_robot"
@@ -31,7 +47,9 @@ apollo:
     - "basestation"
     - "callisto"
     - "io"
-
+    - "triton"
+    - "titan"
+    - "prometheus"
 
 callisto:
   node-type: "ground_robot"
@@ -42,8 +60,9 @@ callisto:
     - "basestation"
     - "io"
     - "apollo"
- #   - "europa"
- #   - "titan"
+    - "triton"
+    - "titan"
+    - "prometheus"
 
 io:
   node-type: "ground_robot"
@@ -54,17 +73,34 @@ io:
     - "basestation"
     - "callisto"
     - "apollo"
+    - "triton"
+    - "titan"
+    - "prometheus"
+
 #    - "europa"
 #    - "titan"
 
-# titan:
-#   node-type: "aerial_robot"
-#   IP-address: "10.10.10.107"
-#   using-radio: "blue-1"
-#   base-port: "6234"
-#   clients:
-#     - "basestation"
-#     - "callisto"
-#     - "europa"
-#     - "io"
+titan:
+  node-type: "aerial_robot"
+  IP-address: "10.10.10.107"
+  using-radio: "dx4-1"
+  base-port: "6234"
+  clients:
+    - "basestation"
+    - "callisto"
+    - "triton"
+    - "io"
+    - "apollo"
+    - "prometheus"
 
+prometheus:
+  node-type: "ground_robot"
+  IP-address: "10.10.10.150"
+  using-radio: "cardinal-2"
+  base-port: "4234"
+  clients:
+    - "basestation"
+    - "callisto"
+    - "triton"
+    - "titan"
+    - "prometheus"
