@@ -32,6 +32,16 @@ base_station:
     msg_type: "std_msgs/Int16"
     msg_priority: "HIGH_PRIORITY"
     msg_history: "LAST_MESSAGE"
+
+    # for europa
+  - msg_topic: "/to_europa/behavior_request"
+    msg_type: "teaming_msgs/BehaviorRequest"
+    msg_priority: "HIGH_PRIORITY"
+    msg_history: "LAST_MESSAGE"
+  - msg_topic: "/to_europa/behavior_result_ack"
+    msg_type: "std_msgs/Int16"
+    msg_priority: "HIGH_PRIORITY"
+    msg_history: "LAST_MESSAGE"
  
   # for io
   - msg_topic: "/to_io/behavior_request"

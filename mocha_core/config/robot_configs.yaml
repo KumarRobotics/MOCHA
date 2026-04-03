@@ -1,7 +1,7 @@
 basestation:
   node-type: "base_station"
-  IP-address: "10.10.10.100"
-  using-radio: "super-brick"
+  IP-address: "10.10.10.220"
+  using-radio: "blue-1"
   base-port: "1234"
   clients:
     - "io"
@@ -10,7 +10,7 @@ basestation:
     - "triton"
     - "titan"
     - "prometheus"
-#    - "europa"
+    - "europa"
 #    - "titan"
 
 triton:
@@ -26,17 +26,22 @@ triton:
     - "titan"
     - "prometheus"
 
-# europa:
-#   node-type: "ground_robot"
-#   IP-address: "10.10.10.101"
-#   using-radio: "blue-2"
-#   base-port: "2234"
-#   clients:
-#     - "basestation"
-#     - "callisto"
-#     - "io"
-#     - "titan"
-# 
+europa:
+  node-type: "ground_robot"
+  IP-address: "10.10.10.101"
+  using-radio: "blue-2"
+  base-port: "2234"
+  clients:
+    - "basestation"
+    - "callisto"
+    - "io"
+    - "titan"
+    - "apollo"
+    - "triton"
+    - "prometheus"
+    - "europa"
+
+
 
 apollo:
   node-type: "ground_robot"
@@ -63,6 +68,8 @@ callisto:
     - "triton"
     - "titan"
     - "prometheus"
+    - "europa"
+    - "callisto"
 
 io:
   node-type: "ground_robot"
@@ -104,3 +111,4 @@ prometheus:
     - "triton"
     - "titan"
     - "prometheus"
+    - "europa"
