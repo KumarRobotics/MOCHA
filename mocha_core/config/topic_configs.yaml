@@ -33,7 +33,7 @@ base_station:
     msg_priority: "HIGH_PRIORITY"
     msg_history: "LAST_MESSAGE"
 
-    # for europa
+  # for europa
   - msg_topic: "/to_europa/behavior_request"
     msg_type: "teaming_msgs/BehaviorRequest"
     msg_priority: "HIGH_PRIORITY"
