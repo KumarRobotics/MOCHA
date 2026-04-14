@@ -3,9 +3,6 @@ import threading
 import mocha_core.hash_comm as hash_comm
 import rclpy.time
 import pdb
-import mocha_core.database_utils as du
-import numpy as np
-import copy
 
 
 class DBMessage():
