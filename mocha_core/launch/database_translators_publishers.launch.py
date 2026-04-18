@@ -68,7 +68,7 @@ def generate_launch_description():
             'robot_configs': robot_configs,
             'radio_configs': radio_configs,
             'topic_configs': topic_configs,
-            'rssi_threshold': 15
+            'rssi_threshold': 2 
         }]
     )
 
