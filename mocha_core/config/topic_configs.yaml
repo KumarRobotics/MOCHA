@@ -20,6 +20,11 @@ aerial_robot:
     msg_priority: "HIGH_PRIORITY"
     msg_history: "LAST_MESSAGE"
 
+  - msg_topic: "/ublox_gps_node/fix"
+    msg_type: "sensor_msgs/NavSatFix"
+    msg_priority: "HIGH_PRIORITY"
+    msg_history: "LAST_MESSAGE"
+
 base_station:
   - msg_topic: "/target_goals"
     msg_type: "geometry_msgs/PoseArray"
