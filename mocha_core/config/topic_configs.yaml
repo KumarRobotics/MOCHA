@@ -1,38 +1,43 @@
 ground_robot:
-  - msg_topic: "/top_down_render/pose_est"
-    msg_type: "geometry_msgs/PoseWithCovarianceStamped"
-    msg_priority: "HIGH_PRIORITY"
-    msg_history: "LAST_MESSAGE"
-
-  - msg_topic: "/object_mapper/map"
-    msg_type: "sensor_msgs/PointCloud2"
-    msg_priority: "NO_PRIORITY"
-    msg_history: "LAST_MESSAGE"
-
-  - msg_topic: "/spomp_global/path_viz"
-    msg_type: "nav_msgs/Path"
-    msg_priority: "MEDIUM_PRIORITY"
-    msg_history: "LAST_MESSAGE"
-
-aerial_robot:
-  - msg_topic: "/graph"
-    msg_type: "std_msgs/String"
-    msg_priority: "HIGH_PRIORITY"
-    msg_history: "LAST_MESSAGE"
-
-  - msg_topic: "/ublox_gps_node/fix"
+  - msg_topic: "/ublox/gps/fix"
     msg_type: "sensor_msgs/NavSatFix"
     msg_priority: "HIGH_PRIORITY"
     msg_history: "LAST_MESSAGE"
 
-base_station:
-  - msg_topic: "/target_goals"
-    msg_type: "geometry_msgs/PoseArray"
+  - msg_topic: "/orchestrator/status"
+    msg_type: "std_msgs/String"
     msg_priority: "HIGH_PRIORITY"
     msg_history: "LAST_MESSAGE"
 
-atak:
-  - msg_topic: "/waypoint"
-    msg_type: "geometry_msgs/PointStamped"
-    msg_priority: "NO_PRIORITY"
+  - msg_topic: "/person_detections"
+    msg_type: "dtc_msgs/PersonDetection"
+    msg_priority: "HIGH_PRIORITY"
+    msg_history: "ALL_MESSAGES"
+
+aerial_robot:
+  - msg_topic: "/ublox/gps/fix"
+    msg_type: "sensor_msgs/NavSatFix"
+    msg_priority: "HIGH_PRIORITY"
     msg_history: "LAST_MESSAGE"
+
+  - msg_topic: "/scenic/graph"
+    msg_type: "std_msgs/String"
+    msg_priority: "HIGH_PRIORITY"
+    msg_history: "LAST_MESSAGE"
+
+base_station:
+  - msg_topic: "/dummy"
+    msg_type: "std_msgs/Header"
+    msg_priority: "HIGH_PRIORITY"
+    msg_history: "LAST_MESSAGE"
+
+  - msg_topic: "/task_planner/commands"
+    msg_type: "std_msgs/String"
+    msg_priority: "HIGH_PRIORITY"
+    msg_history: "ALL_MESSAGES"
+
+  - msg_topic: "/task_planner/graph"
+    msg_type: "std_msgs/String"
+    msg_priority: "HIGH_PRIORITY"
+    msg_history: "LAST_MESSAGE"
+

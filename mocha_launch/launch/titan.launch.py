@@ -89,5 +89,5 @@ def generate_launch_description():
         topic_configs_arg,
         radio_configs_arg,
         database_translators_publishers_launch,
-        rajant_interface_launch
+        rajant_interface_launch,
     ])
